@@ -16,7 +16,9 @@ document.addEventListener('DOMContentLoaded', () => {
     conceptQuiz: document.getElementById('view-concept-quiz'),
     progressAnalytics: document.getElementById('view-progress-analytics'),
     interviewQuestions: document.getElementById('view-interview-questions'),
-    techNews: document.getElementById('view-tech-news')
+    techNews: document.getElementById('view-tech-news'),
+    internships: document.getElementById('view-internships'),
+    myApplications: document.getElementById('view-my-applications')
   };
 
   const consoleContainer = document.getElementById('agent-console');
@@ -56,6 +58,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (viewKey === 'techNews') {
       fetchTechNews();
+    } else if (viewKey === 'internships') {
+      fetchInternships();
+    } else if (viewKey === 'myApplications') {
+      fetchMyApplications();
     }
 
     // Asynchronously persist last_route in MongoDB Atlas for authenticated users
@@ -2665,6 +2671,855 @@ document.addEventListener('DOMContentLoaded', () => {
       fetchTechNews(true);
     });
   });
+
+  // =========================================================================
+  // VIEW 9: DYNAMIC INTERNSHIP RECOMMENDATION & APPLICATION LINKS
+  // =========================================================================
+  const internshipState = {
+    page: 1,
+    domain: null,
+    keywords: '',
+    location: 'India',
+    remote: false,
+    total: 0,
+    internships: [],
+    loading: false
+  };
+
+  function getStudentCurrentDomain() {
+    const session = supervisor.authAgent ? supervisor.authAgent.getActiveSession() : null;
+    const state = supervisor.progressTracker ? supervisor.progressTracker.getUserState() : null;
+    let dKey = (session && session.chosen_domain) || (state && state.chosen_domain) || 'fullstack';
+
+    const domainObj = (window.PLACIFY_DATA && window.PLACIFY_DATA.findDomain)
+      ? window.PLACIFY_DATA.findDomain(dKey)
+      : null;
+
+    const label = domainObj ? domainObj.name : (String(dKey).replace(/_/g, ' ').toUpperCase());
+    const labelEl = document.getElementById('internship-user-domain-label');
+    if (labelEl) labelEl.textContent = label;
+
+    return dKey;
+  }
+
+  function renderInternshipSkeleton() {
+    const container = document.getElementById('internships-cards-container');
+    if (!container) return;
+    const skeletonCards = Array(6).fill(0).map(() => `
+      <div class="internship-card-skeleton">
+        <div class="skeleton-line" style="height: 22px; width: 70%;"></div>
+        <div class="skeleton-line" style="height: 16px; width: 45%;"></div>
+        <div style="display: flex; gap: 0.4rem; margin: 0.5rem 0;">
+          <div class="skeleton-line" style="height: 20px; width: 60px; border-radius: 50px;"></div>
+          <div class="skeleton-line" style="height: 20px; width: 80px; border-radius: 50px;"></div>
+        </div>
+        <div class="skeleton-line" style="height: 40px; width: 100%;"></div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto;">
+          <div class="skeleton-line" style="height: 14px; width: 30%;"></div>
+          <div class="skeleton-line" style="height: 32px; width: 90px; border-radius: 50px;"></div>
+        </div>
+      </div>
+    `).join('');
+    container.innerHTML = skeletonCards;
+  }
+
+  async function fetchInternships(pageOverride = null) {
+    if (pageOverride !== null) {
+      internshipState.page = Math.max(1, pageOverride);
+    }
+
+    const container = document.getElementById('internships-cards-container');
+    if (!container) return;
+
+    renderInternshipSkeleton();
+
+    const session = supervisor.authAgent ? supervisor.authAgent.getActiveSession() : null;
+    const userId = session?.user_id || '';
+
+    const domainSelect = document.getElementById('internship-domain-select');
+    const searchInput = document.getElementById('internship-search-input');
+    const locationInput = document.getElementById('internship-location-input');
+
+    if (!internshipState.domain) {
+      internshipState.domain = getStudentCurrentDomain();
+      if (domainSelect) {
+        domainSelect.value = internshipState.domain;
+      }
+    } else if (domainSelect && domainSelect.value) {
+      internshipState.domain = domainSelect.value;
+    }
+
+    const currentDomain = internshipState.domain || 'fullstack';
+    const keywords = searchInput ? searchInput.value.trim() : '';
+    const location = locationInput ? (locationInput.value.trim() || 'India') : 'India';
+    const page = internshipState.page || 1;
+
+    try {
+      const queryParams = new URLSearchParams({
+        domain: currentDomain,
+        location: location,
+        keywords: keywords,
+        page: String(page),
+        limit: '12',
+        userId: userId
+      });
+
+      const response = await fetch(`http://localhost:5000/api/internships?${queryParams.toString()}`);
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to fetch internship opportunities.');
+      }
+
+      internshipState.total = data.total || 0;
+      internshipState.internships = data.internships || [];
+
+      // Update Pagination UI
+      const curPageEl = document.getElementById('internship-current-page');
+      if (curPageEl) curPageEl.textContent = page;
+
+      const prevBtn = document.getElementById('internship-prev-page-btn');
+      const nextBtn = document.getElementById('internship-next-page-btn');
+      if (prevBtn) prevBtn.disabled = (page <= 1);
+      if (nextBtn) nextBtn.disabled = (data.internships.length < 12 || (page * 12) >= data.total);
+
+      // Render Empty State
+      if (!data.internships || data.internships.length === 0) {
+        container.innerHTML = `
+          <div class="glass-card" style="grid-column: 1 / -1; padding: 3rem 2rem; text-align: center; border: 1px dashed var(--border-glass);">
+            <i class="ph ph-briefcase" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+            <h3 style="color: #fff; margin-bottom: 0.5rem; font-size: 1.2rem;">No Relevant Internships Found</h3>
+            <p style="color: var(--text-muted); max-width: 520px; margin: 0 auto 1.5rem auto; font-size: 0.88rem; line-height: 1.5;">
+              ${escapeHtml(data.message || 'No relevant internships found for your current domain. Try updating your skills or search preferences.')}
+            </p>
+            <button id="reset-internship-search-btn" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 1.2rem;">
+              <i class="ph ph-arrows-counter-clockwise"></i> Reset Search Filters
+            </button>
+          </div>
+        `;
+        const resetBtn = document.getElementById('reset-internship-search-btn');
+        if (resetBtn) {
+          resetBtn.addEventListener('click', () => {
+            if (searchInput) searchInput.value = '';
+            fetchInternships(1);
+          });
+        }
+        return;
+      }
+
+      // Render Cards
+      container.innerHTML = data.internships.map(item => {
+        const titleSafe = escapeHtml(item.title);
+        const companySafe = escapeHtml(item.company);
+        const locSafe = escapeHtml(item.location);
+        const modeSafe = escapeHtml(item.workMode || 'Hybrid');
+        const descSafe = escapeHtml(item.description);
+        const stipendSafe = item.stipend ? escapeHtml(item.stipend) : null;
+        const appUrl = escapeHtml(item.applicationUrl);
+        const sourceSafe = escapeHtml(item.source || 'Jobs Partner');
+        const timeAgo = formatRelativeTime(item.postedDate);
+
+        const modeClass = modeSafe.toLowerCase().includes('remote') ? 'work-mode-remote' :
+                          modeSafe.toLowerCase().includes('hybrid') ? 'work-mode-hybrid' : 'work-mode-onsite';
+        const modeIcon = modeSafe.toLowerCase().includes('remote') ? 'ph-laptop' :
+                         modeSafe.toLowerCase().includes('hybrid') ? 'ph-buildings' : 'ph-map-pin';
+
+        const skills = Array.isArray(item.skills) ? item.skills : [];
+        const skillsHtml = skills.map(s => `<span class="internship-skill-tag">${escapeHtml(s)}</span>`).join('');
+        const itemJson = encodeURIComponent(JSON.stringify(item));
+
+        return `
+          <div class="internship-card">
+            <div>
+              <div class="internship-card-header">
+                <div>
+                  <h3 class="internship-title">${titleSafe}</h3>
+                  <div class="internship-company"><i class="ph ph-buildings"></i> ${companySafe}</div>
+                </div>
+              </div>
+
+              <div class="internship-meta-row">
+                <span class="meta-pill ${modeClass}">
+                  <i class="ph ${modeIcon}"></i> ${modeSafe}
+                </span>
+                <span class="meta-pill location-pill">
+                  <i class="ph ph-map-pin"></i> ${locSafe}
+                </span>
+                ${stipendSafe ? `<span class="meta-pill stipend-pill"><i class="ph ph-currency-dollar"></i> ${stipendSafe}</span>` : ''}
+              </div>
+
+              ${skillsHtml ? `<div class="internship-skills-container">${skillsHtml}</div>` : ''}
+
+              <p class="internship-description">${descSafe}</p>
+            </div>
+
+            <div class="internship-card-footer">
+              <div class="internship-source-info">
+                <span><i class="ph ph-globe"></i> ${sourceSafe}</span>
+                <span><i class="ph ph-clock"></i> ${timeAgo}</span>
+              </div>
+              <a href="${appUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-emerald internship-apply-btn" data-item="${itemJson}" title="Apply directly on external listing page">
+                Apply Now <i class="ph ph-arrow-square-out"></i>
+              </a>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Attach click handlers to Apply Now buttons to trigger post-apply modal
+      container.querySelectorAll('.internship-apply-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const rawItem = btn.dataset.item;
+          if (rawItem) {
+            try {
+              const item = JSON.parse(decodeURIComponent(rawItem));
+              setTimeout(() => {
+                promptPostApplyTracking(item);
+              }, 350);
+            } catch (e) {
+              console.warn('[ApplyNow] Error parsing item:', e);
+            }
+          }
+        });
+      });
+
+    } catch (err) {
+      console.error('❌ [Internships UI] Fetch error:', err);
+      container.innerHTML = `
+        <div style="grid-column: 1 / -1; padding: 2.5rem; text-align: center; color: #fca5a5; background: rgba(239, 68, 68, 0.08); border-radius: var(--radius-md); border: 1px solid rgba(239, 68, 68, 0.25);">
+          <i class="ph ph-warning-circle" style="font-size: 2.5rem; margin-bottom: 0.6rem;"></i>
+          <h4 style="font-size: 1.1rem; color: #fff; margin-bottom: 0.4rem;">Internship Opportunities Temporarily Unavailable</h4>
+          <p style="font-size: 0.85rem; color: var(--text-muted); max-width: 500px; margin: 0 auto 1.2rem auto;">Internship opportunities are temporarily unavailable. Please try again later.</p>
+          <button id="retry-internships-fetch-btn" class="btn btn-emerald" style="font-size: 0.85rem; padding: 0.45rem 1.2rem;">
+            <i class="ph ph-arrows-counter-clockwise"></i> Retry Fetching
+          </button>
+        </div>
+      `;
+      const retryBtn = document.getElementById('retry-internships-fetch-btn');
+      if (retryBtn) {
+        retryBtn.addEventListener('click', () => fetchInternships(1));
+      }
+    }
+  }
+
+  // Bind Event Listeners for Internships UI Controls
+  const filterBtn = document.getElementById('apply-internship-filter-btn');
+  if (filterBtn) {
+    filterBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      fetchInternships(1);
+    });
+  }
+
+  const domainSelectEl = document.getElementById('internship-domain-select');
+  if (domainSelectEl) {
+    domainSelectEl.addEventListener('change', () => {
+      internshipState.domain = domainSelectEl.value;
+      const labelEl = document.getElementById('internship-user-domain-label');
+      if (labelEl) {
+        const selectedOpt = domainSelectEl.options[domainSelectEl.selectedIndex];
+        labelEl.textContent = selectedOpt ? selectedOpt.text : domainSelectEl.value;
+      }
+      fetchInternships(1);
+    });
+  }
+
+  const refreshInternshipBtn = document.getElementById('refresh-internships-btn');
+  if (refreshInternshipBtn) {
+    refreshInternshipBtn.addEventListener('click', () => fetchInternships(internshipState.page || 1));
+  }
+
+  const prevPageBtn = document.getElementById('internship-prev-page-btn');
+  if (prevPageBtn) {
+    prevPageBtn.addEventListener('click', () => {
+      if (internshipState.page > 1) {
+        fetchInternships(internshipState.page - 1);
+      }
+    });
+  }
+
+  const nextPageBtn = document.getElementById('internship-next-page-btn');
+  if (nextPageBtn) {
+    nextPageBtn.addEventListener('click', () => {
+      fetchInternships(internshipState.page + 1);
+    });
+  }
+
+  const searchInputEl = document.getElementById('internship-search-input');
+  if (searchInputEl) {
+    searchInputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        fetchInternships(1);
+      }
+    });
+  }
+
+  // =========================================================================
+  // VIEW 10: APPLICATION TRACKING SYSTEM (MY APPLICATIONS)
+  // =========================================================================
+  let activePendingApplicationItem = null;
+
+  function promptPostApplyTracking(item) {
+    activePendingApplicationItem = item;
+    const modal = document.getElementById('post-apply-modal');
+    const jobTitleEl = document.getElementById('post-apply-job-title');
+    const companyEl = document.getElementById('post-apply-company');
+    const alertBox = document.getElementById('post-apply-alert-box');
+
+    if (jobTitleEl) jobTitleEl.textContent = item.title;
+    if (companyEl) companyEl.textContent = item.company;
+    if (alertBox) alertBox.style.display = 'none';
+
+    if (modal) modal.style.display = 'flex';
+  }
+
+  const btnConfirmTrack = document.getElementById('btn-confirm-track-app');
+  if (btnConfirmTrack) {
+    btnConfirmTrack.addEventListener('click', async () => {
+      if (!activePendingApplicationItem) return;
+
+      const session = supervisor.authAgent ? supervisor.authAgent.getActiveSession() : null;
+      if (!session || !session.user_id) {
+        alert('Please sign in or register to track your applications.');
+        return;
+      }
+
+      const item = activePendingApplicationItem;
+      const alertBox = document.getElementById('post-apply-alert-box');
+      btnConfirmTrack.disabled = true;
+
+      try {
+        const response = await fetch('http://localhost:5000/api/applications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: session.user_id,
+            internshipId: item.id,
+            jobTitle: item.title,
+            company: item.company,
+            domain: item.domain || internshipState.domain || 'fullstack',
+            source: item.source || 'Placify Jobs Partner',
+            applicationUrl: item.applicationUrl,
+            externalListingUrl: item.applicationUrl,
+            location: item.location,
+            workMode: item.workMode,
+            stipend: item.stipend,
+            skills: item.skills,
+            status: 'Applied',
+            notes: `Applied on ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} via ${item.source || 'external platform'}.`
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.status === 409 || data.duplicate) {
+          if (alertBox) {
+            alertBox.textContent = 'This opportunity is already in your applications.';
+            alertBox.style.display = 'block';
+          }
+          btnConfirmTrack.disabled = false;
+          return;
+        }
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Unable to track application.');
+        }
+
+        // Hide Modal
+        document.getElementById('post-apply-modal').style.display = 'none';
+        activePendingApplicationItem = null;
+
+        // Notify user & jump to My Applications
+        if (confirm(`🎉 Application Tracked Successfully!\n\n"${item.title}" at ${item.company} has been saved to "My Applications".\n\nWould you like to view My Applications now?`)) {
+          switchView('myApplications');
+        } else {
+          fetchMyApplications();
+        }
+
+      } catch (err) {
+        if (alertBox) {
+          alertBox.textContent = err.message || 'Error tracking application. Please try again.';
+          alertBox.style.display = 'block';
+        }
+      } finally {
+        btnConfirmTrack.disabled = false;
+      }
+    });
+  }
+
+  const btnCancelTrack = document.getElementById('btn-cancel-track-app');
+  if (btnCancelTrack) {
+    btnCancelTrack.addEventListener('click', () => {
+      document.getElementById('post-apply-modal').style.display = 'none';
+      activePendingApplicationItem = null;
+    });
+  }
+
+  const atsState = {
+    filter: 'All',
+    applications: [],
+    summary: {}
+  };
+
+  async function fetchMyApplications(filterOverride = null) {
+    if (filterOverride !== null) {
+      atsState.filter = filterOverride;
+    }
+
+    const container = document.getElementById('my-applications-grid');
+    if (!container) return;
+
+    const session = supervisor.authAgent ? supervisor.authAgent.getActiveSession() : null;
+    const userId = session?.user_id;
+
+    if (!userId) {
+      container.innerHTML = `
+        <div class="glass-card" style="grid-column: 1 / -1; padding: 3rem 2rem; text-align: center;">
+          <i class="ph ph-user-circle" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+          <h3 style="color: #fff; margin-bottom: 0.5rem;">Sign In Required</h3>
+          <p style="color: var(--text-muted);">Please sign in to view and track your internship applications.</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = `<div style="grid-column: 1 / -1; padding: 2rem; text-align: center; color: var(--text-muted);"><i class="ph ph-spinner spinner" style="font-size: 2rem;"></i><br/><br/>Loading your tracked applications...</div>`;
+
+    try {
+      const statusQuery = atsState.filter && atsState.filter !== 'All' ? `&status=${encodeURIComponent(atsState.filter)}` : '';
+      const response = await fetch(`http://localhost:5000/api/applications?userId=${encodeURIComponent(userId)}${statusQuery}`);
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to fetch application records.');
+      }
+
+      atsState.summary = data.summary || {};
+      atsState.applications = data.applications || [];
+
+      // Update Summary Numbers
+      const totalSubmitted = data.totalSubmitted !== undefined ? data.totalSubmitted : (atsState.summary.totalSubmitted || atsState.summary.total || 0);
+      const statusCounts = data.statusCounts || {
+        Applied: atsState.summary.applied || 0,
+        Assessment: atsState.summary.assessments || 0,
+        Interview: atsState.summary.interviews || 0,
+        Offer: atsState.summary.offers || 0,
+        Rejected: atsState.summary.rejected || 0,
+        Withdrawn: atsState.summary.withdrawn || 0
+      };
+
+      const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || 0; };
+      setEl('ats-hero-total-num', totalSubmitted);
+      setEl('ats-stat-total', totalSubmitted);
+      setEl('ats-stat-applied', statusCounts.Applied || 0);
+      setEl('ats-stat-assessments', statusCounts.Assessment || 0);
+      setEl('ats-stat-interviews', statusCounts.Interview || 0);
+      setEl('ats-stat-offers', statusCounts.Offer || 0);
+      setEl('ats-stat-rejected', statusCounts.Rejected || 0);
+      setEl('ats-stat-withdrawn', statusCounts.Withdrawn || 0);
+
+      setEl('tab-cnt-all', totalSubmitted);
+      setEl('tab-cnt-applied', statusCounts.Applied || 0);
+      setEl('tab-cnt-assessment', statusCounts.Assessment || 0);
+      setEl('tab-cnt-interview', statusCounts.Interview || 0);
+      setEl('tab-cnt-offer', statusCounts.Offer || 0);
+      setEl('tab-cnt-rejected', statusCounts.Rejected || 0);
+      setEl('tab-cnt-withdrawn', statusCounts.Withdrawn || 0);
+
+      const activeStageEl = document.getElementById('ats-hero-active-stage');
+      if (activeStageEl) {
+        if (statusCounts.Interview > 0) activeStageEl.textContent = `${statusCounts.Interview} Interview${statusCounts.Interview > 1 ? 's' : ''}`;
+        else if (statusCounts.Assessment > 0) activeStageEl.textContent = `${statusCounts.Assessment} Assessment${statusCounts.Assessment > 1 ? 's' : ''}`;
+        else if (statusCounts.Offer > 0) activeStageEl.textContent = `${statusCounts.Offer} Offer${statusCounts.Offer > 1 ? 's' : ''}`;
+        else if (statusCounts.Applied > 0) activeStageEl.textContent = `${statusCounts.Applied} Applied`;
+        else activeStageEl.textContent = totalSubmitted > 0 ? 'Active' : 'No Submissions';
+      }
+
+      // Render Empty State
+      if (!data.applications || data.applications.length === 0) {
+        container.innerHTML = `
+          <div class="glass-card" style="grid-column: 1 / -1; padding: 3rem 2rem; text-align: center; border: 1px dashed var(--border-glass);">
+            <i class="ph ph-kanban" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+            <h3 style="color: #fff; margin-bottom: 0.5rem;">No Applications Found</h3>
+            <p style="color: var(--text-muted); max-width: 480px; margin: 0 auto 1.5rem auto; font-size: 0.88rem;">
+              ${atsState.filter !== 'All' ? `No applications currently marked as "${atsState.filter}".` : 'You have not saved or tracked any internship applications yet.'}
+            </p>
+            <button onclick="document.querySelector('.main-navbar .nav-item[data-view=internships]').click();" class="btn btn-primary" style="font-size: 0.85rem; padding: 0.5rem 1.2rem;">
+              <i class="ph ph-briefcase"></i> Browse Recommended Internships
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      // Render Cards
+      container.innerHTML = data.applications.map(app => renderApplicationCard(app)).join('');
+
+      // Wire event listeners on cards
+      container.querySelectorAll('.btn-update-app-status').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const appId = btn.dataset.id;
+          openUpdateStatusModal(appId);
+        });
+      });
+
+      container.querySelectorAll('.btn-view-app-timeline').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const appId = btn.dataset.id;
+          openTimelineModal(appId);
+        });
+      });
+
+      container.querySelectorAll('.btn-delete-app').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const appId = btn.dataset.id;
+          if (confirm('Are you sure you want to remove this tracked application?')) {
+            await deleteApplication(appId);
+          }
+        });
+      });
+
+    } catch (err) {
+      console.error('❌ [ATS UI] Error:', err);
+      container.innerHTML = `
+        <div style="grid-column: 1 / -1; padding: 2rem; text-align: center; color: #fca5a5; background: rgba(239,68,68,0.08); border-radius: var(--radius-md); border: 1px solid rgba(239,68,68,0.25);">
+          <i class="ph ph-warning-circle" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+          <h4 style="color:#fff; margin-bottom:0.3rem;">Unable to load applications</h4>
+          <p style="font-size:0.85rem; color:var(--text-muted);">${escapeHtml(err.message)}</p>
+          <button onclick="fetchMyApplications()" class="btn btn-emerald" style="margin-top:0.8rem; font-size:0.82rem;">Retry</button>
+        </div>
+      `;
+    }
+  }
+
+  function renderApplicationCard(app) {
+    const titleSafe = escapeHtml(app.jobTitle);
+    const companySafe = escapeHtml(app.company);
+    const locSafe = escapeHtml(app.location || 'India');
+    const modeSafe = escapeHtml(app.workMode || 'Hybrid');
+    const status = app.status || 'Applied';
+    const appliedDateStr = formatRelativeTime(app.appliedDate || app.createdAt);
+    const updatedDateStr = formatRelativeTime(app.lastUpdated || app.updatedAt);
+    const appUrl = escapeHtml(app.applicationUrl || app.externalListingUrl || '#');
+
+    let statusBadgeClass = 'status-badge-applied';
+    let statusIcon = 'ph-clock';
+    if (status === 'Assessment') { statusBadgeClass = 'status-badge-assessment'; statusIcon = 'ph-clipboard-text'; }
+    else if (status === 'Interview') { statusBadgeClass = 'status-badge-interview'; statusIcon = 'ph-chats-circle'; }
+    else if (status === 'Offer') { statusBadgeClass = 'status-badge-offer'; statusIcon = 'ph-check-circle'; }
+    else if (status === 'Rejected') { statusBadgeClass = 'status-badge-rejected'; statusIcon = 'ph-x-circle'; }
+    else if (status === 'Saved') { statusBadgeClass = 'status-badge-saved'; statusIcon = 'ph-bookmark'; }
+    else if (status === 'Withdrawn') { statusBadgeClass = 'status-badge-withdrawn'; statusIcon = 'ph-minus-circle'; }
+
+    const skills = Array.isArray(app.skills) ? app.skills.slice(0, 4) : [];
+    const skillsHtml = skills.map(s => `<span class="internship-skill-tag">${escapeHtml(s)}</span>`).join('');
+
+    // Reminder alert banner
+    let reminderBannerHtml = '';
+    if (app.needsFollowUp) {
+      reminderBannerHtml = `
+        <div class="reminder-alert-banner">
+          <span><i class="ph ph-bell-ringing"></i> ${escapeHtml(app.reminderMessage || "You haven't updated the application status yet.")}</span>
+          <button class="btn btn-secondary btn-update-app-status" data-id="${app._id}" style="padding:0.2rem 0.6rem; font-size:0.75rem;">Update Status</button>
+        </div>
+      `;
+    }
+
+    // Prep Connection Banner for Assessment or Interview
+    let prepBannerHtml = '';
+    if (status === 'Assessment') {
+      prepBannerHtml = `
+        <div class="prep-connection-banner">
+          <div style="font-size:0.8rem; font-weight:700; color:#e9d5ff; margin-bottom:0.3rem;"><i class="ph ph-sparkle"></i> Assessment Preparation</div>
+          <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:0.5rem;">Practice time-bound technical questions for ${skills[0] || 'your domain'}.</div>
+          <button onclick="document.querySelector('.main-navbar .nav-item[data-view=dailyHub]').click();" class="btn btn-emerald" style="font-size:0.75rem; padding:0.25rem 0.75rem;">
+            Practice Assessment <i class="ph ph-arrow-right"></i>
+          </button>
+        </div>
+      `;
+    } else if (status === 'Interview') {
+      prepBannerHtml = `
+        <div class="prep-connection-banner" style="background:rgba(56,189,248,0.08); border-color:rgba(56,189,248,0.3);">
+          <div style="font-size:0.8rem; font-weight:700; color:#7dd3fc; margin-bottom:0.3rem;"><i class="ph ph-chats-circle"></i> Interview Preparation</div>
+          <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:0.5rem;">Practice 5 common placement interview questions for ${skills[0] || 'your domain'}.</div>
+          <button onclick="document.getElementById('take-interview-btn').click();" class="btn btn-primary" style="font-size:0.75rem; padding:0.25rem 0.75rem;">
+            Practice Interview <i class="ph ph-arrow-right"></i>
+          </button>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="application-card">
+        <div>
+          <div class="application-card-header">
+            <div>
+              <h3 class="internship-title">${titleSafe}</h3>
+              <div class="internship-company"><i class="ph ph-buildings"></i> ${companySafe}</div>
+            </div>
+            <span class="application-status-badge ${statusBadgeClass}">
+              <i class="ph ${statusIcon}"></i> ${status}
+            </span>
+          </div>
+
+          <div class="internship-meta-row">
+            <span class="meta-pill location-pill"><i class="ph ph-map-pin"></i> ${locSafe}</span>
+            <span class="meta-pill location-pill"><i class="ph ph-laptop"></i> ${modeSafe}</span>
+          </div>
+
+          ${skillsHtml ? `<div class="internship-skills-container">${skillsHtml}</div>` : ''}
+
+          ${reminderBannerHtml}
+          ${prepBannerHtml}
+
+          <div style="font-size:0.75rem; color:var(--text-muted); margin:0.6rem 0;">
+            <div>Applied: <strong>${appliedDateStr}</strong></div>
+            <div>Last updated by you: <strong>${updatedDateStr}</strong></div>
+          </div>
+
+          ${app.notes ? `<div style="font-size:0.78rem; color:var(--text-muted); background:rgba(255,255,255,0.02); padding:0.5rem; border-radius:6px; margin-top:0.4rem; border:1px solid var(--border-color);"><strong>Note:</strong> ${escapeHtml(app.notes)}</div>` : ''}
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:0.5rem; margin-top:1rem; border-top:1px solid rgba(255,255,255,0.06); padding-top:0.8rem;">
+          <div style="display:flex; gap:0.4rem;">
+            <button class="btn btn-secondary btn-update-app-status" data-id="${app._id}" style="flex:1; font-size:0.78rem; padding:0.4rem 0.6rem;" title="Update status">
+              <i class="ph ph-pencil-simple"></i> Update Status
+            </button>
+            <button class="btn btn-secondary btn-view-app-timeline" data-id="${app._id}" style="flex:1; font-size:0.78rem; padding:0.4rem 0.6rem;" title="View timeline & prep">
+              <i class="ph ph-clock-counter-clockwise"></i> Timeline
+            </button>
+            <button class="btn btn-secondary btn-delete-app" data-id="${app._id}" style="padding:0.4rem 0.6rem; font-size:0.78rem; color:#fca5a5;" title="Remove tracking">
+              <i class="ph ph-trash"></i>
+            </button>
+          </div>
+          <a href="${appUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-emerald" style="width:100%; text-align:center; font-size:0.8rem; padding:0.4rem;" title="Track directly on original external site">
+            Track on Original Website <i class="ph ph-arrow-square-out"></i>
+          </a>
+        </div>
+      </div>
+    `;
+  }
+
+  // Open & Handle Update Status Modal
+  async function openUpdateStatusModal(appId) {
+    const session = supervisor.authAgent ? supervisor.authAgent.getActiveSession() : null;
+    const userId = session?.user_id;
+    if (!userId) return;
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/applications/${appId}?userId=${userId}`);
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || 'Failed to load details.');
+
+      const app = data.application;
+      const modal = document.getElementById('update-app-status-modal');
+      const titleEl = document.getElementById('update-status-app-title');
+      const companyEl = document.getElementById('update-status-app-company');
+      const appIdInput = document.getElementById('update-status-app-id');
+      const notesInput = document.getElementById('update-status-notes-input');
+      const interviewFields = document.getElementById('interview-details-fields');
+
+      if (titleEl) titleEl.textContent = app.jobTitle;
+      if (companyEl) companyEl.textContent = app.company;
+      if (appIdInput) appIdInput.value = app._id;
+      if (notesInput) notesInput.value = app.notes || '';
+
+      const radios = document.querySelectorAll('input[name="appStatusRadio"]');
+      radios.forEach(r => {
+        r.checked = (r.value === app.status);
+      });
+
+      if (interviewFields) {
+        interviewFields.style.display = app.status === 'Interview' ? 'block' : 'none';
+      }
+
+      if (app.interviewDetails) {
+        const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+        setVal('interview-round-input', app.interviewDetails.round);
+        setVal('interview-date-input', app.interviewDetails.date);
+        setVal('interview-time-input', app.interviewDetails.time);
+        setVal('interview-type-input', app.interviewDetails.type || 'Online');
+      }
+
+      if (modal) modal.style.display = 'flex';
+    } catch (err) {
+      alert('Unable to load application details: ' + err.message);
+    }
+  }
+
+  document.querySelectorAll('input[name="appStatusRadio"]').forEach(r => {
+    r.addEventListener('change', () => {
+      const interviewFields = document.getElementById('interview-details-fields');
+      if (interviewFields) {
+        interviewFields.style.display = r.value === 'Interview' ? 'block' : 'none';
+      }
+    });
+  });
+
+  const closeUpdateModalBtn = document.getElementById('close-update-status-modal-btn');
+  if (closeUpdateModalBtn) closeUpdateModalBtn.addEventListener('click', () => { document.getElementById('update-app-status-modal').style.display = 'none'; });
+  const cancelUpdateModalBtn = document.getElementById('cancel-update-status-btn');
+  if (cancelUpdateModalBtn) cancelUpdateModalBtn.addEventListener('click', () => { document.getElementById('update-app-status-modal').style.display = 'none'; });
+
+  const updateStatusForm = document.getElementById('update-status-form');
+  if (updateStatusForm) {
+    updateStatusForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const session = supervisor.authAgent ? supervisor.authAgent.getActiveSession() : null;
+      const userId = session?.user_id;
+      const appId = document.getElementById('update-status-app-id').value;
+      const selectedRadio = document.querySelector('input[name="appStatusRadio"]:checked');
+      const newStatus = selectedRadio ? selectedRadio.value : 'Applied';
+      const notes = document.getElementById('update-status-notes-input').value.trim();
+
+      if (!userId || !appId) return;
+
+      const interviewDetails = {
+        round: document.getElementById('interview-round-input').value.trim(),
+        date: document.getElementById('interview-date-input').value,
+        time: document.getElementById('interview-time-input').value,
+        type: document.getElementById('interview-type-input').value
+      };
+
+      try {
+        const response = await fetch(`http://localhost:5000/api/applications/${appId}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            status: newStatus,
+            notes,
+            interviewDetails
+          })
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Failed to update status.');
+        }
+
+        document.getElementById('update-app-status-modal').style.display = 'none';
+        fetchMyApplications();
+
+      } catch (err) {
+        alert('Error updating status: ' + err.message);
+      }
+    });
+  }
+
+  async function openTimelineModal(appId) {
+    const session = supervisor.authAgent ? supervisor.authAgent.getActiveSession() : null;
+    const userId = session?.user_id;
+    if (!userId) return;
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/applications/${appId}?userId=${userId}`);
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || 'Failed to load timeline.');
+
+      const app = data.application;
+      const prep = data.preparationRecommendations;
+      const modal = document.getElementById('app-timeline-modal');
+
+      const headerBox = document.getElementById('timeline-modal-header-info');
+      if (headerBox) {
+        headerBox.innerHTML = `
+          <div style="font-size:1.1rem; font-weight:800; color:#fff;">${escapeHtml(app.jobTitle)}</div>
+          <div style="font-size:0.9rem; color:var(--accent-cyan); font-weight:600;"><i class="ph ph-buildings"></i> ${escapeHtml(app.company)}</div>
+          <div style="font-size:0.78rem; color:var(--text-muted); margin-top:0.4rem; display:flex; gap:0.8rem;">
+            <span>Location: ${escapeHtml(app.location || 'India')}</span>
+            <span>Work Mode: ${escapeHtml(app.workMode || 'Hybrid')}</span>
+          </div>
+        `;
+      }
+
+      const prepBox = document.getElementById('timeline-prep-connection-box');
+      if (prepBox && prep) {
+        prepBox.innerHTML = `
+          <div class="prep-connection-banner" style="margin:0;">
+            <div style="font-size:0.9rem; font-weight:800; color:#fff; margin-bottom:0.3rem;"><i class="ph ph-sparkle" style="color:var(--accent-cyan);"></i> ${escapeHtml(prep.title)}</div>
+            <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.6rem;">${escapeHtml(prep.subtitle)}</div>
+            <ul style="margin:0 0 0.8rem 1.2rem; padding:0; font-size:0.82rem; color:var(--text-muted);">
+              ${(prep.actionPlan || []).map(step => `<li style="margin-bottom:0.25rem;">${escapeHtml(step)}</li>`).join('')}
+            </ul>
+            <button onclick="document.getElementById('app-timeline-modal').style.display='none'; switchView('${prep.targetView || 'roadmap'}');" class="btn btn-emerald" style="font-size:0.8rem; padding:0.4rem 1rem;">
+              ${escapeHtml(prep.ctaLabel || 'Start Preparation')} <i class="ph ph-arrow-right"></i>
+            </button>
+          </div>
+        `;
+      }
+
+      const historyContainer = document.getElementById('timeline-history-container');
+      if (historyContainer) {
+        const history = Array.isArray(app.statusHistory) ? app.statusHistory : [];
+        if (history.length === 0) {
+          historyContainer.innerHTML = '<div style="font-size:0.82rem; color:var(--text-muted);">No status history recorded yet.</div>';
+        } else {
+          historyContainer.innerHTML = history.map(item => `
+            <div class="timeline-step">
+              <div style="font-weight:700; color:#fff;">✓ ${escapeHtml(item.status)}</div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">${formatRelativeTime(item.date)} (${new Date(item.date).toLocaleDateString()})</div>
+              ${item.notes ? `<div style="font-size:0.78rem; color:var(--accent-cyan); margin-top:0.2rem;">${escapeHtml(item.notes)}</div>` : ''}
+            </div>
+          `).join('');
+        }
+      }
+
+      const notesBox = document.getElementById('timeline-notes-box');
+      if (notesBox) {
+        notesBox.innerHTML = app.notes ? escapeHtml(app.notes) : 'No notes added.';
+      }
+
+      const extLinkBtn = document.getElementById('timeline-external-link-btn');
+      if (extLinkBtn) {
+        extLinkBtn.href = app.applicationUrl || app.externalListingUrl || '#';
+      }
+
+      if (modal) modal.style.display = 'flex';
+
+    } catch (err) {
+      alert('Error loading application timeline: ' + err.message);
+    }
+  }
+
+  const closeTimelineBtn = document.getElementById('close-timeline-modal-btn');
+  if (closeTimelineBtn) closeTimelineBtn.addEventListener('click', () => { document.getElementById('app-timeline-modal').style.display = 'none'; });
+
+  async function deleteApplication(appId) {
+    const session = supervisor.authAgent ? supervisor.authAgent.getActiveSession() : null;
+    const userId = session?.user_id;
+    if (!userId || !appId) return;
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/applications/${appId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || 'Failed to delete application.');
+
+      fetchMyApplications();
+    } catch (err) {
+      alert('Error deleting application: ' + err.message);
+    }
+  }
+
+  document.querySelectorAll('.ats-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.ats-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const filter = btn.dataset.filter || 'All';
+      fetchMyApplications(filter);
+    });
+  });
+
+  const refreshAtsBtn = document.getElementById('refresh-ats-btn');
+  if (refreshAtsBtn) {
+    refreshAtsBtn.addEventListener('click', () => fetchMyApplications());
+  }
 
   document.getElementById('view-all-roadmap-btn').addEventListener('click', () => {
     const state = supervisor.progressTracker.getUserState();

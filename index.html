@@ -41,6 +41,12 @@
       <button id="nav-btn-analytics" class="nav-item" data-view="progressAnalytics">
         <i class="ph ph-chart-line-up"></i> <span>Analytics</span>
       </button>
+      <button id="nav-btn-internships" class="nav-item" data-view="internships">
+        <i class="ph ph-briefcase"></i> <span>Internships</span>
+      </button>
+      <button id="nav-btn-my-applications" class="nav-item" data-view="myApplications">
+        <i class="ph ph-kanban"></i> <span>My Applications</span>
+      </button>
     </nav>
 
     <div class="header-actions">
@@ -914,6 +920,335 @@
         </div>
       </div>
     </section>
+
+    <!-- VIEW 9: Dynamic Internship Recommendation & Application Links -->
+    <section id="view-internships" class="view-section">
+      <div class="glass-card">
+        <!-- Section Title Bar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div class="section-title">
+              <i class="ph ph-briefcase" style="color: var(--accent-emerald);"></i> Real-Time Internship Opportunities
+            </div>
+            <p class="section-subtitle" style="margin-bottom: 0;">
+              Dynamically fetched real internship listings tailored to your domain: <strong id="internship-user-domain-label" style="color: var(--accent-cyan);">Selected Domain</strong>
+            </p>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span id="internship-count-badge" style="font-size: 0.78rem; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.12); padding: 0.35rem 0.85rem; border-radius: var(--radius-full); border: 1px solid rgba(16, 185, 129, 0.3); font-weight: 700;">
+              <i class="ph ph-sparkle"></i> Dynamic Real Jobs API
+            </span>
+            <button id="refresh-internships-btn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.4rem 0.9rem;" title="Fetch Latest Internships">
+              <i class="ph ph-arrows-counter-clockwise"></i> Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Controls & Filtering Bar -->
+        <div class="internships-filter-bar glass-card" style="margin-bottom: 1.5rem; padding: 1rem; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.8rem; align-items: center;">
+          <!-- Keyword Search -->
+          <div class="form-group" style="margin: 0;">
+            <label style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.2rem; display: block;"><i class="ph ph-magnifying-glass"></i> Custom Keywords:</label>
+            <input type="text" id="internship-search-input" class="form-control" placeholder="e.g. Python, React, Machine Learning..." style="padding: 0.45rem 0.75rem; font-size: 0.85rem;">
+          </div>
+
+          <!-- Domain Override Select -->
+          <div class="form-group" style="margin: 0;">
+            <label style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.2rem; display: block;"><i class="ph ph-compass"></i> Tech Domain:</label>
+            <select id="internship-domain-select" class="form-control" style="padding: 0.45rem 0.75rem; font-size: 0.85rem; background: var(--bg-card); color: #fff;">
+              <option value="fullstack">Full-Stack Web Development</option>
+              <option value="datascience">Data Science & Machine Learning</option>
+              <option value="ai_llm">Artificial Intelligence / GenAI</option>
+              <option value="cybersecurity">Cybersecurity & SOC</option>
+              <option value="data_analytics">Data Analytics & BI</option>
+              <option value="devops">Cloud Computing & DevOps</option>
+              <option value="mobile">Android & Mobile Development</option>
+              <option value="dsa">Software Development & DSA</option>
+            </select>
+          </div>
+
+          <!-- Location Filter -->
+          <div class="form-group" style="margin: 0;">
+            <label style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.2rem; display: block;"><i class="ph ph-map-pin"></i> Location:</label>
+            <input type="text" id="internship-location-input" class="form-control" value="India" placeholder="e.g. India, Remote, USA..." style="padding: 0.45rem 0.75rem; font-size: 0.85rem;">
+          </div>
+
+          <!-- Filter Action Button -->
+          <div style="margin-top: auto; display: flex; gap: 0.5rem;">
+            <button type="button" id="apply-internship-filter-btn" class="btn btn-primary" style="width: 100%; padding: 0.5rem; font-size: 0.85rem;">
+              <i class="ph ph-funnel"></i> Search Internships
+            </button>
+          </div>
+        </div>
+
+        <!-- Internship Cards Container -->
+        <div id="internships-cards-container" class="internships-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.25rem;">
+          <!-- Dynamically populated internship cards -->
+        </div>
+
+        <!-- Pagination Controls -->
+        <div id="internship-pagination-container" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+          <span id="internship-page-info" style="font-size: 0.82rem; color: var(--text-muted);">
+            Showing page <strong id="internship-current-page" style="color: #fff;">1</strong>
+          </span>
+          <div style="display: flex; gap: 0.5rem;">
+            <button type="button" id="internship-prev-page-btn" class="btn btn-secondary" style="padding: 0.35rem 0.85rem; font-size: 0.8rem;" disabled>
+              <i class="ph ph-caret-left"></i> Previous
+            </button>
+            <button type="button" id="internship-next-page-btn" class="btn btn-secondary" style="padding: 0.35rem 0.85rem; font-size: 0.8rem;">
+              Next <i class="ph ph-caret-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- News Cards Container -->
+        <div id="tech-news-feed-container" class="news-feed-container news-feed-grid">
+          <!-- Dynamically populated tech news cards -->
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 10: Application Tracking System (My Applications) -->
+    <section id="view-my-applications" class="view-section">
+      <div class="glass-card">
+        <!-- Title Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div class="section-title">
+              <i class="ph ph-kanban" style="color: var(--accent-cyan);"></i> My Applications
+            </div>
+            <p class="section-subtitle" style="margin-bottom: 0;">
+              Track your confirmed internship & job application progress, status timelines, and connected preparation.
+            </p>
+          </div>
+          <button id="refresh-ats-btn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.4rem 0.9rem;" title="Refresh Applications">
+            <i class="ph ph-arrows-counter-clockwise"></i> Refresh Tracker
+          </button>
+        </div>
+
+        <!-- Primary Dashboard Header & Summary Grid -->
+        <div class="ats-hero-banner" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.12), rgba(16, 185, 129, 0.12)); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: var(--radius-md); padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.2rem;">
+          <div>
+            <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-cyan); font-weight: 800;">
+              Application Summary
+            </div>
+            <div style="font-size: 2rem; font-weight: 800; color: #fff; line-height: 1.2; margin-top: 0.2rem;">
+              <span id="ats-hero-total-num">0</span> Applications Submitted
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; margin-bottom: 0;">
+              Only opportunities where you confirmed "Yes, Track Application" are counted here.
+            </p>
+          </div>
+          
+          <div style="display: flex; gap: 1rem; align-items: center;">
+            <div style="text-align: center; background: rgba(255, 255, 255, 0.04); padding: 0.6rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-glass);">
+              <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Active Stage</div>
+              <div id="ats-hero-active-stage" style="font-size: 1.1rem; font-weight: 800; color: var(--accent-emerald);">In Progress</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary Statistics Cards -->
+        <div class="ats-summary-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.8rem; margin-bottom: 1.5rem;">
+          <div class="ats-stat-card" data-status="All">
+            <div class="ats-stat-label">Total Submitted</div>
+            <div class="ats-stat-num" id="ats-stat-total">0</div>
+          </div>
+          <div class="ats-stat-card" data-status="Applied">
+            <div class="ats-stat-label">Applied</div>
+            <div class="ats-stat-num" id="ats-stat-applied" style="color: #f59e0b;">0</div>
+          </div>
+          <div class="ats-stat-card" data-status="Assessment">
+            <div class="ats-stat-label">Assessment</div>
+            <div class="ats-stat-num" id="ats-stat-assessments" style="color: #c084fc;">0</div>
+          </div>
+          <div class="ats-stat-card" data-status="Interview">
+            <div class="ats-stat-label">Interview</div>
+            <div class="ats-stat-num" id="ats-stat-interviews" style="color: #38bdf8;">0</div>
+          </div>
+          <div class="ats-stat-card" data-status="Offer">
+            <div class="ats-stat-label">Offer</div>
+            <div class="ats-stat-num" id="ats-stat-offers" style="color: #34d399;">0</div>
+          </div>
+          <div class="ats-stat-card" data-status="Rejected">
+            <div class="ats-stat-label">Rejected</div>
+            <div class="ats-stat-num" id="ats-stat-rejected" style="color: #fca5a5;">0</div>
+          </div>
+          <div class="ats-stat-card" data-status="Withdrawn">
+            <div class="ats-stat-label">Withdrawn</div>
+            <div class="ats-stat-num" id="ats-stat-withdrawn" style="color: #9ca3af;">0</div>
+          </div>
+        </div>
+
+        <!-- Status Filter Tabs -->
+        <div class="ats-filter-tabs" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.8rem;">
+          <button type="button" class="ats-tab-btn active" data-filter="All">All (<span id="tab-cnt-all">0</span>)</button>
+          <button type="button" class="ats-tab-btn" data-filter="Applied">Applied (<span id="tab-cnt-applied">0</span>)</button>
+          <button type="button" class="ats-tab-btn" data-filter="Assessment">Assessment (<span id="tab-cnt-assessment">0</span>)</button>
+          <button type="button" class="ats-tab-btn" data-filter="Interview">Interview (<span id="tab-cnt-interview">0</span>)</button>
+          <button type="button" class="ats-tab-btn" data-filter="Offer">Offer (<span id="tab-cnt-offer">0</span>)</button>
+          <button type="button" class="ats-tab-btn" data-filter="Rejected">Rejected (<span id="tab-cnt-rejected">0</span>)</button>
+          <button type="button" class="ats-tab-btn" data-filter="Withdrawn">Withdrawn (<span id="tab-cnt-withdrawn">0</span>)</button>
+        </div>
+
+        <!-- Applications Cards Grid -->
+        <div id="my-applications-grid" class="applications-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.25rem;">
+          <!-- Dynamically populated application cards -->
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL 1: Post-Apply Confirmation ("Did you apply?") -->
+  <div id="post-apply-modal" class="modal-overlay" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(3,7,18,0.85); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:1rem;">
+    <div class="glass-card" style="width:min(520px, 100%); padding:2rem; border:1px solid rgba(16, 185, 129, 0.35); box-shadow:0 20px 70px rgba(0,0,0,0.5);">
+      <div style="display:flex; align-items:center; gap:.75rem; margin-bottom:.5rem;">
+        <i class="ph ph-paper-plane-tilt" style="font-size:1.8rem; color:var(--accent-emerald);"></i>
+        <h2 style="margin:0; color:#fff; font-size:1.3rem;">Did you apply for this opportunity?</h2>
+      </div>
+      <p style="color:var(--text-muted); line-height:1.5; margin:.5rem 0 1.2rem; font-size:0.88rem;">
+        We noticed you opened the external application link for <strong id="post-apply-job-title" style="color:#fff;">Job Title</strong> at <strong id="post-apply-company" style="color:var(--accent-cyan);">Company</strong>. Save it to Placify to track your progress and connect preparation!
+      </p>
+
+      <div id="post-apply-alert-box" class="alert-box alert-error" style="display:none; margin-bottom:1rem;"></div>
+
+      <div style="display:flex; gap:0.75rem; justify-content:flex-end; margin-top:1.5rem;">
+        <button type="button" id="btn-cancel-track-app" class="btn btn-secondary" style="padding:0.6rem 1.2rem; font-size:0.88rem;">
+          Not Yet
+        </button>
+        <button type="button" id="btn-confirm-track-app" class="btn btn-emerald" style="padding:0.6rem 1.4rem; font-size:0.88rem;">
+          <i class="ph ph-check"></i> Yes, Track Application
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Update Application Status & Notes -->
+  <div id="update-app-status-modal" class="modal-overlay" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(3,7,18,0.85); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:1rem;">
+    <div class="glass-card" style="width:min(580px, 100%); padding:2rem; border:1px solid rgba(139, 92, 246, 0.35); box-shadow:0 20px 70px rgba(0,0,0,0.5); max-height:90vh; overflow-y:auto;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <div style="display:flex; align-items:center; gap:.75rem;">
+          <i class="ph ph-pencil-simple" style="font-size:1.5rem; color:var(--accent-violet);"></i>
+          <h3 style="margin:0; color:#fff; font-size:1.2rem;">Update Application Status</h3>
+        </div>
+        <button type="button" id="close-update-status-modal-btn" class="assistant-icon-btn"><i class="ph ph-x"></i></button>
+      </div>
+
+      <div style="margin-bottom:1rem; padding:0.75rem; background:rgba(255,255,255,0.03); border-radius:8px; border:1px solid var(--border-color);">
+        <div id="update-status-app-title" style="font-weight:700; color:#fff;">Job Title</div>
+        <div id="update-status-app-company" style="font-size:0.82rem; color:var(--accent-cyan);">Company</div>
+      </div>
+
+      <form id="update-status-form">
+        <input type="hidden" id="update-status-app-id" value="">
+
+        <!-- Status Radio Selector Grid -->
+        <label style="font-size:0.8rem; color:var(--text-muted); font-weight:700; margin-bottom:0.4rem; display:block;">Select Placify Status:</label>
+        <div class="status-radio-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:0.6rem; margin-bottom:1.2rem;">
+          <label class="status-radio-label"><input type="radio" name="appStatusRadio" value="Saved"> <span>⚪ Saved</span></label>
+          <label class="status-radio-label"><input type="radio" name="appStatusRadio" value="Applied"> <span>🟡 Applied</span></label>
+          <label class="status-radio-label"><input type="radio" name="appStatusRadio" value="Assessment"> <span>🟣 Assessment</span></label>
+          <label class="status-radio-label"><input type="radio" name="appStatusRadio" value="Interview"> <span>🔵 Interview</span></label>
+          <label class="status-radio-label"><input type="radio" name="appStatusRadio" value="Offer"> <span>🟢 Offer</span></label>
+          <label class="status-radio-label"><input type="radio" name="appStatusRadio" value="Rejected"> <span>🔴 Rejected</span></label>
+          <label class="status-radio-label"><input type="radio" name="appStatusRadio" value="Withdrawn"> <span>🔘 Withdrawn</span></label>
+        </div>
+
+        <!-- Optional Interview Details Fields -->
+        <div id="interview-details-fields" style="display:none; background:rgba(56, 189, 248, 0.06); border:1px solid rgba(56, 189, 248, 0.25); padding:1rem; border-radius:10px; margin-bottom:1.2rem;">
+          <div style="font-size:0.85rem; font-weight:700; color:var(--accent-cyan); margin-bottom:0.6rem; display:flex; align-items:center; gap:0.4rem;">
+            <i class="ph ph-calendar"></i> Interview Details (Optional)
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin-bottom:0.6rem;">
+            <div class="form-group" style="margin:0;">
+              <label style="font-size:0.75rem; color:var(--text-muted);">Round Name:</label>
+              <input type="text" id="interview-round-input" class="form-control" placeholder="e.g. Technical Round 1">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label style="font-size:0.75rem; color:var(--text-muted);">Interview Date:</label>
+              <input type="date" id="interview-date-input" class="form-control">
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem;">
+            <div class="form-group" style="margin:0;">
+              <label style="font-size:0.75rem; color:var(--text-muted);">Interview Time:</label>
+              <input type="time" id="interview-time-input" class="form-control">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label style="font-size:0.75rem; color:var(--text-muted);">Interview Type:</label>
+              <select id="interview-type-input" class="form-control" style="background:var(--bg-card); color:#fff;">
+                <option value="Online">Online / Video Call</option>
+                <option value="In-person">In-person Onsite</option>
+                <option value="Phone Screen">Phone Screen</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notes Input -->
+        <div class="form-group" style="margin-bottom:1.2rem;">
+          <label style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">Student Notes (Optional):</label>
+          <textarea id="update-status-notes-input" class="form-control" rows="3" placeholder="e.g. Recruiter mentioned 3 rounds. Revise Python and SQL questions."></textarea>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
+          <button type="button" id="cancel-update-status-btn" class="btn btn-secondary">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Save Status Update</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 3: Timeline & Preparation Connection Drawer/Modal -->
+  <div id="app-timeline-modal" class="modal-overlay" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(3,7,18,0.85); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:1rem;">
+    <div class="glass-card" style="width:min(640px, 100%); padding:2rem; border:1px solid rgba(139, 92, 246, 0.35); box-shadow:0 20px 70px rgba(0,0,0,0.5); max-height:90vh; overflow-y:auto;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <div style="display:flex; align-items:center; gap:.75rem;">
+          <i class="ph ph-clock-counter-clockwise" style="font-size:1.5rem; color:var(--accent-cyan);"></i>
+          <h3 style="margin:0; color:#fff; font-size:1.2rem;">Application Timeline & Preparation</h3>
+        </div>
+        <button type="button" id="close-timeline-modal-btn" class="assistant-icon-btn"><i class="ph ph-x"></i></button>
+      </div>
+
+      <div id="timeline-modal-header-info" style="margin-bottom:1.2rem; padding:1rem; background:rgba(255,255,255,0.03); border-radius:10px; border:1px solid var(--border-color);">
+        <!-- Dynamically rendered header -->
+      </div>
+
+      <!-- Preparation Connection Banner -->
+      <div id="timeline-prep-connection-box" style="margin-bottom:1.5rem;">
+        <!-- Dynamically populated prep recommendations -->
+      </div>
+
+      <!-- Status Timeline History -->
+      <div style="margin-bottom:1.5rem;">
+        <h4 style="font-size:0.95rem; font-weight:700; color:#fff; margin-bottom:0.8rem; display:flex; align-items:center; gap:0.4rem;">
+          <i class="ph ph-git-commit" style="color:var(--accent-emerald);"></i> Status Timeline History
+        </h4>
+        <div id="timeline-history-container" class="timeline-stepper">
+          <!-- Dynamically populated status history timeline -->
+        </div>
+      </div>
+
+      <!-- Student Notes Log -->
+      <div style="margin-bottom:1.5rem;">
+        <h4 style="font-size:0.95rem; font-weight:700; color:#fff; margin-bottom:0.5rem; display:flex; align-items:center; gap:0.4rem;">
+          <i class="ph ph-note" style="color:var(--accent-violet);"></i> Application Notes
+        </h4>
+        <div id="timeline-notes-box" style="font-size:0.85rem; color:var(--text-muted); padding:0.8rem; background:rgba(255,255,255,0.02); border-radius:8px; border:1px solid var(--border-color);">
+          No notes added.
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border-color); padding-top:1rem;">
+        <span style="font-size:0.75rem; color:var(--text-muted);">Placify Student-Managed Status</span>
+        <a id="timeline-external-link-btn" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="font-size:0.82rem;">
+          Track on Original Website <i class="ph ph-arrow-square-out"></i>
+        </a>
+      </div>
+    </div>
+  </div>
 
   </main>
 

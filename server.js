@@ -31,6 +31,8 @@ const { recalculateAdaptiveRoadmap } = require('./engine/adaptiveEngine');
 const NewsArticle = require('./models/NewsArticle');
 const { startNewsFetchJob } = require('./jobs/newsFetchJob');
 const { handleGetPersonalizedNews } = require('./controllers/newsController');
+const { handleGetInternships } = require('./controllers/internshipController');
+const { handleApplicationRequests } = require('./controllers/applicationController');
 
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -3880,6 +3882,22 @@ Return ONLY valid JSON matching this exact JSON schema:
     } catch (err) {
       return sendJSON(res, 500, { error: err.message });
     }
+  }
+
+  // ==========================================================
+  // GET /api/internships
+  // Dynamic Internship Recommendation and Application Links feature
+  // ==========================================================
+  if (req.method === 'GET' && parsedUrl.pathname === '/api/internships') {
+    return handleGetInternships(req, res, parsedUrl, sendJSON);
+  }
+
+  // ==========================================================
+  // /api/applications (POST, GET, PATCH, DELETE)
+  // Application Tracking System (ATS) Endpoints
+  // ==========================================================
+  if (parsedUrl.pathname && parsedUrl.pathname.startsWith('/api/applications')) {
+    return handleApplicationRequests(req, res, parsedUrl, sendJSON, readRequestBody);
   }
 
   // ==========================================================
