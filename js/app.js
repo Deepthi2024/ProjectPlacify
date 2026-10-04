@@ -2307,6 +2307,7 @@ document.addEventListener('DOMContentLoaded', () => {
           dayTopic;
 
         const taskContext = {
+          taskItem: taskItem,
           id: taskItem.taskId || taskItem.id || `task_day_${targetDayNum}_${tIdx + 1}`,
           taskId: taskItem.taskId || taskItem.id || `task_day_${targetDayNum}_${tIdx + 1}`,
           dayNumber: targetDayNum,
@@ -2405,7 +2406,7 @@ document.addEventListener('DOMContentLoaded', () => {
               </h4>
 
               <div style="display: flex; flex-direction: column; gap: 0.8rem;">
-                ${taskResources.map((r, idx) => `
+                ${taskResources && taskResources.length > 0 ? taskResources.map((r, idx) => `
                   <div class="resource-card" style="border-left: 4px solid ${idx === 0 ? 'var(--accent-emerald)' : (idx === 1 ? 'var(--accent-cyan)' : 'var(--accent-amber)')}; padding: 0.9rem; background: rgba(0,0,0,0.25); border-radius: 8px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; flex-wrap: wrap; gap: 0.4rem;">
                       <span class="node-tag ${r.category_label || (idx === 0 ? 'STANDARD' : 'REMEDIAL')}" style="font-size: 0.72rem; font-weight: 800;">
@@ -2435,11 +2436,16 @@ document.addEventListener('DOMContentLoaded', () => {
                       </a>
                     </div>
                   </div>
-                `).join('')}
+                `).join('') : `
+                  <div style="padding: 0.75rem 1rem; color: var(--text-muted); font-size: 0.82rem; background: rgba(0,0,0,0.15); border-radius: 6px;">
+                    Recommended resources are temporarily unavailable. You may continue with your task.
+                  </div>
+                `}
               </div>
             </div>
           </div>
         `;
+
       }
 
       resList.innerHTML = fullHTML;

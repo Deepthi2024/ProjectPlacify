@@ -1337,41 +1337,72 @@ class PersonalizedRoadmapAgent {
    ============================================================ */
 
 class ResourceSuggesterAgent {
-
+  constructor() {
+    this.ragCache = new Map();
+  }
 
   async suggestResources(topic, skillTier, taskContext = {}) {
-    const payload = {
-      taskId: taskContext.id || taskContext.taskId,
-      taskTitle: taskContext.title || taskContext.taskTitle || taskContext.conceptTitle || topic || 'Learning Task',
-      taskType: taskContext.type || taskContext.taskType || 'LEARN',
-      taskDifficulty: skillTier || taskContext.difficulty || 'BEGINNER',
-      taskDuration: taskContext.durationMinutes || taskContext.estimated_minutes || taskContext.taskDuration || 30,
-      dailyTopic: taskContext.dailyTopic || topic,
-      subtopic: taskContext.taskSubtopic || taskContext.subtopic || taskContext.subskillName || topic,
-      topic: taskContext.taskTopic || taskContext.topic || topic,
-      domain: taskContext.domain || taskContext.domainId || taskContext.chosen_domain || 'fullstack',
-      userLevel: skillTier || taskContext.userLevel || taskContext.difficulty || 'BEGINNER',
-      user_id: taskContext.user_id
-    };
+    const rawTask = taskContext.taskItem || {};
+    const taskHeading =
+      rawTask.taskTitle ||
+      rawTask.title ||
+      taskContext.taskTitle ||
+      taskContext.title ||
+      topic ||
+      'Learning Task';
 
-    console.log('[POST /api/resources/recommend - DYNAMIC RAG]', payload);
+    const session = window.placifySupervisor?.authAgent?.getActiveSession?.() || window.activeSession;
+    const userId = taskContext.user_id || session?.user_id || (window.currentDraftProfile ? window.currentDraftProfile.user_id : null) || 'anonymous_user';
+
+    const taskId = taskContext.taskId || taskContext.id || taskHeading;
+    const cacheKey = `${userId}::${taskId}::${taskHeading}`;
+
+    if (this.ragCache.has(cacheKey)) {
+      return this.ragCache.get(cacheKey);
+    }
+
+    console.log('[POST /api/rag/day-resources - YouTube RAG]', { user_id: userId, query: taskHeading });
 
     try {
-      const res = await fetch('http://localhost:5000/api/resources/recommend', {
+      const baseUrl = window.location.origin && window.location.origin !== 'null' ? window.location.origin : 'http://localhost:5000';
+      const res = await fetch(`${baseUrl}/api/rag/day-resources`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          user_id: userId,
+          query: taskHeading
+        })
       });
+
       const data = await res.json();
-      if (data.success && Array.isArray(data.resources)) return data.resources;
-      console.warn('Dynamic resource API returned no resources:', data.message || data.error);
+      if (data.success && Array.isArray(data.resources) && data.resources.length > 0) {
+        const mappedResources = data.resources.map((r, idx) => ({
+          resource_id: r.resource_id,
+          title: r.title || 'Recommended Resource',
+          url: r.url || '#',
+          platform: r.channel || r.platform || 'YouTube',
+          description: r.subtopic
+            ? `${r.topic || ''}${r.topic ? ' — ' : ''}${r.subtopic}`
+            : (r.topic || r.description || 'Recommended learning resource'),
+          estimated_minutes: r.duration_minutes || r.estimated_minutes || 30,
+          relevance_reason: `Retrieved specifically for the task: "${taskHeading}"`,
+          category_label: idx === 0 ? 'PRIMARY' : 'ALTERNATIVE',
+          is_official: false,
+          score: r.score
+        }));
+
+        this.ragCache.set(cacheKey, mappedResources);
+        return mappedResources;
+      }
+      console.warn('YouTube RAG API notice:', data?.message || 'No resources returned');
     } catch (err) {
-      console.warn('Dynamic resource retrieval failed:', err.message);
+      console.warn('YouTube RAG resource retrieval failed:', err.message);
     }
 
     return [];
   }
 }
+
 
 
 /* ============================================================

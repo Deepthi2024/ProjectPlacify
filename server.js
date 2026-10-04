@@ -4061,10 +4061,103 @@ Return ONLY valid JSON matching this exact JSON schema:
   }
 
   // ==========================================================
+  // YOUTUBE RAG DAY-RESOURCES PROXY ENDPOINT
+  // POST /api/rag/day-resources
+  // ==========================================================
+  if (
+    req.method === 'POST' &&
+    parsedUrl.pathname === '/api/rag/day-resources'
+  ) {
+    try {
+      const payload = await readRequestBody(req);
+      const { user_id, query } = payload || {};
+
+      if (!user_id || !query || typeof user_id !== 'string' || typeof query !== 'string' || !user_id.trim() || !query.trim()) {
+        return sendJSON(res, 400, {
+          success: false,
+          error: 'Missing required parameters: user_id and query.'
+        });
+      }
+
+      const cleanUserId = user_id.trim();
+      const cleanQuery = query.trim();
+
+      const ragBaseUrl = (process.env.RAG_API_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '');
+      const targetUrl = `${ragBaseUrl}/api/rag/query`;
+
+      let ragData = null;
+      try {
+        if (typeof globalThis.fetch === 'function') {
+          const ragRes = await globalThis.fetch(targetUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: cleanUserId, query: cleanQuery })
+          });
+          if (ragRes.ok) {
+            ragData = await ragRes.json();
+          } else {
+            console.warn(`[RAG PROXY WARNING] RAG API returned HTTP ${ragRes.status}`);
+          }
+        } else {
+          ragData = await new Promise((resolve) => {
+            const parsedTarget = url.parse(targetUrl);
+            const postData = JSON.stringify({ user_id: cleanUserId, query: cleanQuery });
+            const reqOpts = {
+              hostname: parsedTarget.hostname || '127.0.0.1',
+              port: parsedTarget.port || 8000,
+              path: parsedTarget.path || '/api/rag/query',
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(postData)
+              }
+            };
+            const clientReq = http.request(reqOpts, (clientRes) => {
+              let bodyStr = '';
+              clientRes.on('data', chunk => { bodyStr += chunk; });
+              clientRes.on('end', () => {
+                try { resolve(JSON.parse(bodyStr)); } catch (e) { resolve(null); }
+              });
+            });
+            clientReq.on('error', () => resolve(null));
+            clientReq.setTimeout(10000, () => { clientReq.destroy(); resolve(null); });
+            clientReq.write(postData);
+            clientReq.end();
+          });
+        }
+      } catch (ragErr) {
+        console.warn('⚠️ YouTube RAG service unavailable:', ragErr.message);
+      }
+
+      if (ragData && ragData.success && Array.isArray(ragData.resources)) {
+        return sendJSON(res, 200, {
+          success: true,
+          query: cleanQuery,
+          resources: ragData.resources
+        });
+      }
+
+      return sendJSON(res, 200, {
+        success: false,
+        message: 'Recommended resources are temporarily unavailable.',
+        resources: []
+      });
+    } catch (err) {
+      console.error('❌ RAG proxy endpoint error:', err);
+      return sendJSON(res, 200, {
+        success: false,
+        message: 'Recommended resources are temporarily unavailable.',
+        resources: []
+      });
+    }
+  }
+
+  // ==========================================================
   // 11e. RESOURCE RECOMMENDATION ENDPOINTS
   // POST /api/resources/recommend
   // GET /api/resources/task/:task_id
   // ==========================================================
+
 
   if (
     req.method === 'POST' &&
