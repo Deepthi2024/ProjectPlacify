@@ -65,7 +65,7 @@
 
       <div class="stat-pill">
         <i class="ph ph-flame"></i>
-        <span><strong id="user-streak-val">1</strong> Day Streak</span>
+        <span><strong id="user-streak-val">0</strong> Day Streak</span>
       </div>
       <button id="reset-app-btn" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;"
         title="Reset State & Restart">
@@ -643,7 +643,7 @@
             </button>
             <span style="color: var(--text-muted);"><i class="ph ph-caret-right"></i></span>
             <button id="nav-level-days" class="btn btn-secondary" style="padding: 0.35rem 0.8rem; font-size: 0.8rem;" disabled>
-              <i class="ph ph-clock"></i> Day-Wise Tasks
+              <i class="ph ph-clock"></i> Phase-Wise Tasks
             </button>
           </div>
           <div id="roadmap-level-indicator" style="font-size: 0.8rem; color: var(--accent-cyan); font-weight: 700; text-transform: uppercase;">
@@ -673,12 +673,23 @@
       <div class="daily-hub-layout">
         <!-- Main: Current Day Tasks & Recommended Resources -->
         <div class="glass-card">
+          <div style="margin-bottom: 1rem;">
+            <button id="top-back-to-weekly-roadmap-btn" class="btn btn-secondary back-to-weekly-roadmap-btn" style="font-size: 0.8rem; padding: 0.35rem 0.8rem;">
+              <i class="ph ph-arrow-left"></i> Back to Weekly Roadmap
+            </button>
+          </div>
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 1rem; flex-wrap: wrap; gap: 0.6rem;">
             <div>
-              <span id="current-day-badge"
-                style="background: rgba(139, 92, 246, 0.2); color: var(--accent-violet); font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 4px; text-transform: uppercase;">
-                Day 1 Tasks
-              </span>
+              <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                <span id="current-day-badge"
+                  style="background: rgba(139, 92, 246, 0.2); color: var(--accent-violet); font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 4px; text-transform: uppercase;">
+                  Day 1 Tasks
+                </span>
+                <span id="current-day-progress-badge"
+                  style="background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 4px;">
+                  0 / 0 Completed (0%)
+                </span>
+              </div>
               <h2 id="current-task-title"
                 style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 700; margin-top: 0.4rem; color: #fff;">
                 Daily Task Execution
@@ -692,14 +703,19 @@
             </div>
           </div>
 
+          <!-- Day Completion Progress Bar -->
+          <div id="day-progress-bar-container" style="margin-bottom: 1.2rem; background: rgba(255, 255, 255, 0.05); border-radius: 4px; height: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05);">
+            <div id="day-progress-bar-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-emerald), var(--accent-cyan)); transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+          </div>
+
           <div id="suggested-resources-list">
             <!-- Dynamically populated daily tasks & resource cards -->
           </div>
 
           <div
             style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-glass); padding-top: 1.2rem;">
-            <button id="view-all-roadmap-btn" class="btn btn-secondary">
-              <i class="ph ph-arrow-left"></i> Back to Roadmap
+            <button id="view-all-roadmap-btn" class="btn btn-secondary back-to-weekly-roadmap-btn">
+              <i class="ph ph-arrow-left"></i> Back to Weekly Roadmap
             </button>
             <div style="display:flex; gap:0.6rem; flex-wrap:wrap; justify-content:flex-end;">
               <button id="start-concept-quiz-btn" class="btn btn-emerald">
@@ -820,6 +836,64 @@
             </button>
           </div>
         </form>
+      </div>
+    </section>
+
+    <!-- VIEW 6b: Dedicated Assessment Evaluation Page -->
+    <section id="view-assessment-evaluation" class="view-section">
+      <div class="glass-card" style="padding: 1.8rem;">
+        
+        <!-- Header Bar with Phase Title and Navigation -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 1.2rem;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem; flex-wrap: wrap;">
+              <span id="eval-phase-badge" style="background: rgba(139, 92, 246, 0.2); color: var(--accent-violet); font-size: 0.78rem; font-weight: 700; padding: 0.25rem 0.7rem; border-radius: 4px; text-transform: uppercase;">
+                Phase 1 Assessment
+              </span>
+              <span id="eval-date-badge" style="font-size: 0.78rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.05); padding: 0.25rem 0.7rem; border-radius: 4px;">
+                <i class="ph ph-clock"></i> Just now
+              </span>
+            </div>
+            <h2 id="eval-phase-title" style="font-family: var(--font-heading); font-size: 1.5rem; font-weight: 800; color: #fff; margin: 0;">
+              Assessment Evaluation Report
+            </h2>
+            <p class="section-subtitle" style="margin-bottom: 0; margin-top: 0.25rem;">
+              Detailed question-by-question evaluation, score breakdown, and targeted revision recommendations.
+            </p>
+          </div>
+          <div style="display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center;">
+            <button type="button" id="eval-back-to-roadmap-btn" class="btn btn-secondary eval-nav-roadmap-btn" style="font-size: 0.82rem; padding: 0.45rem 0.9rem;">
+              <i class="ph ph-arrow-left"></i> Back to Weekly Roadmap
+            </button>
+            <button type="button" id="eval-review-phase-btn" class="btn btn-secondary eval-nav-review-btn" style="font-size: 0.82rem; padding: 0.45rem 0.9rem;">
+              <i class="ph ph-book-open"></i> Review Phase
+            </button>
+            <button type="button" id="eval-retake-assessment-btn" class="btn btn-emerald eval-nav-retake-btn" style="font-size: 0.82rem; padding: 0.45rem 0.95rem;">
+              <i class="ph ph-arrows-counter-clockwise"></i> Retake Assessment
+            </button>
+          </div>
+        </div>
+
+        <!-- Dynamic Container for Evaluation Summary, Question Breakdown, Concepts to Review -->
+        <div id="assessment-evaluation-content">
+          <!-- Populated dynamically by renderAssessmentEvaluationPage -->
+        </div>
+
+        <!-- Bottom Action Bar -->
+        <div style="margin-top: 2.2rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-glass); padding-top: 1.2rem; flex-wrap: wrap; gap: 1rem;">
+          <button type="button" id="eval-bottom-back-roadmap-btn" class="btn btn-secondary eval-nav-roadmap-btn">
+            <i class="ph ph-arrow-left"></i> Back to Weekly Roadmap
+          </button>
+          <div style="display: flex; gap: 0.8rem; flex-wrap: wrap;">
+            <button type="button" id="eval-bottom-review-phase-btn" class="btn btn-secondary eval-nav-review-btn">
+              <i class="ph ph-book-open"></i> Review Phase Tasks & Resources
+            </button>
+            <button type="button" id="eval-bottom-retake-btn" class="btn btn-emerald eval-nav-retake-btn">
+              <i class="ph ph-arrows-counter-clockwise"></i> Retake Assessment
+            </button>
+          </div>
+        </div>
+
       </div>
     </section>
 

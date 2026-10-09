@@ -30,6 +30,7 @@ class AuthAgent {
 
   constructor() {
     this.sessionKey = 'placify_active_session';
+    this.activeSession = null;
   }
 
 
@@ -195,13 +196,8 @@ class AuthAgent {
       }
 
 
-      this.setActiveSession(
-        data.profile
-      );
-
-
       console.log(
-        '✅ User registered successfully:',
+        '✅ User registered successfully in MongoDB Atlas:',
         data.profile
       );
 
@@ -215,12 +211,6 @@ class AuthAgent {
         '❌ Registration failed:',
         error
       );
-
-      /*
-       * MongoDB Atlas is the ONLY authentication source.
-       *
-       * Do NOT create a localStorage user here.
-       */
 
       throw error;
     }
@@ -268,13 +258,6 @@ class AuthAgent {
           headers: {
             'Content-Type': 'application/json'
           },
-
-          /*
-           * Send original password.
-           *
-           * Backend retrieves the stored salt
-           * and performs PBKDF2 verification.
-           */
 
           body: JSON.stringify({
 
@@ -347,10 +330,6 @@ class AuthAgent {
         error
       );
 
-      /*
-       * MongoDB Atlas is the ONLY authentication source.
-       */
-
       throw error;
     }
   }
@@ -361,11 +340,10 @@ class AuthAgent {
      ========================================================== */
 
   setActiveSession(profile) {
-
-    localStorage.setItem(
-      this.sessionKey,
-      JSON.stringify(profile)
-    );
+    this.activeSession = profile;
+    if (window.placifySupervisor?.progressTracker && profile?.user_id) {
+      window.placifySupervisor.progressTracker.setActiveUser(profile.user_id);
+    }
   }
 
 
@@ -374,32 +352,7 @@ class AuthAgent {
      ========================================================== */
 
   getActiveSession() {
-
-    try {
-
-      const raw =
-        localStorage.getItem(
-          this.sessionKey
-        );
-
-
-      if (!raw) {
-        return null;
-      }
-
-
-      return JSON.parse(raw);
-
-
-    } catch (error) {
-
-      console.error(
-        '❌ Could not read active session:',
-        error
-      );
-
-      return null;
-    }
+    return this.activeSession;
   }
 
 
@@ -408,10 +361,14 @@ class AuthAgent {
      ========================================================== */
 
   clearSession() {
-
-    localStorage.removeItem(
-      this.sessionKey
-    );
+    this.activeSession = null;
+    if (window.placifySupervisor?.progressTracker) {
+      window.placifySupervisor.progressTracker.clearActiveUser();
+    }
+    try {
+      localStorage.removeItem(this.sessionKey);
+      sessionStorage.removeItem(this.sessionKey);
+    } catch (err) {}
   }
 
 }
@@ -1341,38 +1298,281 @@ class ResourceSuggesterAgent {
     this.ragCache = new Map();
   }
 
+  getCuratedTopicFallbacks(topic, taskHeading, domain) {
+    const headingLower = (taskHeading || '').toLowerCase();
+    const topicLower = (topic || '').toLowerCase();
+    const domainLower = (domain || '').toLowerCase();
+
+    const text = `${headingLower} ${topicLower} ${domainLower}`;
+
+    if (text.includes('html') || text.includes('doctype') || text.includes('boilerplate') || text.includes('dom structure')) {
+      return [
+        {
+          resource_id: 'html_mdn_doc',
+          title: 'MDN Web Docs: HTML Introduction & Document Structure',
+          url: 'https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Getting_started',
+          platform: 'MDN Web Docs',
+          description: 'Official MDN guide covering HTML document syntax, DOCTYPE declarations, head/body organization, and boilerplate structure.',
+          estimated_minutes: 25,
+          relevance_reason: 'Directly covers HTML document structure, DOCTYPE, and fundamental elements.',
+          category_label: 'PRIMARY',
+          is_official: true
+        },
+        {
+          resource_id: 'html_yt_tutorial',
+          title: 'HTML Complete Tutorial: Page Structure & Tags',
+          url: 'https://www.youtube.com/watch?v=UB1O30fR-EE',
+          platform: 'YouTube',
+          description: 'Visual crash course demonstrating how to structure HTML documents from scratch.',
+          estimated_minutes: 35,
+          relevance_reason: 'Hands-on video tutorial covering HTML document boilerplate setup.',
+          category_label: 'ALTERNATIVE',
+          is_official: false
+        },
+        {
+          resource_id: 'html_w3_guide',
+          title: 'W3Schools: HTML Basics & DOCTYPE Reference',
+          url: 'https://www.w3schools.com/html/html_basic.asp',
+          platform: 'W3Schools',
+          description: 'Interactive reference guide for core HTML elements and document tags.',
+          estimated_minutes: 20,
+          relevance_reason: 'Interactive practice environment for basic HTML structure.',
+          category_label: 'PRACTICE',
+          is_official: false
+        }
+      ];
+    } else if (text.includes('css') || text.includes('flexbox') || text.includes('grid') || text.includes('style')) {
+      return [
+        {
+          resource_id: 'css_mdn_flex',
+          title: 'MDN Web Docs: CSS Layouts & Flexbox Guide',
+          url: 'https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Flexbox',
+          platform: 'MDN Web Docs',
+          description: 'Comprehensive documentation on CSS flexbox, alignment, and modern layout techniques.',
+          estimated_minutes: 30,
+          relevance_reason: 'Authoritative guide for CSS layouts, flex container properties, and alignment.',
+          category_label: 'PRIMARY',
+          is_official: true
+        },
+        {
+          resource_id: 'css_yt_flex',
+          title: 'CSS Flexbox & Grid Masterclass',
+          url: 'https://www.youtube.com/watch?v=phWxA89Dy94',
+          platform: 'YouTube',
+          description: 'Step-by-step video guide explaining flexbox containers, main axis, cross axis, and responsive grids.',
+          estimated_minutes: 40,
+          relevance_reason: 'Visual walkthrough of CSS styling and layout principles.',
+          category_label: 'ALTERNATIVE',
+          is_official: false
+        }
+      ];
+    } else if (text.includes('js') || text.includes('javascript') || text.includes('async') || text.includes('dom') || text.includes('es6')) {
+      return [
+        {
+          resource_id: 'js_mdn_guide',
+          title: 'MDN Web Docs: JavaScript Fundamentals & Core Concepts',
+          url: 'https://developer.mozilla.org/en-US/docs/Learn/JavaScript/First_steps',
+          platform: 'MDN Web Docs',
+          description: 'Essential guide covering JavaScript syntax, data types, functions, and DOM manipulation.',
+          estimated_minutes: 35,
+          relevance_reason: 'Core MDN guide for modern JavaScript programming.',
+          category_label: 'PRIMARY',
+          is_official: true
+        },
+        {
+          resource_id: 'js_yt_course',
+          title: 'Modern JavaScript Full Course for Beginners',
+          url: 'https://www.youtube.com/watch?v=W6NZfCO5SIk',
+          platform: 'YouTube',
+          description: 'Practical video tutorial introducing variables, events, async/await, and API integration.',
+          estimated_minutes: 45,
+          relevance_reason: 'Comprehensive video covering JS execution and practice drills.',
+          category_label: 'ALTERNATIVE',
+          is_official: false
+        }
+      ];
+    } else if (text.includes('dsa') || text.includes('tree') || text.includes('array') || text.includes('algorithm') || text.includes('complexity')) {
+      return [
+        {
+          resource_id: 'dsa_gfg_guide',
+          title: 'GeeksforGeeks: Data Structures & Algorithms Roadmap',
+          url: 'https://www.geeksforgeeks.org/data-structures/',
+          platform: 'GeeksforGeeks',
+          description: 'Detailed tutorial covering data structure operations, time/space complexity analysis, and coding problems.',
+          estimated_minutes: 40,
+          relevance_reason: 'In-depth explanation of core DSA concepts and problem-solving patterns.',
+          category_label: 'PRIMARY',
+          is_official: false
+        },
+        {
+          resource_id: 'dsa_yt_guide',
+          title: 'DSA Complete Beginner to Advanced Tutorial',
+          url: 'https://www.youtube.com/watch?v=8hly31xKLI0',
+          platform: 'YouTube',
+          description: 'Step-by-step visual explanation of algorithms, recursion, and data structures.',
+          estimated_minutes: 50,
+          relevance_reason: 'Visual algorithm demonstrations and practice coding problems.',
+          category_label: 'ALTERNATIVE',
+          is_official: false
+        }
+      ];
+    }
+
+    return [
+      {
+        resource_id: 'gen_mdn_docs',
+        title: `Official Learning Documentation for ${taskHeading}`,
+        url: 'https://developer.mozilla.org/en-US/',
+        platform: 'Web Docs',
+        description: `Curated learning guide covering fundamental topics and best practices for ${taskHeading}.`,
+        estimated_minutes: 30,
+        relevance_reason: `Direct reference material for ${taskHeading}.`,
+        category_label: 'PRIMARY',
+        is_official: true
+      },
+      {
+        resource_id: 'gen_yt_video',
+        title: `Video Tutorial: ${taskHeading}`,
+        url: 'https://www.youtube.com/',
+        platform: 'YouTube',
+        description: `Video walkthrough explaining practical implementation details of ${taskHeading}.`,
+        estimated_minutes: 35,
+        relevance_reason: `Visual tutorial for ${taskHeading}.`,
+        category_label: 'ALTERNATIVE',
+        is_official: false
+      }
+    ];
+  }
+
+  getRecentlyUsedResourceIds(userId) {
+    try {
+      const key = `placify_history_res_${userId}`;
+      const data = localStorage.getItem(key);
+      return data ? JSON.parse(data) : [];
+    } catch(e) { return []; }
+  }
+
+  getWeekResourceIds(userId, weekNum) {
+    try {
+      const key = `placify_week_res_${userId}_w${weekNum}`;
+      const data = localStorage.getItem(key);
+      return data ? JSON.parse(data) : [];
+    } catch(e) { return []; }
+  }
+
+  recordUsedResourceIds(userId, weekNum, resourceIds) {
+    if (!Array.isArray(resourceIds) || resourceIds.length === 0) return;
+    try {
+      const histKey = `placify_history_res_${userId}`;
+      const curHist = this.getRecentlyUsedResourceIds(userId);
+      const updatedHist = Array.from(new Set([...resourceIds, ...curHist])).slice(0, 50);
+      localStorage.setItem(histKey, JSON.stringify(updatedHist));
+
+      if (weekNum) {
+        const weekKey = `placify_week_res_${userId}_w${weekNum}`;
+        const curWeek = this.getWeekResourceIds(userId, weekNum);
+        const updatedWeek = Array.from(new Set([...resourceIds, ...curWeek]));
+        localStorage.setItem(weekKey, JSON.stringify(updatedWeek));
+      }
+    } catch(e) {}
+  }
+
   async suggestResources(topic, skillTier, taskContext = {}) {
     const rawTask = taskContext.taskItem || {};
-    const taskHeading =
+    const taskTitle =
       rawTask.taskTitle ||
       rawTask.title ||
       taskContext.taskTitle ||
       taskContext.title ||
       topic ||
-      'Learning Task';
+      'Daily Learning Task';
 
     const session = window.placifySupervisor?.authAgent?.getActiveSession?.() || window.activeSession;
     const userId = taskContext.user_id || session?.user_id || (window.currentDraftProfile ? window.currentDraftProfile.user_id : null) || 'anonymous_user';
 
-    const taskId = taskContext.taskId || taskContext.id || taskHeading;
-    const cacheKey = `${userId}::${taskId}::${taskHeading}`;
+    const dayNum = taskContext.dayNumber || rawTask.dayNumber || rawTask.day_number || 1;
+    const weekNum = taskContext.weekNumber || rawTask.weekNumber || rawTask.week_number || 1;
+    const taskId = taskContext.taskId || rawTask.taskId || rawTask.id || taskContext.id || `task_${dayNum}_1`;
 
+    const taskType = (rawTask.taskType || rawTask.type || taskContext.taskType || 'LEARN').toUpperCase();
+    const taskDifficulty = rawTask.difficulty || taskContext.difficulty || skillTier || 'BEGINNER';
+    const taskDuration = parseInt(rawTask.durationMinutes || rawTask.estimated_minutes || taskContext.durationMinutes || 45, 10);
+    const taskTopic = rawTask.taskTopic || rawTask.topic || taskContext.taskTopic || taskContext.topic || topic || 'Core Learning';
+    const taskSubtopic = rawTask.taskSubtopic || rawTask.subtopic || taskContext.taskSubtopic || taskContext.subtopic || taskTopic;
+    const domain = taskContext.domain || taskContext.chosen_domain || rawTask.domain || 'fullstack';
+    const userLevel = taskContext.userLevel || taskContext.skillLevel || skillTier || 'BEGINNER';
+    const roadmapId = taskContext.roadmapId || 'active_roadmap';
+
+    // 1. Task-Specific Cache Key Fingerprint
+    const cacheKey = `placify_rag_res_${roadmapId}_${domain}_${taskTopic}_${taskSubtopic}_${taskId}_${userLevel}_${taskDuration}`;
+
+    // Check in-memory cache
     if (this.ragCache.has(cacheKey)) {
       return this.ragCache.get(cacheKey);
     }
 
-    console.log('[POST /api/rag/day-resources - YouTube RAG]', { user_id: userId, query: taskHeading });
-
+    // Check localStorage cache
     try {
+      const stored = localStorage.getItem(cacheKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          this.ragCache.set(cacheKey, parsed);
+          return parsed;
+        }
+      }
+    } catch (e) {}
+
+    console.log('[POST /api/rag/day-resources - RAG Query]', {
+      taskId,
+      taskTitle,
+      taskTopic,
+      taskSubtopic,
+      taskDuration,
+      userLevel,
+      domain
+    });
+
+    const structuredQuery = `${domain} ${taskTopic} ${taskSubtopic}. ${taskType}: ${taskTitle}. Level: ${userLevel}. Duration: ${taskDuration} mins`;
+
+    const payload = {
+      user_id: userId,
+      query: structuredQuery,
+      taskId,
+      taskTitle,
+      taskType,
+      taskDifficulty,
+      taskDuration,
+      dailyTopic: taskTopic,
+      subtopic: taskSubtopic,
+      topic: taskTopic,
+      domain,
+      userLevel,
+      topK: 3,
+      dailyHours: taskContext.dailyHours || session?.daily_hours || 2.0,
+      dailyBudgetMinutes: Math.round((parseFloat(taskContext.dailyHours || session?.daily_hours || 2.0)) * 60),
+      taskDescription: rawTask.description || taskContext.description || '',
+      weekNumber: weekNum,
+      dayNumber: dayNum,
+      quizTopicPerformance: taskContext.quizTopicPerformance || {},
+      history_resource_ids: this.getRecentlyUsedResourceIds(userId),
+      week_resource_ids: this.getWeekResourceIds(userId, weekNum)
+    };
+
+    // 2. Attempt RAG API call with 5s timeout
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
       const baseUrl = window.location.origin && window.location.origin !== 'null' ? window.location.origin : 'http://localhost:5000';
       const res = await fetch(`${baseUrl}/api/rag/day-resources`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: userId,
-          query: taskHeading
-        })
+        signal: controller.signal,
+        body: JSON.stringify(payload)
       });
+
+      clearTimeout(timeoutId);
 
       const data = await res.json();
       if (data.success && Array.isArray(data.resources) && data.resources.length > 0) {
@@ -1384,21 +1584,29 @@ class ResourceSuggesterAgent {
           description: r.subtopic
             ? `${r.topic || ''}${r.topic ? ' — ' : ''}${r.subtopic}`
             : (r.topic || r.description || 'Recommended learning resource'),
-          estimated_minutes: r.duration_minutes || r.estimated_minutes || 30,
-          relevance_reason: `Retrieved specifically for the task: "${taskHeading}"`,
-          category_label: idx === 0 ? 'PRIMARY' : 'ALTERNATIVE',
-          is_official: false,
-          score: r.score
+          estimated_minutes: r.duration_minutes || r.estimated_minutes || 20,
+          duration_minutes: r.duration_minutes || r.estimated_minutes || 20,
+          task_budget_minutes: taskDuration,
+          relevance_reason: r.relevance_reason || `Matches topic '${taskTopic}' and task '${taskTitle}' within ${taskDuration} min budget.`,
+          category_label: r.category_label || (idx === 0 ? 'PRIMARY' : (idx === 1 ? 'ALTERNATIVE' : 'PRACTICE')),
+          duration_fit_score: r.duration_fit_score || 0.9,
+          relevance_score: r.relevance_score || 0.85,
+          final_score: r.final_score || 0.85,
+          resource_type: r.resource_type || 'VIDEO',
+          is_official: Boolean(r.is_official)
         }));
 
         this.ragCache.set(cacheKey, mappedResources);
+        try { localStorage.setItem(cacheKey, JSON.stringify(mappedResources)); } catch(e) {}
+        this.recordUsedResourceIds(userId, weekNum, mappedResources.map(r => r.resource_id));
         return mappedResources;
       }
       console.warn('YouTube RAG API notice:', data?.message || 'No resources returned');
     } catch (err) {
-      console.warn('YouTube RAG resource retrieval failed:', err.message);
+      console.warn('YouTube RAG resource retrieval notice/timeout:', err.message);
     }
 
+    // Never return unrelated fallback URLs
     return [];
   }
 }
@@ -1459,158 +1667,127 @@ class ResourceFetcherAgent {
 class ProgressTrackerAgent {
 
   constructor() {
-
-    this.storageKey =
-      'placify_user_state';
+    this.activeUserId = null;
+    this.storagePrefix = 'placify_user_state_';
   }
 
+  setActiveUser(userId) {
+    this.activeUserId = userId ? String(userId).trim() : null;
+  }
+
+  clearActiveUser() {
+    this.activeUserId = null;
+  }
+
+  getStorageKey(userId) {
+    const uid = userId || this.activeUserId;
+    return uid ? `${this.storagePrefix}${uid}` : 'placify_user_state_guest';
+  }
 
   /* ==========================================================
      DEFAULT STATE
      ========================================================== */
 
-  getDefaultState() {
-
+  getDefaultState(userId) {
+    const uid = userId || this.activeUserId || null;
     return {
-
-      isOnboarded:
-        false,
-
-      userProfile:
-        null,
-
-      evaluation:
-        null,
-
-      personalizedRoadmap:
-        null,
-
-      currentDayIndex:
-        0,
-
-      masteryPct:
-        0,
-
-      xp:
-        0,
-
-      streak:
-        1,
-
-      lastCompletedDate:
-        null,
-
-      badges:
-        ['🐣 Fresh Start'],
-
-      level:
-        1,
-
-      levelUpEligible:
-        false,
-
-      history:
-        []
-
+      isOnboarded: false,
+      userId: uid,
+      userProfile: null,
+      evaluation: null,
+      personalizedRoadmap: null,
+      currentDayIndex: 0,
+      masteryPct: 0,
+      xp: 0,
+      streak: 0,
+      lastCompletedDate: null,
+      badges: ['🐣 Fresh Start'],
+      level: 1,
+      levelUpEligible: false,
+      history: []
     };
   }
-
 
   /* ==========================================================
      GET USER STATE
      ========================================================== */
 
-  getUserState() {
-
+  getUserState(userId) {
     try {
-
-      const raw =
-        localStorage.getItem(
-          this.storageKey
-        );
-
+      const key = this.getStorageKey(userId);
+      const raw = localStorage.getItem(key);
 
       if (!raw) {
-
-        return this.getDefaultState();
+        return this.getDefaultState(userId);
       }
 
-
-      const state =
-        JSON.parse(raw);
-
-
-      /*
-       * Protect against missing properties
-       * when an older local state exists.
-       */
+      const state = JSON.parse(raw);
 
       return {
-
-        ...this.getDefaultState(),
-
+        ...this.getDefaultState(userId),
         ...state,
-
-        badges:
-          Array.isArray(state.badges)
-            ? state.badges
-            : ['🐣 Fresh Start'],
-
-        history:
-          Array.isArray(state.history)
-            ? state.history
-            : []
-
+        streak: state.streak !== undefined ? state.streak : 0,
+        xp: state.xp !== undefined ? state.xp : 0,
+        badges: Array.isArray(state.badges) ? state.badges : ['🐣 Fresh Start'],
+        history: Array.isArray(state.history) ? state.history : []
       };
-
-
     } catch (error) {
-
-      console.error(
-        '❌ Could not read progress state:',
-        error
-      );
-
-      return this.getDefaultState();
+      console.error('❌ Could not read progress state:', error);
+      return this.getDefaultState(userId);
     }
   }
-
 
   /* ==========================================================
      SAVE USER STATE
      ========================================================== */
 
-  saveUserState(state) {
-
-    localStorage.setItem(
-      this.storageKey,
-      JSON.stringify(state)
-    );
-
+  saveUserState(state, userId) {
+    const key = this.getStorageKey(userId || state?.userId);
+    localStorage.setItem(key, JSON.stringify(state));
     return state;
   }
 
+  /* ==========================================================
+     SYNC WITH BACKEND SOURCE OF TRUTH
+     ========================================================== */
+
+  async syncWithBackend(userId) {
+    const uid = userId || this.activeUserId;
+    if (!uid) return this.getUserState();
+    this.setActiveUser(uid);
+    try {
+      const res = await fetch(`http://localhost:5000/api/progress/${encodeURIComponent(uid)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.success) {
+          const currentState = this.getUserState(uid);
+          currentState.userId = uid;
+          currentState.streak = data.streak !== undefined ? data.streak : 0;
+          currentState.xp = data.xp !== undefined ? data.xp : 0;
+          currentState.level = data.level !== undefined ? data.level : 1;
+          currentState.badges = Array.isArray(data.badges) ? data.badges : ['🐣 Fresh Start'];
+          currentState.masteryPct = data.masteryPct !== undefined ? data.masteryPct : 0;
+          this.saveUserState(currentState, uid);
+          return currentState;
+        }
+      }
+    } catch (err) {
+      console.warn('Could not sync progress with backend:', err.message);
+    }
+    return this.getUserState(uid);
+  }
 
   /* ==========================================================
      TASK COMPLETION
      ========================================================== */
 
-  logTaskCompletion(
-    dayNumber,
-    taskScorePct
-  ) {
+  logTaskCompletion(dayNumber, taskScorePct, userId) {
+    const uid = userId || this.activeUserId;
+    const state = this.getUserState(uid);
 
-    const state =
-      this.getUserState();
-
-
-    if (
-      !state.personalizedRoadmap
-    ) {
-
+    if (!state.personalizedRoadmap) {
       return state;
     }
-
 
     if (!Array.isArray(state.personalizedRoadmap.dailyTasks)) {
       state.personalizedRoadmap.dailyTasks = [];
@@ -1648,257 +1825,75 @@ class ProgressTrackerAgent {
       t => Number(t.dayNumber || t.day_number) === Number(dayNumber)
     );
 
-    if (!task) {
-      console.warn(`⚠️ Day ${dayNumber} task not found.`);
-    } else {
+    if (task) {
       task.completed = true;
       task.score = taskScorePct;
     }
 
+    const completedTasks = state.personalizedRoadmap.dailyTasks.filter(t => t.completed);
+    const totalTasks = state.personalizedRoadmap.dailyTasks.length;
 
-    // -------------------------------
-    // Mark Task Complete
-    // -------------------------------
+    state.masteryPct = totalTasks > 0 ? Math.round((completedTasks.length / totalTasks) * 100) : 0;
 
-    task.completed =
-      true;
+    const xpGained = Math.round(150 * (taskScorePct / 100));
+    state.xp = (state.xp || 0) + xpGained;
 
-    task.score =
-      taskScorePct;
+    state.currentDayIndex = Math.max(state.currentDayIndex || 0, dayNumber);
 
-
-    // -------------------------------
-    // Calculate Mastery
-    // -------------------------------
-
-    const completedTasks =
-      state.personalizedRoadmap
-        .dailyTasks
-        .filter(
-          t => t.completed
-        );
-
-
-    const totalTasks =
-      state.personalizedRoadmap
-        .dailyTasks
-        .length;
-
-
-    state.masteryPct =
-      totalTasks > 0
-        ? Math.round(
-          (completedTasks.length /
-            totalTasks) *
-          100
-        )
-        : 0;
-
-
-    // -------------------------------
-    // XP
-    // -------------------------------
-
-    const xpGained =
-      Math.round(
-        150 *
-        (taskScorePct / 100)
-      );
-
-
-    state.xp += xpGained;
-
-
-    // -------------------------------
-    // Update Current Day
-    // -------------------------------
-
-    state.currentDayIndex =
-      Math.max(
-        state.currentDayIndex || 0,
-        dayNumber
-      );
-
-
-    // -------------------------------
-    // Streak
-    // -------------------------------
-
-    const today =
-      new Date()
-        .toISOString()
-        .split('T')[0];
-
-
-    if (
-      state.lastCompletedDate !==
-      today
-    ) {
-
-      /*
-       * Keep existing project behavior:
-       * first completed task changes
-       * the streak from 1 to 2.
-       */
-
-      state.streak =
-        Math.max(
-          1,
-          state.streak + 1
-        );
-
-      state.lastCompletedDate =
-        today;
+    const today = new Date().toISOString().split('T')[0];
+    if (state.lastCompletedDate !== today) {
+      state.streak = Math.max(1, (state.streak || 0) + 1);
+      state.lastCompletedDate = today;
     }
 
-
-    // -------------------------------
-    // Badges
-    // -------------------------------
-
-    if (
-      completedTasks.length === 1 &&
-      !state.badges.includes(
-        '🚀 First Step'
-      )
-    ) {
-
-      state.badges.push(
-        '🚀 First Step'
-      );
+    if (completedTasks.length === 1 && !state.badges.includes('🚀 First Step')) {
+      state.badges.push('🚀 First Step');
+    }
+    if (state.streak >= 3 && !state.badges.includes('🔥 3-Day Streak')) {
+      state.badges.push('🔥 3-Day Streak');
+    }
+    if (state.masteryPct >= 50 && !state.badges.includes('⚡ Halfway Master')) {
+      state.badges.push('⚡ Halfway Master');
+    }
+    if (state.masteryPct >= 100 && !state.badges.includes('🏆 Domain Conqueror')) {
+      state.badges.push('🏆 Domain Conqueror');
     }
 
-
-    if (
-      state.streak >= 3 &&
-      !state.badges.includes(
-        '🔥 3-Day Streak'
-      )
-    ) {
-
-      state.badges.push(
-        '🔥 3-Day Streak'
-      );
-    }
-
-
-    if (
-      state.masteryPct >= 50 &&
-      !state.badges.includes(
-        '⚡ Halfway Master'
-      )
-    ) {
-
-      state.badges.push(
-        '⚡ Halfway Master'
-      );
-    }
-
-
-    if (
-      state.masteryPct >= 100 &&
-      !state.badges.includes(
-        '🏆 Domain Conqueror'
-      )
-    ) {
-
-      state.badges.push(
-        '🏆 Domain Conqueror'
-      );
-    }
-
-
-    // -------------------------------
-    // Level Calculation
-    // -------------------------------
-
-    const newLevel =
-      Math.floor(
-        state.xp / 300
-      ) + 1;
-
-
-    if (
-      newLevel > state.level
-    ) {
-
-      state.level =
-        newLevel;
-
-      state.levelUpEligible =
-        true;
-    }
-
-
-    // -------------------------------
-    // History
-    // -------------------------------
+    state.level = Math.floor(state.xp / 300) + 1;
 
     state.history.push({
-
-      timestamp:
-        new Date().toISOString(),
-
+      timestamp: new Date().toISOString(),
       dayNumber,
-
       taskScorePct,
-
-      masteryPct:
-        state.masteryPct,
-
+      masteryPct: state.masteryPct,
       xpGained
-
     });
 
-
-    return this.saveUserState(
-      state
-    );
+    return this.saveUserState(state, uid);
   }
-
 
   /* ==========================================================
      CONSUME LEVEL UP
      ========================================================== */
 
-  consumeLevelUp(
-    tierChoice
-  ) {
-
-    const state =
-      this.getUserState();
-
-
-    state.levelUpEligible =
-      false;
-
-
-    if (
-      state.personalizedRoadmap
-    ) {
-
-      state.personalizedRoadmap.skillTier =
-        tierChoice;
+  consumeLevelUp(tierChoice, userId) {
+    const uid = userId || this.activeUserId;
+    const state = this.getUserState(uid);
+    state.levelUpEligible = false;
+    if (state.personalizedRoadmap) {
+      state.personalizedRoadmap.skillTier = tierChoice;
     }
-
-
-    return this.saveUserState(
-      state
-    );
+    return this.saveUserState(state, uid);
   }
-
 
   /* ==========================================================
      RESET
      ========================================================== */
 
-  resetState() {
-
-    localStorage.removeItem(
-      this.storageKey
-    );
-
-    return this.getUserState();
+  resetState(userId) {
+    const key = this.getStorageKey(userId);
+    localStorage.removeItem(key);
+    return this.getUserState(userId);
   }
 }
 

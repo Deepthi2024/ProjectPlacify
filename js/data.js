@@ -622,11 +622,12 @@ window.PLACIFY_DATA = {
 window.normalizeDailyTask = function(rawTask, context = {}) {
   if (!rawTask || typeof rawTask !== 'object') return null;
 
-  const taskId = rawTask.taskId || rawTask.id || context.taskId || `task_${context.monthNumber || 1}_${context.weekNumber || 1}_${context.dayNumber || 1}_1`;
-  
+  const taskSeq = parseInt(rawTask.taskSeq !== undefined ? rawTask.taskSeq : (rawTask.task_seq !== undefined ? rawTask.task_seq : context.taskSeq), 10) || 1;
   const dayNumber = parseInt(rawTask.dayNumber !== undefined ? rawTask.dayNumber : (rawTask.day_number !== undefined ? rawTask.day_number : context.dayNumber), 10) || 1;
   const monthNumber = parseInt(rawTask.monthNumber !== undefined ? rawTask.monthNumber : (rawTask.month_number !== undefined ? rawTask.month_number : context.monthNumber), 10) || 1;
   const weekNumber = parseInt(rawTask.weekNumber !== undefined ? rawTask.weekNumber : (rawTask.week_number !== undefined ? rawTask.week_number : context.weekNumber), 10) || 1;
+
+  const taskId = rawTask.taskId || rawTask.id || context.taskId || `task_${monthNumber}_${weekNumber}_${dayNumber}_${taskSeq}`;
   
   const domain = rawTask.domain || rawTask.domainId || rawTask.chosen_domain || context.domain || 'fullstack';
 
@@ -686,7 +687,11 @@ window.normalizeDailyTask = function(rawTask, context = {}) {
     practice_details: description,
     difficulty,
     durationMinutes,
-    estimated_minutes: durationMinutes
+    estimated_minutes: durationMinutes,
+    completed: rawTask.completed === true || String(rawTask.status || '').toUpperCase() === 'COMPLETED',
+    status: String(rawTask.status || (rawTask.completed === true ? 'COMPLETED' : 'pending')),
+    completed_at: rawTask.completed_at || rawTask.completedAt || null,
+    completedAt: rawTask.completed_at || rawTask.completedAt || null
   };
 
   if (!normalized.taskTitle || !normalized.taskType || !normalized.durationMinutes || normalized.taskTitle.includes('undefined')) {

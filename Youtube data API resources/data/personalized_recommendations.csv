@@ -1,0 +1,502 @@
+personalized_rank,recommendation_rank,resource_id,domain,topic,subtopic,level,title,channel,url,duration_minutes,language,quality_score,status,description,tags,published_at,view_count,like_count,comment_count,thumbnail_url,category_id,engagement_score,recency_score,duration_score,metadata_completeness,topic_relevance,level_suitability,content_quality,educational_value,topic_match_score,subtopic_match_score,level_match_score,language_match_score,recommendation_score,resource_type,duration_bucket,normalized_score,diversity_score,diversity_adjusted_score,base_score_normalized,language_match,level_match,duration_match,type_match,history_signal,history_adjustment,personalized_score,eligible
+1,1,yt_html_445,Full Stack Development,React,Basics|Components|JSX|Props|State|Hooks|Events & Forms|Conditional Rendering|Lists & Keys|Context API|Routing|API Integration|Projects,Beginner,Learn React With This One Project,Web Dev Simplified,https://www.youtube.com/watch?v=9aTRnV6g0eQ,105,English,81.75,approved,"React Simplified Course: https://learn.webdevsimplified.com/react-simplified/?utm_source=youtube&utm_medium=video-description&utm_term=video-id-9aTRnV6g0eQ&utm_campaign=react-promo-2026-05
+FREE React Hooks Course: https://courses.webdevsimplified.com/react-hooks-simplified/?utm_source=youtube&utm_medium=video-description&utm_term=video-id-9aTRnV6g0eQ
+
+Learning React is hard, especially if you are just getting started. In this video I will show you how to build out a full React application while also explaining every single important React concept you need to know.
+
+
+📚 Materials/References:
+
+GitHub Code: https://github.com/WebDevSimplified/react-habit-tracker
+React Simplified Course: https://learn.webdevsimplified.com/react-simplified/?utm_source=youtube&utm_medium=video-description&utm_term=video-id-9aTRnV6g0eQ&utm_campaign=react-promo-2026-05
+FREE React Hooks Course: https://courses.webdevsimplified.com/react-hooks-simplified/?utm_source=youtube&utm_medium=video-description&utm_term=video-id-9aTRnV6g0eQ
+
+
+🌎 Find Me Here:
+
+My Blog: https://blog.webdevsimplified.com/
+My Courses: https://courses.webdevsimplified.com/
+Patreon: https://www.patreon.com/WebDevSimplified
+Twitter: https://twitter.com/DevSimplified
+Discord: https://discord.gg/7StTjnR
+GitHub: https://github.com/WebDevSimplified
+CodePen: https://codepen.io/WebDevSimplified
+
+
+⏱️ Timestamps:
+
+00:00:00 - Introduction
+00:01:02 - Setup React
+00:04:24 - Setup Tailwind
+00:06:27 - Thinking in Components
+00:08:15 - Custom Components
+00:14:26 - Props
+00:19:20 - Form Custom Component
+00:22:40 - Habit List Custom Component
+00:24:40 - Rendering Arrays
+00:28:15 - Habit Item Component
+00:37:00 - Advanced Props
+00:47:55 - useState Hook
+01:10:30 - Conditional Rendering
+01:11:50 - useContext Hook
+01:22:46 - Making UI Reactive
+01:32:51 - Rules of Hooks Hooks
+01:34:30 - Custom Hooks
+01:37:18 - useEffect Hook
+
+
+#TypeScript #WDS #ReactJS",webdevsimplified|react habit tracker|react project|reactjs|react js|react.js,2026-05-05T16:00:14Z,79628,2691.0,132.0,https://i.ytimg.com/vi/9aTRnV6g0eQ/maxresdefault.jpg,27,32.52,100.0,90.0,100.0,90,85,80,85,100.0,100.0,100.0,100.0,93.39,Project,60+ min,1.0,1.0,1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0,0.8999999999999999,True
+2,4,yt_html_457,Full Stack Development,React,Basics|Components|JSX|Props|State|Hooks|Events & Forms|Conditional Rendering|Lists & Keys|Routing|API Integration,Beginner,React Tutorial for Beginners,Programming with Mosh,https://www.youtube.com/watch?v=SqcY0GlETPk,80,English,84.22,approved,"Master React 18 with TypeScript! ⚛️  Build amazing front-end apps with this beginner-friendly tutorial.
+
+🚀 Want the ultimate React deep dive? 
+- Check out my full React course: https://mosh.link/react-course
+- Subscribe for more awesome content: https://goo.gl/6PYaGF
+
+✋ Stay connected:
+- Twitter: https://twitter.com/moshhamedani
+- Facebook: https://www.facebook.com/programmingwithmosh/
+- Instagram: https://www.instagram.com/codewithmosh.official/
+- LinkedIn: https://www.linkedin.com/school/codewithmosh/
+
+📖 TABLE OF CONTENT
+00:00:00 Course Intro
+00:01:55 Prerequisites
+00:02:43 What is React?
+00:04:57 Setting Up the Development Environment 
+00:06:24 Creating a React App
+00:09:17 Project Structure
+00:11:20 Creating a React Component
+00:16:41 How React Works
+00:19:00 React Ecosystem
+00:21:04 Building Components
+00:21:40 Creating a ListGroup Component
+00:27:15 Fragments
+00:29:42 Rendering Lists
+00:33:11 Conditional Rendering
+00:38:36 Handling Events
+00:44:43 Managing State
+00:50:44 Passing Data Via Props
+00:54:42 Passing Functions Via Props
+00:58:27 State Vs Props
+01:00:00 Passing Children
+01:05:04 Inspecting Components with React Dev Tools 
+01:07:14 Exercise: Building a Button Component 
+01:14:15 Exercise: Showing an Alert
+
+#react #reactjs #javascript #coding",react js|react tutorial|learn react|react course|reactjs tutorial|react crash course|react js tutorial|reactjs course|react tutorial for beginners|react.js|reactjs tutorial for beginners|reactJS|react|learn reactjs|tutorial|javascript|crash course|programming with mosh|code with mosh|web development|mosh hamedani|learn react js|typescript,2023-03-12T08:00:07Z,6075457,100586.0,2051.0,https://i.ytimg.com/vi/SqcY0GlETPk/maxresdefault.jpg,27,52.7,60.0,90.0,100.0,90,85,90,88,100.0,100.0,100.0,100.0,92.77,Project,60+ min,0.8609865470852006,0.4,0.7918,0.6395348837209274,1.0,1.0,0.0,0.0,0.0,0.0,0.6476744186046491,True
+3,2,yt_html_498,Full Stack Development,React,Basics|Components|JSX|Props|State|Hooks,Beginner,[ GAMECHANGER 🚀 ] REACT JS BECOMES 100 TIMES EASY IF YOU FOLLOW THIS.,Sheryians Coding School,https://www.youtube.com/watch?v=EaG3Zd04W5s,22,English,79.61,review,"🚀 Ready to embark on your journey into the world of React JS? Join us in this in-depth video where we cover everything you need to know before diving into learning React JS and explore the essential components that form the backbone of this powerful JavaScript library!
+
+🔍 Understanding React JS is crucial for modern web development, and we're here to guide you through the key concepts, best practices, and fundamental knowledge to set you on the path to success.
+
+📋 In the first part of the video, we'll walk you through the prerequisites, ensuring you have a solid foundation before tackling React JS. We'll discuss the basics of JavaScript, HTML, and CSS to ensure you're well-equipped for the exciting journey ahead.
+
+🧠 Once we've covered the essentials, we'll transition into a detailed exploration of React JS's main components. From understanding the concept of JSX (JavaScript XML) to the significance of components, props, and state, each crucial aspect will be demystified.
+
+🌐 Components are the building blocks of React applications, and we'll dissect each type, including functional components and class components. You'll gain a clear understanding of when to use each and how they contribute to creating dynamic and interactive user interfaces.
+
+⚛️ Dive deeper into the world of state and props, learning how they enable dynamic and efficient data management within your React applications. We'll provide real-world examples and hands-on demonstrations to reinforce your understanding.
+
+💡 Don't miss our tips and tricks for structuring your React projects effectively, managing state and props gracefully, and troubleshooting common issues encountered by developers.
+
+🚧 Whether you're a beginner looking to start your React JS journey or someone seeking a comprehensive refresher, this video is your go-to resource. Subscribe now, hit the notification bell, and let's master React JS together!
+
+#ReactJS #WebDevelopment #JavaScript #CodingTutorial #ReactComponents #LearnToCode #ProgrammingBasics #TechEducation",web|webdev|reactjs|react|javascript|js|html|css,2023-12-13T12:30:06Z,269773,12384.0,894.0,https://i.ytimg.com/vi/EaG3Zd04W5s/maxresdefault.jpg,27,51.14,70.0,95.0,100.0,90,85,70,80,100.0,100.0,100.0,100.0,92.75,Project,15-30 min,0.8565022421524661,0.65,0.8255,0.6279069767441855,1.0,1.0,0.0,0.0,0.0,0.0,0.6395348837209298,True
+4,5,yt_html_446,Full Stack Development,React,Basics|Components|JSX|Props|State|Hooks|Events & Forms|Conditional Rendering|Lists & Keys,Beginner,ReactJs Crash Course: Master the Basics in One Video! Ignite Your Front-End Mastery Series!,Sheryians Coding School,https://www.youtube.com/watch?v=Xe8CkYZvCig,81,English,81.6,approved,"🚀 Welcome to the ultimate React JS crash course for beginners! In just 1.2
+hours, you'll embark on a coding journey that will empower you to build dynamic and interactive web applications from scratch. Whether you're new to programming or looking to enhance your web development skills, this comprehensive crash course will guide you through the essentials of React JS.
+
+⚛️ Join us as we dive into the core concepts of React JS, demystifying its powerful components, state management, and reactivity. With hands-on examples and step-by-step guidance, you'll quickly grasp the foundations of this popular JavaScript library.
+
+🎯 By the end of this crash course, you'll have the skills to craft modern, responsive, and user-friendly web apps that stand out in today's digital landscape. Get ready to unlock a world of possibilities with React JS!
+
+🔗 Dive into the world of web development now – hit that play button and let's learn React JS together in just 1.2 hours! Don't forget to like, subscribe, and ring the notification bell to stay updated on more exciting tutorials. Happy coding! 👨‍💻❤
+
+Instructor in this video: Harsh Sharma
+
+Visit our website: https://sheryians.com/
+
+Socials:
+Instagram: https://www.instagram.com/sheryians_c...
+Facebook: https://www.facebook.com/sheryians.co...
+Telegram: https://t.me/sheryiansCommunity
+LinkedIn: https://www.linkedin.com/company/the-...
+Discord: https://discord.gg/Au3TquBarQ
+Peace ✌️
+
+#reactjs #javascript #webdevelopment #crashcourse #beginnerstutorial  #codingjourney #coding",React JS|React JS crash course|web development|beginners tutorial|coding|dynamic web apps|JavaScript library|state management|reactivity|hands-on examples|modern web development|responsive design|user-friendly|coding journey|web apps from scratch.,2023-12-23T15:40:01Z,684689,19128.0,1310.0,https://i.ytimg.com/vi/Xe8CkYZvCig/maxresdefault.jpg,27,46.0,70.0,90.0,100.0,90,85,80,85,100.0,100.0,100.0,100.0,92.54,Project,60+ min,0.8094170403587454,0.22,0.721,0.5058139534883751,1.0,1.0,0.0,0.0,0.0,0.0,0.5540697674418625,True
+5,3,yt_html_474,Full Stack Development,React,Basics|Components|JSX|Props|State|Hooks|Events & Forms|Conditional Rendering|Lists & Keys|Context API|Routing|API Integration|State Management|Performance|Authentication,Beginner,Every React Concept Explained in 12 Minutes,Code Bootcamp,https://www.youtube.com/watch?v=wIyHSOugGGw,12,English,80.75,approved,"My React course: https://reactbootcamp.dev
+
+Chapters
+
+0:00 - Intro
+0:11 - Components
+0:29 - JSX
+1:02 - Curly Braces
+1:29 - Fragments
+1:49 - Props
+2:20 - Children
+2:54 - Keys
+3:27 - Rendering
+4:34 - Event Handling
+5:05 - State
+5:54 - Controlled Components
+6:31 - Hooks
+7:21 - Purity
+8:03 - Strict Mode
+8:22 - Effects
+9:03 - Refs
+9:30 - Context
+10:10 - Portals
+10:41 - Suspense
+11:06 - Error Boundaries
+11:35 - Learn More",,2024-03-18T12:00:52Z,1829699,72446.0,687.0,https://i.ytimg.com/vi/wIyHSOugGGw/maxresdefault.jpg,28,55.03,70.0,80.0,100.0,90,75,85,80,100.0,100.0,100.0,100.0,92.36,Concept,5-15 min,0.769058295964125,1.0,0.8037,0.40116279069767335,1.0,1.0,1.0,0.0,0.0,0.0,0.5308139534883713,True
+6,6,yt_html_465,Full Stack Development,React,Basics|Components|JSX|Props|State|Hooks,Beginner,React tutorial for beginners ⚛️,Bro Code,https://www.youtube.com/watch?v=hn80mWvP-9g,20,English,80.44,approved,"00:00:00 introduction
+00:01:41 installation
+00:02:48 new project
+00:05:00 how to restart dev server
+00:05:36 project folder explanation
+00:08:13 App component
+00:09:14 new Header component
+00:13:30 new Footer component
+00:16:32 new Food component
+00:19:22 conclusion
+
+Node: https://nodejs.org/en
+VSCode: https://code.visualstudio.com/
+React docs: https://react.dev/",react js|react tutorial|learn react|react course|reactjs tutorial|react crash course|react js tutorial|reactjs course|react tutorial for beginners|react.js|reactjs tutorial for beginners|reactJS|react|learn reactjs|tutorial|javascript|crash course|web development|learn react js,2023-10-09T17:56:33Z,612977,12057.0,700.0,https://i.ytimg.com/vi/hn80mWvP-9g/maxresdefault.jpg,27,39.41,70.0,95.0,100.0,90,85,80,80,100.0,100.0,100.0,100.0,92.29,Project,15-30 min,0.7533632286995525,0.3,0.6854,0.36046511627907263,1.0,1.0,0.0,0.0,0.0,0.0,0.45232558139535084,True
+7,7,yt_html_479,Full Stack Development,React,Basics|Components|JSX|Props|State|Hooks|Events & Forms|Conditional Rendering|Lists & Keys|Context API|Routing|API Integration|Projects,Beginner,ReactJS Full Course | What is ReactJS | React JS Tutorial for Beginners | ReactJS Full Course #1,Coder Army,https://www.youtube.com/watch?v=TkHH-IHsEKQ,68,English,76.93,review,"Welcome to the first episode of the only React JS course you'll ever need. If you've mastered HTML, CSS, and JavaScript but are tired of tutorials that just show you the 'how' without the 'why', you're in the right place. We're throwing out memorization and building a deep, fundamental understanding of React from First Principles.
+
+In this first video, we go back to the beginning. Before we write a single line of JSX, we explore the core problem React was created to solve. We'll compare the old, imperative way of building web apps with React's powerful declarative model, solidifying the one concept that rules them all: UI = f(state).
+
+✨ IN THIS VIDEO, YOU WILL LEARN:
+(Using timestamps helps with SEO and user experience)
+
+The Problem with Modern Web Apps
+The ""Old Way"": Manual DOM Manipulation (Imperative)
+The Core Flaw: Why Imperative UI is Prone to Bugs
+React's Big Idea: The Declarative Mindset Shift
+The Golden Rule: UI = f(state) Explained
+The Bedrock: React.createElement (NO JSX!)
+First Principles: Why React and ReactDOM are Separate Libraries
+What's Coming Next in Episode 2 (Components & JSX)
+
+---
+
+🧠 OUR METHODOLOGY (FIRST PRINCIPLES):
+
+Instead of memorizing a list of React features, we will build our knowledge from the ground up. Each new concept will be connected to a core truth about managing UI complexity. This method ensures you don't just know how to write React code—you'll know how to THINK in React.
+
+✅ WHO IS THIS FOR?
+- Developers who have mastered HTML, CSS, and vanilla JavaScript.
+- Learners who want to understand the ""why"" behind the code.
+- Anyone who has tried other React tutorials and felt like they were just copying and pasting.
+
+0:00 Introduction to React
+1:50 What is React
+3:17 Problem 1: Creating Elements with Raw DOM  
+6:36 Problem 2: Repetitive Code Issues  
+8:33 Solution: Designing a Reusable createElement Function  
+11:44 Implementing Custom createElement  
+16:33 Handling Nested Styles (Object.assign)  
+22:15 What React Really Is  
+25:59 What ReactDOM Does  
+40:20 React vs ReactDOM
+45:39 Why They’re Separate (Native, PDF, etc.)  
+53:12 Building a Custom ReactDOM Renderer  
+1:03:59 React 18 Rendering (createRoot)  
+1:06:10 Conclusion – Why JSX Matters
+
+
+#ReactJS #LearnReact #ReactTutorial #WebDevelopment #JavaScript #FirstPrinciples #ReactForBeginners
+
+
+
+
+
+Visit Strike: https://strikes.in/
+Class start from 1 december
+Visit Coder Army Website: https://coderarmy.in/#home 
+
+Enroll in Our Premium Courses:
+DSA: https://strikes.in/course/combo
+Web Dev: https://coderarmy.in/#home
+AI: https://strikes.in/course/689ee05f1d8fc292bd27df7c
+HLD Course: https://rohittnegi.akamai.net.in/new-courses/8-high-level-design-course
+
+
+Course start date: 1 september
+Timing: 6pm (Mon-fri)
+Hackathon will be organised after course completion
+Join Premium Whatsapp Group: https://whatsapp.com/channel/0029Va6H0tbHVvTbcuT99Y1f
+Class Notes : https://www.notion.so/Lecture-01-Introduction-To-React-2b03a78e0e2280c6b345f2ee06dc25de?source=copy_link
+Code Link: https://github.com/coderarmy-notes/mern-stack-course
+Twitter: https://x.com/rohit_negi9?s=21
+Channel: ‪@CoderArmy9‬ 
+
+Buy Our Premium Course of Web dev+Blockchain+HLD+DSA: https://rohittnegi.akamai.net.in/new-courses/4-web-development-block-chain (5500 only)
+
+Time Stamp:
+
+
+
+
+#javascript #webdevelopment #mernstack",react js|react tutorial|learn react|react js tutorial for beginners|react for beginners|what is react js|react course|first principles|react first principles|javascript|web development|declarative vs imperative|react hooks|react without jsx|front end development|react fundamentals|react concepts|react 2024|programming|coding,2025-11-19T12:30:45Z,148124,2859.0,351.0,https://i.ytimg.com/vi/TkHH-IHsEKQ/maxresdefault.jpg,27,31.83,90.0,90.0,100.0,80,85,75,80,100.0,100.0,100.0,100.0,92.13,Project,60+ min,0.7174887892376666,0.4,0.6699,0.2674418604651128,1.0,1.0,0.0,0.0,0.0,0.0,0.38720930232557893,True
+8,8,yt_html_433,Full Stack Development,React,Basics|Components|JSX|Props|State|Hooks|Events & Forms|Conditional Rendering|Lists & Keys|Context API|Routing|API Integration|State Management|Performance|Authentication|Projects,Beginner,Learn React JS - Full Beginner’s Tutorial & Practice Projects,freeCodeCamp.org,https://www.youtube.com/watch?v=x4rFhThSX04,941,English,84.66,approved,"Learn modern React basics in the most interactive, hands-on way possible in the full course for beginners.
+
+Throughout this tutorial, you'll tackle over 170 interactive coding challenges and build six exciting projects. If you're tired of React courses that leave you staring blankly at an empty editor screen, you're in the right place! Here, you'll actually build React projects by the end, giving you the confidence and skills to tackle real-world apps.
+
+Scrimba on YouTube: https://www.youtube.com/c/Scrimba
+
+Code: https://github.com/scrimba/learn-react
+
+✏️ Bob Ziroll teaches this course.
+
+⭐️ Course Contents ⭐️
+
+- 0:00:00 Section 1 – React Basics
+⌨️ Course Introduction
+⌨️ What we'll learn
+⌨️ First React Code 
+⌨️ First React Challenge
+⌨️ Local Setup w/ Vite
+⌨️ Libraries/Frameworks
+⌨️ React.createElement()
+⌨️ JSX
+⌨️ Why React? It's Composable!
+⌨️ Why React? It's Declarative!
+⌨️ Random housekeeping
+⌨️ ReactFacts Project - Markup
+⌨️ Pop Quiz
+⌨️ Custom Components
+⌨️ Custom Components Challenge Part 2
+⌨️ Custom Components Quiz
+⌨️ Fragments
+⌨️ Custom Components - Parent/Child Components
+⌨️ Styling with Classes
+⌨️ Organizing Components
+⌨️ Make Mental Outline of Project
+⌨️ Initial Project Setup
+⌨️ ReactFacts - Navbar & Styling
+⌨️ ReactFacts - Main Content Section
+⌨️ ReactFacts - Coloring the Bullets
+⌨️ ReactFacts - Add Background Image
+⌨️ Section 1 Recap
+
+- 2:17:59 Section 2 – Travel Journal Project
+⌨️ Section 2 Intro
+⌨️ Travel Journal - Header
+⌨️ Travel Journal - Entry Component
+⌨️ Problem - Not reusable
+⌨️ Props
+⌨️ Prop quiz! (Get it?? )
+⌨️ Destructuring props
+⌨️ Props practice
+⌨️ Non-string props
+⌨️ Importing static assets
+⌨️ Pass props to Entry component
+⌨️ Review - array .map()
+⌨️ React can render arrays
+⌨️ Mapping components
+⌨️ Map quiz!
+⌨️ Travel Journal: Map Entry components
+⌨️ Travel Journal: key prop
+⌨️ Travel Journal: Pass object as props
+⌨️ Travel Journal: Spread object as props
+⌨️ Section 2 Recap
+
+- 4:33:02 Section 3 – Chef Claude Project
+⌨️ Section 3 Intro
+⌨️ Chef Claude: Header
+⌨️ Chef Claude: form
+⌨️ Chef Claude: Project overview
+⌨️ Event Listeners
+⌨️ Chef Claude: Map ingredients list
+⌨️ Props vs. State: Props
+⌨️ Props vs. State: State
+⌨️ useState
+⌨️ useState array destructuring
+⌨️ Changing state
+⌨️ State practice
+⌨️ Updating state with a callback function
+⌨️ Changing state quiz
+⌨️ Ternary practice
+⌨️ Toggling state
+⌨️ Complex state: Arrays
+⌨️ Chef Claude: Refactor array state
+⌨️ Complex state: Objects
+⌨️ Complex state: updating state objects
+⌨️ React forms intro
+⌨️ Form basics
+⌨️ Form submission
+⌨️ Form action
+⌨️ Chef Claude: Refactor form submission
+⌨️ Forms: textarea & defaultValue
+⌨️ Forms: radio
+⌨️ Forms: checkbox
+⌨️ Forms: select and option
+⌨️ Forms: Object.fromEntries
+⌨️ Chef Claude: conditional rendering intro
+⌨️ Conditional rendering
+⌨️ Chef Claude
+⌨️ Chef Claude: Get recipe placeholder challenge
+⌨️ Passing state as props
+⌨️ Setting state from child components
+⌨️ Passing data around React
+⌨️ Sound pads challenge
+⌨️ Chef Claude challenge: refactor to separate components
+⌨️ API Sign Ups
+⌨️ AI code walkthrough
+⌨️ Challenge quiz: prep to get recipe from the AI chef 
+⌨️ Challenge: Get recipe from the AI chef 
+⌨️ Format recipe response
+⌨️ Section 3 Outro
+
+- 9:43:55 Section 4 – Meme Generator Project
+⌨️ Section 4 Intro
+⌨️ Meme Generator Starting Point
+⌨️ Meme Generator State
+⌨️ Controlled Components
+⌨️ Planning data fetch
+⌨️ Functional programming in React
+⌨️ Fetching data in React
+⌨️ useEffect()
+⌨️ Meme Generator - Fetch Memes
+⌨️ State and Effect practices
+⌨️ useEffect cleanup function
+⌨️ Meme Generator - Get random meme
+⌨️ Sneak peak: refs
+⌨️ useEffect practice: scrollIntoView()
+⌨️ scrollIntoView() iFrame bug fix 
+⌨️ Section 4 Outro
+
+- 11:41:14 Section 5 – Tenzies Project
+⌨️ Tenzies Intro
+⌨️ Setup
+⌨️ Die component
+⌨️ Generate 10 random numbers
+⌨️ Map array to Die components
+⌨️ Roll dice button
+⌨️ Change dice to objects
+⌨️ Styling held dice
+⌨️ Hold dice
+⌨️ End game
+⌨️ Lazy State Initialization
+⌨️ New game
+⌨️ Accessibility Improvements
+⌨️ Tenzies Outro
+
+- 13:11:13 Section 6 – Assembly Endgame Project
+⌨️ Assembly Endgame Intro
+⌨️ Project Planning
+⌨️ Header Section
+⌨️ Status Section
+⌨️ Languages List
+⌨️ Word Display
+⌨️ Keyboard
+⌨️ Save the guessed letters
+⌨️ Keyboard letter styles for guesses
+⌨️ Only display correctly guessed letters in word
+⌨️ Wrong guess count
+⌨️ Lost languages
+⌨️ isGameOver
+⌨️ Display won/lost status
+⌨️ Quick CSS alignment fix 
+⌨️ Conditional rendering with a helper function
+⌨️ Backlog inventory
+⌨️ Farewell messages
+⌨️ Disable keyboard when the game is over
+⌨️ Make the game more a11y-friendly
+⌨️ Choose random word
+⌨️ New game button resets the game
+⌨️ Display missed letters when lost
+⌨️ 🎉🎉
+⌨️ Assembly Endgame Outro
+⌨️ Course Outro
+
+- 15:18:12 Bonus Section – React and VS Code
+⌨️ Helpful React VS Code Extensions
+⌨️ Moving to VS Code
+⌨️ ES7 + React Snippets Extension
+⌨️ Import Extension
+⌨️ React Developer Tools Chrome Extension
+⌨️ React Component Tree
+⌨️ ReacTree",,2024-11-20T18:25:12Z,1106469,21565.0,1010.0,https://i.ytimg.com/vi/x4rFhThSX04/maxresdefault.jpg,27,43.08,80.0,60.0,100.0,95,90,88,90,100.0,100.0,100.0,100.0,91.85,Project,60+ min,0.6547085201793703,0.4,0.6165,0.10465116279069345,1.0,1.0,0.0,0.0,0.0,0.0,0.2732558139534854,True
+9,9,yt_html_501,Full Stack Development,React,Basics|Components|JSX|Props|State|Hooks|Events & Forms|Conditional Rendering|Lists & Keys|Routing|API Integration|Context API|State Management|Projects,Beginner,React JS Full Course | Build an App and Master React in 1 Hour,JavaScript Mastery,https://www.youtube.com/watch?v=b9eMGE7QtTk,72,English,78.78,review,"After building this simple, half-hour movie application, imagine what a long and comprehensive 20-hour Next.js course would look like! Check it out now - jsmastery.pro/next15
+
+💻JS Mastery Pro - https://jsmastery.pro
+
+📚 Materials/References:
+Ultimate React Roadmap - https://resource.jsmastery.pro/reactjs-guide
+JS Mastery PRO - https://resource.jsmastery.pro/pro
+Movie App Code - https://gist.github.com/adrianhajdin/997a8cdf94234e889fa47be89a4759f1
+2022 Web Dev Roadmap - https://youtu.be/xORdz1Hi9Gc
+JavaScript Course: https://www.completepathtojavascriptmastery.com/
+Use the special promo code ""YOUTUBE"" on checkout to save $60!
+
+Learning JavaScript libraries and frameworks can be overwhelming. There are many libraries to choose from, and no proper step-by-step guides that’ll teach you how to use these libraries to their fullest potential. That’s why, in this video, you’ll learn the most popular JavaScript library, used by hundreds of thousands of developers worldwide - React.js.
+
+If you want to learn everything from the essential JSX syntax all the way to more advanced React topics, like state, hooks, data fetching, and more, you’ve come to the right place. Most importantly, I’ll teach you how to build a React.js application so that you can actively internalize and independently apply everything you’ve learned in this beginner-friendly React Crash Course video. 
+
+❤️ Support JavaScript Mastery & Suggest Future Videos:
+Patreon: https://www.patreon.com/javascriptmastery
+
+🌎 Find Me Here:
+Discord: https://discord.gg/n6EdbFJ
+Instagram: https://instagram.com/javascriptmastery
+Twitter: https://twitter.com/jsmasterypro
+
+💼 Business Inquiries:
+E-mail: contact@jsmastery.pro
+
+Time Stamps 👇
+00:00 Overview
+00:13:10 React in Practice
+00:41:08 Developing a Project",javascript|javascript mastery|js mastery|master javascript|react js|react js tutorial|react js for beginners|react hs website|reactjs 2022|react js roadmap 2022|react tutorial|learn react|reactjs tutorial for beginners|react tutorial for beginners|react crash course|react js crash course|react tutorial project|react js project|learn react with one project|learn react 2022|learn react js for beginners|learn react js for beginners 2022,2022-03-04T11:06:59Z,2114205,43591.0,1506.0,https://i.ytimg.com/vi/b9eMGE7QtTk/maxresdefault.jpg,27,47.85,60.0,90.0,100.0,90,80,75,80,100.0,100.0,100.0,100.0,91.71,Project,60+ min,0.6233183856502221,0.4,0.5898,0.02325581395348376,1.0,1.0,0.0,0.0,0.0,0.0,0.21627906976743866,True
+10,10,yt_html_435,Full Stack Development,React,Basics|Components|JSX|Props|State|Hooks|Events & Forms|Conditional Rendering|Lists & Keys,Beginner,React 19 Crash Course for Beginners 2026 (Learn in 90 Minutes),Code with Ahsan,https://www.youtube.com/watch?v=tqjJrXd27m4,146,English,80.84,approved,"Learn React JS in just 90 minutes! This 2026 beginner's guide covers React 19, Hooks, AI integration, and full-stack development. We don't just learn syntax; we build a fast, AI-powered application from scratch.
+
+If you are looking for a React Crash Course that moves beyond ""Hello World"" and teaches you architectural best practices, this is it.
+
+🔥 Coming from Angular?
+Watch my ""Angular in 90 Minutes"" video here: https://youtu.be/oUmVFHlwZsI
+
+🔗 Resources:
+GitHub Repository (Star it! ⭐️): https://github.com/AhsanAyaz/react-in-90ish
+Live Demo App: https://phpstack-1537842-6027953.cloudwaysapps.com/
+Slides: https://ahsanayaz.github.io/react-in-90ish/slides.html?md=react-19-slides.md&title=React%20in%2090%E2%80%91ish%20Minutes#/
+
+💰 Sponsor & Deals:
+Get 50% OFF Cloudways Hosting (Use code BFCM5050): 
+https://unified.cloudways.com/signup?id=1879418&coupon=BFCM5050
+
+📚 In this React 19 Course, you will learn:
+- React 19 Architecture & Virtual DOM explained
+- Modern Hooks: useState, useEffect, useMemo, and Custom Hooks
+- Handling Forms, State Management, and Context API
+- Integrating AI (Gemini/OpenAI) into React apps
+- Performance optimization and Lazy Loading
+
+Timestamps:
+00:00:00 - Introduction & Roadmap
+00:01:31 - Environment Setup (Vite & React)
+00:02:30 - Agenda & Instructor Intro
+00:09:49 - What is React? (Architecture Explained)
+00:13:50 - Understanding JSX
+00:24:42 - Virtual DOM vs Real DOM
+00:28:35 - Components & Props Deep Dive
+00:43:15 - Handling Events in React
+00:54:23 - Conditional Rendering Patterns
+01:05:27 - Rendering Lists & Loops
+01:15:38 - Forms & Input Handling
+01:23:05 - State Management: Context API vs Prop Drilling
+01:39:00 - React Router & Navigation
+01:47:46 - React 19 Features Overview
+01:49:00 - PROJECT: Building a Full Stack AI App
+01:54:15 - API Integration (Gemini AI)
+01:58:24 - State Handlers & Logic
+02:04:20 - Custom Hooks & Data Fetching
+02:10:05 - Theming with Context API
+02:13:25 - Performance: useMemo & Optimization
+02:18:10 - Lazy Loading & Suspense
+02:20:52 - Error Boundaries & Best Practices
+02:23:20 - What to learn next?
+
+#reactjs #webdevelopment #react19 #javascript #frontend #codingtutorial",reactjs|reactjs for beginners|reactjs crash course|reactjs tutorial|react tutorial|react 2025|reactjs 2025|reactjs 2026|react 2026,2025-12-01T08:43:57Z,88169,1721.0,124.0,https://i.ytimg.com/vi/tqjJrXd27m4/maxresdefault.jpg,28,25.85,90.0,75.0,100.0,90,80,85,90,100.0,100.0,100.0,100.0,91.67,Project,60+ min,0.614349775784753,0.4,0.5822,0.0,1.0,1.0,0.0,0.0,0.0,0.0,0.2,True

@@ -49,11 +49,12 @@ function normalizeDailyTask(rawTask, context = {}) {
     return null;
   }
 
-  const taskId = rawTask.taskId || rawTask.id || context.taskId || `task_${context.monthNumber || 1}_${context.weekNumber || 1}_${context.dayNumber || 1}_1`;
-  
+  const taskSeq = parseInt(rawTask.taskSeq !== undefined ? rawTask.taskSeq : (rawTask.task_seq !== undefined ? rawTask.task_seq : context.taskSeq), 10) || 1;
   const dayNumber = parseInt(rawTask.dayNumber !== undefined ? rawTask.dayNumber : (rawTask.day_number !== undefined ? rawTask.day_number : context.dayNumber), 10) || 1;
   const monthNumber = parseInt(rawTask.monthNumber !== undefined ? rawTask.monthNumber : (rawTask.month_number !== undefined ? rawTask.month_number : context.monthNumber), 10) || 1;
   const weekNumber = parseInt(rawTask.weekNumber !== undefined ? rawTask.weekNumber : (rawTask.week_number !== undefined ? rawTask.week_number : context.weekNumber), 10) || 1;
+
+  const taskId = rawTask.taskId || rawTask.id || context.taskId || `task_${monthNumber}_${weekNumber}_${dayNumber}_${taskSeq}`;
   
   const domain = normalizeDomainKey(rawTask.domain || rawTask.domainId || rawTask.chosen_domain || context.domain || 'fullstack');
 
@@ -127,7 +128,9 @@ function normalizeDailyTask(rawTask, context = {}) {
     durationMinutes,
     estimated_minutes: durationMinutes,
     completed: rawTask.completed === true || String(rawTask.status || '').toUpperCase() === 'COMPLETED',
-    status: String(rawTask.status || (rawTask.completed === true ? 'COMPLETED' : 'pending'))
+    status: String(rawTask.status || (rawTask.completed === true ? 'COMPLETED' : 'pending')),
+    completed_at: rawTask.completed_at || rawTask.completedAt || null,
+    completedAt: rawTask.completed_at || rawTask.completedAt || null
   };
 
   // Requirement 3: FAIL LOUDLY IN DEVELOPMENT
@@ -188,6 +191,80 @@ function normalizeRoadmap(roadmap) {
   }
 
   return roadmap;
+}
+
+/**
+ * Canonical Daily Task Budget & Resource Validation Functions
+ */
+
+function validateDailyTimeBudget(day, dailyBudgetMinutes = 120) {
+  if (!day || !Array.isArray(day.tasks)) return { valid: false, error: 'Invalid day object or missing tasks' };
+  const totalTaskMinutes = day.tasks.reduce((sum, t) => sum + (Number(t.estimated_minutes || t.durationMinutes || 0)), 0);
+  const maxAllowed = Number(dailyBudgetMinutes) + 5; // max 5 min tolerance
+  return {
+    valid: totalTaskMinutes <= maxAllowed,
+    totalTaskMinutes,
+    dailyBudgetMinutes: Number(dailyBudgetMinutes),
+    difference: totalTaskMinutes - Number(dailyBudgetMinutes)
+  };
+}
+
+function validateResourceTaskMatch(task, resource) {
+  if (!task || !resource) return { valid: false, reason: 'Missing task or resource' };
+  const taskTopic = String(task.taskTopic || task.topic || '').toLowerCase();
+  const taskSubtopic = String(task.taskSubtopic || task.subtopic || '').toLowerCase();
+  const taskTitle = String(task.taskTitle || task.title || '').toLowerCase();
+
+  const resTopic = String(resource.topic || '').toLowerCase();
+  const resSubtopic = String(resource.subtopic || '').toLowerCase();
+  const resTitle = String(resource.title || '').toLowerCase();
+
+  const hasTopicMatch = Boolean(resTopic && (resTopic.includes(taskTopic) || taskTopic.includes(resTopic)));
+  const hasSubtopicMatch = Boolean(resSubtopic && (resSubtopic.includes(taskSubtopic) || taskSubtopic.includes(resSubtopic)));
+  const hasTitleMatch = Boolean(resTitle && ((taskSubtopic && resTitle.includes(taskSubtopic)) || (taskTopic && resTitle.includes(taskTopic))));
+
+  const valid = Boolean(hasTopicMatch || hasSubtopicMatch || hasTitleMatch);
+  return { valid, hasTopicMatch, hasSubtopicMatch, hasTitleMatch };
+}
+
+function validateResourceDuration(task, resource) {
+  if (!task || !resource) return { valid: false, reason: 'Missing task or resource' };
+  const taskBudget = Number(task.durationMinutes || task.estimated_minutes || 45);
+  const resDuration = Number(resource.duration_minutes || resource.estimated_minutes || 0);
+  const valid = resDuration > 0 && resDuration <= taskBudget;
+  return {
+    valid,
+    taskBudget,
+    resDuration,
+    fits: resDuration <= taskBudget
+  };
+}
+
+function validateResourceRelevance(task, resource) {
+  const match = validateResourceTaskMatch(task, resource);
+  const duration = validateResourceDuration(task, resource);
+  const hasUrl = Boolean(resource.url && resource.url !== '#' && String(resource.url).startsWith('http'));
+  const valid = match.valid && duration.valid && hasUrl;
+  return {
+    valid,
+    match,
+    duration,
+    hasUrl
+  };
+}
+
+function validateDailyResourceBudget(day) {
+  if (!day || !Array.isArray(day.tasks)) return { valid: false, error: 'Invalid day' };
+  let allValid = true;
+  const taskResults = day.tasks.map(t => {
+    const taskBudget = Number(t.durationMinutes || t.estimated_minutes || 45);
+    const resources = Array.isArray(t.recommended_resources) ? t.recommended_resources : [];
+    const totalResMins = resources.reduce((sum, r) => sum + (Number(r.duration_minutes || r.estimated_minutes || 0)), 0);
+    const fits = totalResMins <= taskBudget;
+    if (!fits && resources.length > 0) allValid = false;
+    return { taskId: t.id || t.taskId, taskBudget, totalResMins, fits, resourceCount: resources.length };
+  });
+  return { valid: allValid, tasks: taskResults };
 }
 
 /**
@@ -343,6 +420,41 @@ const userSchema = new mongoose.Schema(
       default: null
     },
 
+    streak: {
+      type: Number,
+      default: 0
+    },
+
+    xp: {
+      type: Number,
+      default: 0
+    },
+
+    level: {
+      type: Number,
+      default: 1
+    },
+
+    badges: {
+      type: [String],
+      default: ['🐣 Fresh Start']
+    },
+
+    activity_dates: {
+      type: [String],
+      default: []
+    },
+
+    last_active_date: {
+      type: String,
+      default: null
+    },
+
+    last_completion_date: {
+      type: String,
+      default: null
+    },
+
     createdAt: {
       type: Date,
       default: Date.now
@@ -492,17 +604,42 @@ const UserSkillProfile = mongoose.model('UserSkillProfile', userSkillProfileSche
 
 const taskSchema = new mongoose.Schema({
   id: String,
+  taskId: String,
   title: String,
+  taskTitle: String,
+  topic: String,
+  taskTopic: String,
+  subtopic: String,
+  taskSubtopic: String,
   type: {
     type: String,
     enum: ['LEARN', 'PRACTICE', 'IMPLEMENT', 'PROBLEM_SOLVING', 'REVISION', 'ASSESSMENT', 'PROJECT', 'MOCK_TEST'],
     default: 'LEARN'
   },
+  taskType: String,
   estimated_minutes: Number,
+  durationMinutes: Number,
   difficulty: String,
+  description: String,
   resources_ref: String,
   practice_details: String,
   revision_details: String,
+  completed: {
+    type: Boolean,
+    default: false
+  },
+  status: {
+    type: String,
+    default: 'pending'
+  },
+  completed_at: {
+    type: Date,
+    default: null
+  },
+  completedAt: {
+    type: Date,
+    default: null
+  },
   recommended_resources: {
     type: Array,
     default: []
@@ -594,7 +731,7 @@ const roadmapSchema = new mongoose.Schema(
     },
     curriculum_version: {
       type: String,
-      default: 'v2_placement'
+      default: 'v4_quiz_aligned_personalized'
     },
     topic_performances: [
       {
@@ -643,6 +780,128 @@ async function safeSaveRoadmap(roadmapDoc) {
       throw err;
     }
   }
+}
+
+/**
+ * Calculate user consecutive streak based ONLY on that user's activity dates
+ */
+function calculateUserStreak(activityDates = []) {
+  if (!Array.isArray(activityDates) || activityDates.length === 0) {
+    return 0;
+  }
+
+  const dateSet = new Set();
+  activityDates.forEach(d => {
+    if (!d) return;
+    if (d instanceof Date) {
+      dateSet.add(d.toISOString().split('T')[0]);
+    } else if (typeof d === 'string') {
+      const trimmed = d.split('T')[0].trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+        dateSet.add(trimmed);
+      }
+    }
+  });
+
+  if (dateSet.size === 0) return 0;
+
+  const today = new Date().toISOString().split('T')[0];
+  const yesterdayDate = new Date();
+  yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1);
+  const yesterday = yesterdayDate.toISOString().split('T')[0];
+
+  let checkDate = null;
+  if (dateSet.has(today)) {
+    checkDate = new Date(today + 'T00:00:00Z');
+  } else if (dateSet.has(yesterday)) {
+    checkDate = new Date(yesterday + 'T00:00:00Z');
+  } else {
+    return 0;
+  }
+
+  let streak = 0;
+  while (true) {
+    const dateStr = checkDate.toISOString().split('T')[0];
+    if (dateSet.has(dateStr)) {
+      streak++;
+      checkDate.setUTCDate(checkDate.getUTCDate() - 1);
+    } else {
+      break;
+    }
+  }
+
+  return streak;
+}
+
+/**
+ * Compute user progress metrics from their roadmap document and user document
+ */
+function calculateUserProgress(roadmapDoc, userDoc) {
+  let totalTasks = 0;
+  let completedTasks = 0;
+  const topicStats = {};
+  const completedTaskDates = [];
+
+  if (roadmapDoc && Array.isArray(roadmapDoc.monthly_roadmap)) {
+    roadmapDoc.monthly_roadmap.forEach(month => {
+      (month.weeks || []).forEach(week => {
+        (week.days || []).forEach(day => {
+          (day.tasks || []).forEach(task => {
+            totalTasks++;
+            const isCompleted = task.completed === true || String(task.status || '').toUpperCase() === 'COMPLETED';
+            if (isCompleted) {
+              completedTasks++;
+              if (task.completed_at || task.completedAt) {
+                const d = new Date(task.completed_at || task.completedAt);
+                if (!isNaN(d.getTime())) {
+                  completedTaskDates.push(d.toISOString().split('T')[0]);
+                }
+              }
+            }
+
+            const topicName = task.topic || task.taskTopic || day.topic || (week.topics && week.topics[0]) || 'General Technical';
+            if (!topicStats[topicName]) {
+              topicStats[topicName] = { total: 0, completed: 0 };
+            }
+            topicStats[topicName].total++;
+            if (isCompleted) {
+              topicStats[topicName].completed++;
+            }
+          });
+        });
+      });
+    });
+  }
+
+  // Combine activity dates
+  const allActivityDates = Array.from(new Set([
+    ...(userDoc?.activity_dates || []),
+    ...completedTaskDates
+  ]));
+
+  const streak = calculateUserStreak(allActivityDates);
+  const masteryPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  const taskXp = completedTasks * 50;
+  const xp = Math.max(userDoc?.xp || 0, taskXp);
+  const level = Math.floor(xp / 300) + 1;
+
+  const badges = ['🐣 Fresh Start'];
+  if (completedTasks >= 1) badges.push('🚀 First Step');
+  if (streak >= 3) badges.push('🔥 3-Day Streak');
+  if (masteryPct >= 50) badges.push('⚡ Halfway Master');
+  if (masteryPct >= 100) badges.push('🏆 Domain Conqueror');
+
+  return {
+    totalTasks,
+    completedTasks,
+    masteryPct,
+    streak,
+    xp,
+    level,
+    badges,
+    topicStats,
+    allActivityDates
+  };
 }
 
 // ============================================================
@@ -1449,7 +1708,7 @@ function generatePersonalizedRoadmapEngine({ user_id, domain, timeline_months, d
     quiz_score: overallScore,
     overall_level: userLevel,
     starting_point: startingPoint ? startingPoint.name : 'Foundations',
-    curriculum_version: 'v2_placement',
+    curriculum_version: 'v4_quiz_aligned_personalized',
     topic_performances: topicPerformances,
     monthly_roadmap: monthlyRoadmap,
     generated_at: new Date()
@@ -1763,19 +2022,19 @@ function extractGroqJSON(content) {
 function normalizeAssessmentQuestion(q, index) {
   const typeRaw = String(q?.type || 'MCQ').toUpperCase().replace(/[-\s]/g, '_');
   const type = ['MCQ','MSQ','NAT','SHORT_ANSWER'].includes(typeRaw) ? typeRaw : 'MCQ';
-  const options = Array.isArray(q?.options) ? q.options.map(String).slice(0, 4) : [];
+  let options = Array.isArray(q?.options) ? q.options.map(opt => String(opt ?? '').trim()).filter(Boolean).slice(0, 4) : [];
   const correct = type === 'MSQ'
     ? (Array.isArray(q?.correct) ? q.correct.map(Number).filter(Number.isInteger) : [])
-    : (q?.correct !== undefined && q?.correct !== null ? q.correct : 0);
+    : (q?.correct !== undefined && q?.correct !== null ? Number(q.correct) : 0);
   return {
     id: String(q?.id || `assessment_q${index + 1}`),
     type,
-    question: String(q?.question || 'Assessment question'),
-    options: type === 'MCQ' || type === 'MSQ' ? options : [],
+    question: String(q?.question || 'Assessment question').trim(),
+    options: (type === 'MCQ' || type === 'MSQ') ? options : [],
     correct,
-    model_answer: String(q?.model_answer || q?.modelAnswer || ''),
-    expected_keywords: Array.isArray(q?.expected_keywords) ? q.expected_keywords.map(String) : [],
-    explanation: String(q?.explanation || 'Review the concept and compare your answer with the expected reasoning.'),
+    model_answer: String(q?.model_answer || q?.modelAnswer || '').trim(),
+    expected_keywords: Array.isArray(q?.expected_keywords) ? q.expected_keywords.map(k => String(k).trim()).filter(Boolean) : [],
+    explanation: String(q?.explanation || 'Review the concept and compare your answer with the expected reasoning.').trim(),
     points: Number.isFinite(Number(q?.points)) ? Number(q.points) : (type === 'SHORT_ANSWER' ? 2 : 1)
   };
 }
@@ -2755,14 +3014,16 @@ Return ONLY valid JSON matching this exact JSON schema:
       );
 
       let isQuizCompleted = user.quiz_completed || false;
+      const existingRoadmap = await Roadmap.findOne({ user_id: user.user_id });
       if (!isQuizCompleted) {
         const existingEval = await QuizEvaluation.findOne({ user_id: user.user_id });
-        const existingRoadmap = await Roadmap.findOne({ user_id: user.user_id });
         if (existingEval || existingRoadmap) {
           isQuizCompleted = true;
           await User.findOneAndUpdate({ user_id: user.user_id }, { quiz_completed: true });
         }
       }
+
+      const progressData = calculateUserProgress(existingRoadmap, user);
 
       return sendJSON(res, 200, {
 
@@ -2808,7 +3069,34 @@ Return ONLY valid JSON matching this exact JSON schema:
             user.journey_started || false,
 
           journey_start_date:
-            user.journey_start_date || null
+            user.journey_start_date || null,
+
+          streak:
+            progressData.streak,
+
+          xp:
+            progressData.xp,
+
+          level:
+            progressData.level,
+
+          badges:
+            progressData.badges,
+
+          completed_tasks_count:
+            progressData.completedTasks,
+
+          total_tasks_count:
+            progressData.totalTasks,
+
+          mastery_pct:
+            progressData.masteryPct,
+
+          last_active_date:
+            user.last_active_date || null,
+
+          activity_dates:
+            user.activity_dates || []
 
         }
 
@@ -3668,20 +3956,39 @@ Return ONLY valid JSON matching this exact JSON schema:
       }
 
       const nextCompleted = completed !== false;
+      const completedTimestamp = new Date();
       let found = false;
       let matchedTask = null;
+      let alreadyCompleted = false;
+
+      // Step 1: Scoped search within specified monthNumber, weekNumber, and dayNumber
       for (const month of (roadmapDoc.monthly_roadmap || [])) {
+        const mNum = Number(month.month_number);
+        if (monthNumber !== undefined && mNum !== Number(monthNumber)) continue;
+
         for (const week of (month.weeks || [])) {
+          const wNum = Number(week.week_number);
+          if (weekNumber !== undefined && wNum !== Number(weekNumber)) continue;
+
           for (const day of (week.days || [])) {
-            for (const task of (day.tasks || [])) {
-              const exactId = (task.taskId || task.id) === taskId;
-              const contextMatch = Number(month.month_number) === Number(monthNumber) &&
-                Number(week.week_number) === Number(weekNumber) &&
-                Number(day.day_number) === Number(dayNumber) &&
-                (!title || String(task.title || task.taskTitle || '').trim() === String(title).trim());
-              if (exactId || contextMatch) {
+            const dNum = Number(day.day_number);
+            if (dayNumber !== undefined && dNum !== Number(dayNumber)) continue;
+
+            const dayTasks = Array.isArray(day.tasks) ? day.tasks : [];
+            for (let tIdx = 0; tIdx < dayTasks.length; tIdx++) {
+              const task = dayTasks[tIdx];
+              const exactId = (task.taskId && task.taskId === taskId) || (task.id && task.id === taskId);
+              const titleMatch = title && (String(task.title || task.taskTitle || '').trim().toLowerCase() === String(title).trim().toLowerCase());
+              const seqMatch = taskId && (taskId === `task_${mNum}_${wNum}_${dNum}_${tIdx + 1}` || taskId === `task_m${mNum}_w${wNum}_d${dNum}_${tIdx + 1}` || taskId === `task_day_${dNum}_${tIdx + 1}`);
+
+              if (exactId || titleMatch || seqMatch || (dayTasks.length === 1)) {
+                if (task.completed === true && nextCompleted) {
+                  alreadyCompleted = true;
+                }
                 task.completed = nextCompleted;
                 task.status = nextCompleted ? 'COMPLETED' : 'pending';
+                task.completed_at = nextCompleted ? (task.completed_at || completedTimestamp) : null;
+                task.completedAt = task.completed_at;
                 found = true;
                 matchedTask = task;
                 break;
@@ -3694,19 +4001,101 @@ Return ONLY valid JSON matching this exact JSON schema:
         if (found) break;
       }
 
+      // Step 2: Global fallback search across entire roadmap if scoped match did not find the task
+      if (!found) {
+        for (const month of (roadmapDoc.monthly_roadmap || [])) {
+          for (const week of (month.weeks || [])) {
+            for (const day of (week.days || [])) {
+              for (const task of (day.tasks || [])) {
+                const exactId = (task.taskId && task.taskId === taskId) || (task.id && task.id === taskId);
+                const titleMatch = title && (String(task.title || task.taskTitle || '').trim().toLowerCase() === String(title).trim().toLowerCase());
+                if (exactId || titleMatch) {
+                  if (task.completed === true && nextCompleted) {
+                    alreadyCompleted = true;
+                  }
+                  task.completed = nextCompleted;
+                  task.status = nextCompleted ? 'COMPLETED' : 'pending';
+                  task.completed_at = nextCompleted ? (task.completed_at || completedTimestamp) : null;
+                  task.completedAt = task.completed_at;
+                  found = true;
+                  matchedTask = task;
+                  break;
+                }
+              }
+              if (found) break;
+            }
+            if (found) break;
+          }
+          if (found) break;
+        }
+      }
+
       if (!found) {
         return sendJSON(res, 404, { error: `Task ${taskId} not found in the active roadmap.` });
       }
 
       roadmapDoc.markModified('monthly_roadmap');
       roadmapDoc.updated_at = new Date();
-      await roadmapDoc.save();
+      await safeSaveRoadmap(roadmapDoc);
+      try {
+        await Roadmap.updateOne(
+          { user_id },
+          { $set: { monthly_roadmap: roadmapDoc.monthly_roadmap, updated_at: new Date() } }
+        );
+      } catch (atomicErr) {
+        console.warn('Atomic update warning in /api/task/status:', atomicErr.message);
+      }
+
+      // Update User progress, activity dates, streak, XP & badges in MongoDB
+      const userDoc = await User.findOne({ user_id });
+      if (userDoc && nextCompleted) {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const actDates = Array.isArray(userDoc.activity_dates) ? [...userDoc.activity_dates] : [];
+        if (!actDates.includes(todayStr)) {
+          actDates.push(todayStr);
+        }
+        userDoc.activity_dates = actDates;
+        userDoc.last_active_date = todayStr;
+        userDoc.last_completion_date = todayStr;
+      }
+
+      const progressData = calculateUserProgress(roadmapDoc, userDoc);
+      if (userDoc) {
+        userDoc.streak = progressData.streak;
+        userDoc.xp = progressData.xp;
+        userDoc.level = progressData.level;
+        userDoc.badges = progressData.badges;
+        await userDoc.save();
+      }
+
+      // Explicit Step 34 Debug Logging
+      console.log('[AUTH USER] userId:', user_id);
+      console.log('[ROADMAP QUERY] userId:', user_id, 'roadmapId:', roadmapDoc._id);
+      console.log('[TASK UPDATE] userId:', user_id, 'taskId:', taskId, 'completed:', nextCompleted);
+      console.log('[STREAK CALCULATION] userId:', user_id, 'activityDates:', userDoc ? userDoc.activity_dates : [], 'streak:', progressData.streak);
+      console.log('[PROGRESS] userId:', user_id, 'completedTasks:', progressData.completedTasks, 'totalTasks:', progressData.totalTasks, 'percentage:', progressData.masteryPct);
+      console.log('[XP] userId:', user_id, 'xp:', progressData.xp);
 
       return sendJSON(res, 200, {
         success: true,
+        alreadyCompleted,
+        task: {
+          id: matchedTask?.taskId || matchedTask?.id || taskId,
+          completed: nextCompleted,
+          completedAt: matchedTask?.completed_at || completedTimestamp
+        },
         taskId: matchedTask?.taskId || matchedTask?.id || taskId,
         completed: nextCompleted,
-        message: nextCompleted ? 'Task marked completed.' : 'Task marked pending.'
+        completedAt: matchedTask?.completed_at || completedTimestamp,
+        streak: progressData.streak,
+        xp: progressData.xp,
+        level: progressData.level,
+        badges: progressData.badges,
+        completedTasksCount: progressData.completedTasks,
+        totalTasksCount: progressData.totalTasks,
+        masteryPct: progressData.masteryPct,
+        topicStats: progressData.topicStats,
+        message: alreadyCompleted ? 'Task is already completed.' : (nextCompleted ? 'Task completed successfully' : 'Task marked pending.')
       });
     } catch (err) {
       return sendJSON(res, 500, { error: 'Task status update error: ' + err.message });
@@ -3908,7 +4297,9 @@ Return ONLY valid JSON matching this exact JSON schema:
   if (
     req.method === 'GET' &&
     parsedUrl.pathname.startsWith('/api/user/') &&
-    !parsedUrl.pathname.startsWith('/api/user/route')
+    !parsedUrl.pathname.startsWith('/api/user/route') &&
+    !parsedUrl.pathname.startsWith('/api/user/reset/') &&
+    !parsedUrl.pathname.endsWith('/progress')
   ) {
     try {
       if (mongoose.connection.readyState !== 1) {
@@ -3925,15 +4316,18 @@ Return ONLY valid JSON matching this exact JSON schema:
         return sendJSON(res, 404, { error: `User not found for user_id: ${targetUserId}` });
       }
 
+      const roadmapDoc = await Roadmap.findOne({ user_id: userDoc.user_id });
+
       let isQuizCompleted = userDoc.quiz_completed || false;
       if (!isQuizCompleted) {
         const existingEval = await QuizEvaluation.findOne({ user_id: userDoc.user_id });
-        const existingRoadmap = await Roadmap.findOne({ user_id: userDoc.user_id });
-        if (existingEval || existingRoadmap) {
+        if (existingEval || roadmapDoc) {
           isQuizCompleted = true;
           await User.findOneAndUpdate({ user_id: userDoc.user_id }, { quiz_completed: true });
         }
       }
+
+      const progressData = calculateUserProgress(roadmapDoc, userDoc);
 
       return sendJSON(res, 200, {
         success: true,
@@ -3948,11 +4342,152 @@ Return ONLY valid JSON matching this exact JSON schema:
           quiz_completed: isQuizCompleted,
           last_route: userDoc.last_route || 'roadmap',
           roadmap_status: userDoc.roadmap_status || 'NOT_STARTED',
+          journey_started: userDoc.journey_started || false,
+          journey_start_date: userDoc.journey_start_date || null,
+          streak: progressData.streak,
+          xp: progressData.xp,
+          level: progressData.level,
+          badges: progressData.badges,
+          completed_tasks_count: progressData.completedTasks,
+          total_tasks_count: progressData.totalTasks,
+          mastery_pct: progressData.masteryPct,
+          last_active_date: userDoc.last_active_date || null,
+          activity_dates: userDoc.activity_dates || [],
           createdAt: userDoc.createdAt
         }
       });
     } catch (err) {
       return sendJSON(res, 500, { error: err.message });
+    }
+  }
+
+  // ==========================================================
+  // GET /api/progress/:user_id or GET /api/user/:user_id/progress
+  // Authoritative user-isolated learning progress metrics
+  // ==========================================================
+  if (
+    req.method === 'GET' &&
+    (parsedUrl.pathname.startsWith('/api/progress/') || parsedUrl.pathname.match(/^\/api\/user\/[^/]+\/progress$/))
+  ) {
+    try {
+      if (mongoose.connection.readyState !== 1) {
+        return sendJSON(res, 503, { error: 'MongoDB Atlas is not connected.' });
+      }
+
+      let targetUserId = '';
+      if (parsedUrl.pathname.startsWith('/api/progress/')) {
+        targetUserId = parsedUrl.pathname.replace('/api/progress/', '').trim();
+      } else {
+        const match = parsedUrl.pathname.match(/^\/api\/user\/([^/]+)\/progress$/);
+        targetUserId = match ? match[1].trim() : '';
+      }
+
+      if (!targetUserId) {
+        return sendJSON(res, 400, { error: 'User ID is required.' });
+      }
+
+      const userDoc = await User.findOne({ user_id: targetUserId });
+      if (!userDoc) {
+        return sendJSON(res, 404, { error: `User not found for user_id: ${targetUserId}` });
+      }
+
+      const roadmapDoc = await Roadmap.findOne({ user_id: targetUserId });
+      const progressData = calculateUserProgress(roadmapDoc, userDoc);
+
+      console.log('[AUTH USER] userId:', targetUserId);
+      console.log('[STREAK CALCULATION] userId:', targetUserId, 'activityDates:', userDoc.activity_dates || [], 'streak:', progressData.streak);
+      console.log('[PROGRESS] userId:', targetUserId, 'completedTasks:', progressData.completedTasks, 'totalTasks:', progressData.totalTasks, 'percentage:', progressData.masteryPct);
+      console.log('[XP] userId:', targetUserId, 'xp:', progressData.xp);
+
+      return sendJSON(res, 200, {
+        success: true,
+        user_id: targetUserId,
+        streak: progressData.streak,
+        xp: progressData.xp,
+        level: progressData.level,
+        badges: progressData.badges,
+        completedTasksCount: progressData.completedTasks,
+        totalTasksCount: progressData.totalTasks,
+        masteryPct: progressData.masteryPct,
+        topicStats: progressData.topicStats,
+        tier: userDoc.current_skill_level || 'BEGINNER',
+        domain: userDoc.chosen_domain || 'fullstack'
+      });
+    } catch (err) {
+      return sendJSON(res, 500, { error: 'Progress fetch error: ' + err.message });
+    }
+  }
+
+  // ==========================================================
+  // POST /api/user/reset/:user_id
+  // Resets learning data strictly for the specified user
+  // ==========================================================
+  if (
+    req.method === 'POST' &&
+    parsedUrl.pathname.startsWith('/api/user/reset/')
+  ) {
+    try {
+      if (mongoose.connection.readyState !== 1) {
+        return sendJSON(res, 503, { error: 'MongoDB Atlas is not connected.' });
+      }
+
+      const targetUserId = parsedUrl.pathname.replace('/api/user/reset/', '').trim();
+      if (!targetUserId) {
+        return sendJSON(res, 400, { error: 'User ID is required.' });
+      }
+
+      const userDoc = await User.findOne({ user_id: targetUserId });
+      if (!userDoc) {
+        return sendJSON(res, 404, { error: `User ${targetUserId} not found.` });
+      }
+
+      userDoc.streak = 0;
+      userDoc.xp = 0;
+      userDoc.level = 1;
+      userDoc.badges = ['🐣 Fresh Start'];
+      userDoc.activity_dates = [];
+      userDoc.last_active_date = null;
+      userDoc.last_completion_date = null;
+      userDoc.quiz_completed = false;
+      userDoc.current_skill_level = 'UNASSESSED';
+      userDoc.last_route = 'roadmap';
+      userDoc.roadmap_status = 'NOT_STARTED';
+      userDoc.journey_started = false;
+      userDoc.journey_start_date = null;
+      await userDoc.save();
+
+      const roadmapDoc = await Roadmap.findOne({ user_id: targetUserId });
+      if (roadmapDoc && Array.isArray(roadmapDoc.monthly_roadmap)) {
+        roadmapDoc.monthly_roadmap.forEach(month => {
+          (month.weeks || []).forEach(week => {
+            (week.days || []).forEach(day => {
+              (day.tasks || []).forEach(task => {
+                task.completed = false;
+                task.status = 'pending';
+                task.completed_at = null;
+                task.completedAt = null;
+                task.score = null;
+              });
+            });
+          });
+        });
+        roadmapDoc.journey_started = false;
+        roadmapDoc.journey_start_date = null;
+        roadmapDoc.markModified('monthly_roadmap');
+        await safeSaveRoadmap(roadmapDoc);
+      }
+
+      await QuizEvaluation.deleteMany({ user_id: targetUserId });
+      await UserSkillProfile.deleteMany({ user_id: targetUserId });
+
+      console.log(`[USER RESET] Successfully reset learning profile for user: ${targetUserId}`);
+
+      return sendJSON(res, 200, {
+        success: true,
+        message: `Learning profile successfully reset for user ${targetUserId}.`
+      });
+    } catch (err) {
+      return sendJSON(res, 500, { error: 'User reset error: ' + err.message });
     }
   }
 
@@ -4061,6 +4596,99 @@ Return ONLY valid JSON matching this exact JSON schema:
   }
 
   // ==========================================================
+  // RAG RESOURCE RETRIEVAL HELPER
+  // ==========================================================
+  async function recommendResourcesForTask(params = {}) {
+    const ragBaseUrl = (process.env.RAG_API_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '');
+    const targetUrl = `${ragBaseUrl}/api/rag/query`;
+
+    const payload = {
+      user_id: params.user_id || params.userId || 'anonymous',
+      query: params.query || params.taskTitle || params.title || '',
+      taskId: params.taskId || params.id,
+      taskTitle: params.taskTitle || params.title,
+      taskType: params.taskType || params.type || 'LEARN',
+      taskDifficulty: params.taskDifficulty || params.difficulty,
+      taskDuration: params.taskDuration || params.durationMinutes || params.estimated_minutes || 45,
+      dailyTopic: params.dailyTopic || params.topic,
+      subtopic: params.subtopic || params.taskSubtopic,
+      topic: params.topic || params.dailyTopic,
+      domain: params.domain || params.chosen_domain,
+      userLevel: params.userLevel || params.skillLevel || 'BEGINNER',
+      topK: params.topK || 3,
+      dailyHours: params.dailyHours || params.daily_hours,
+      dailyBudgetMinutes: params.dailyBudgetMinutes || params.daily_budget_minutes,
+      taskDescription: params.taskDescription || params.description,
+      weekNumber: params.weekNumber || params.week_number,
+      dayNumber: params.dayNumber || params.day_number,
+      quizTopicPerformance: params.quizTopicPerformance || params.quiz_topic_performance,
+      learningObjective: params.learningObjective,
+      preferredLanguage: params.preferredLanguage || params.language,
+      history_resource_ids: params.history_resource_ids || [],
+      week_resource_ids: params.week_resource_ids || []
+    };
+
+    try {
+      if (typeof globalThis.fetch === 'function') {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+        const ragRes = await globalThis.fetch(targetUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify(payload)
+        });
+
+        clearTimeout(timeoutId);
+
+        if (ragRes.ok) {
+          const ragData = await ragRes.json();
+          if (ragData && ragData.success && Array.isArray(ragData.resources)) {
+            return ragData.resources;
+          }
+        } else {
+          console.warn(`[RAG PROXY WARNING] RAG API returned HTTP ${ragRes.status}`);
+        }
+      } else {
+        const ragData = await new Promise((resolve) => {
+          const parsedTarget = url.parse(targetUrl);
+          const postData = JSON.stringify(payload);
+          const reqOpts = {
+            hostname: parsedTarget.hostname || '127.0.0.1',
+            port: parsedTarget.port || 8000,
+            path: parsedTarget.path || '/api/rag/query',
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Content-Length': Buffer.byteLength(postData)
+            }
+          };
+          const clientReq = http.request(reqOpts, (clientRes) => {
+            let bodyStr = '';
+            clientRes.on('data', chunk => { bodyStr += chunk; });
+            clientRes.on('end', () => {
+              try { resolve(JSON.parse(bodyStr)); } catch (e) { resolve(null); }
+            });
+          });
+          clientReq.on('error', () => resolve(null));
+          clientReq.setTimeout(6000, () => { clientReq.destroy(); resolve(null); });
+          clientReq.write(postData);
+          clientReq.end();
+        });
+
+        if (ragData && ragData.success && Array.isArray(ragData.resources)) {
+          return ragData.resources;
+        }
+      }
+    } catch (err) {
+      console.warn('⚠️ YouTube RAG retrieval error or timeout:', err.message);
+    }
+
+    return [];
+  }
+
+  // ==========================================================
   // YOUTUBE RAG DAY-RESOURCES PROXY ENDPOINT
   // POST /api/rag/day-resources
   // ==========================================================
@@ -4070,83 +4698,29 @@ Return ONLY valid JSON matching this exact JSON schema:
   ) {
     try {
       const payload = await readRequestBody(req);
-      const { user_id, query } = payload || {};
+      const user_id = payload?.user_id || 'anonymous';
+      const query = payload?.query || payload?.taskTitle || payload?.title || '';
 
-      if (!user_id || !query || typeof user_id !== 'string' || typeof query !== 'string' || !user_id.trim() || !query.trim()) {
-        return sendJSON(res, 400, {
-          success: false,
-          error: 'Missing required parameters: user_id and query.'
-        });
-      }
+      const resources = await recommendResourcesForTask(payload);
 
-      const cleanUserId = user_id.trim();
-      const cleanQuery = query.trim();
-
-      const ragBaseUrl = (process.env.RAG_API_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '');
-      const targetUrl = `${ragBaseUrl}/api/rag/query`;
-
-      let ragData = null;
-      try {
-        if (typeof globalThis.fetch === 'function') {
-          const ragRes = await globalThis.fetch(targetUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: cleanUserId, query: cleanQuery })
-          });
-          if (ragRes.ok) {
-            ragData = await ragRes.json();
-          } else {
-            console.warn(`[RAG PROXY WARNING] RAG API returned HTTP ${ragRes.status}`);
-          }
-        } else {
-          ragData = await new Promise((resolve) => {
-            const parsedTarget = url.parse(targetUrl);
-            const postData = JSON.stringify({ user_id: cleanUserId, query: cleanQuery });
-            const reqOpts = {
-              hostname: parsedTarget.hostname || '127.0.0.1',
-              port: parsedTarget.port || 8000,
-              path: parsedTarget.path || '/api/rag/query',
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(postData)
-              }
-            };
-            const clientReq = http.request(reqOpts, (clientRes) => {
-              let bodyStr = '';
-              clientRes.on('data', chunk => { bodyStr += chunk; });
-              clientRes.on('end', () => {
-                try { resolve(JSON.parse(bodyStr)); } catch (e) { resolve(null); }
-              });
-            });
-            clientReq.on('error', () => resolve(null));
-            clientReq.setTimeout(10000, () => { clientReq.destroy(); resolve(null); });
-            clientReq.write(postData);
-            clientReq.end();
-          });
-        }
-      } catch (ragErr) {
-        console.warn('⚠️ YouTube RAG service unavailable:', ragErr.message);
-      }
-
-      if (ragData && ragData.success && Array.isArray(ragData.resources)) {
+      if (Array.isArray(resources) && resources.length > 0) {
         return sendJSON(res, 200, {
           success: true,
-          query: cleanQuery,
-          resources: ragData.resources
+          query: query,
+          resources: resources
         });
       }
 
       return sendJSON(res, 200, {
         success: false,
-        message: 'Recommended resources are temporarily unavailable.',
+        message: 'No sufficiently relevant resource was found for this task.',
         resources: []
       });
     } catch (err) {
       console.error('❌ RAG proxy endpoint error:', err);
       return sendJSON(res, 200, {
         success: false,
-        message: 'Recommended resources are temporarily unavailable.',
+        message: 'No sufficiently relevant resource was found for this task.',
         resources: []
       });
     }
@@ -4158,32 +4732,19 @@ Return ONLY valid JSON matching this exact JSON schema:
   // GET /api/resources/task/:task_id
   // ==========================================================
 
-
   if (
     req.method === 'POST' &&
     parsedUrl.pathname === '/api/resources/recommend'
   ) {
     try {
       const payload = await readRequestBody(req);
-      const { taskId, taskTitle, taskType, taskDifficulty, taskDuration, dailyTopic, subtopic, topic, domain, userLevel, user_id, topK } = payload;
+      const { taskId, taskTitle, domain, user_id } = payload || {};
 
-      if (!taskTitle || !domain) {
-        return sendJSON(res, 400, { error: 'Missing required parameters: taskTitle and domain.' });
+      if (!taskTitle && !taskId) {
+        return sendJSON(res, 400, { error: 'Missing required parameters: taskTitle or taskId.' });
       }
 
-      const resources = await recommendResourcesForTask({
-        taskId,
-        taskTitle,
-        taskType,
-        taskDifficulty,
-        taskDuration,
-        dailyTopic,
-        subtopic,
-        topic,
-        domain,
-        userLevel,
-        topK
-      });
+      const resources = await recommendResourcesForTask(payload);
 
       // Update daily task resources in stored Roadmap if user_id and taskId exist
       if (user_id && taskId && mongoose.connection.readyState === 1) {
@@ -4195,7 +4756,7 @@ Return ONLY valid JSON matching this exact JSON schema:
               (m.weeks || []).forEach(w => {
                 (w.days || []).forEach(d => {
                   (d.tasks || []).forEach(t => {
-                    if (t.id === taskId) {
+                    if (t.id === taskId || t.taskId === taskId) {
                       t.recommended_resources = resources;
                       updated = true;
                     }
@@ -4218,10 +4779,9 @@ Return ONLY valid JSON matching this exact JSON schema:
       });
     } catch (err) {
       console.error('❌ Resource recommendation error:', err);
-      // Independent failure isolation: Return fallback notice without breaking roadmap
       return sendJSON(res, 200, {
         success: false,
-        message: 'Recommended resources are temporarily unavailable.',
+        message: 'No sufficiently relevant resource was found for this task.',
         resources: []
       });
     }
@@ -4551,7 +5111,53 @@ Return ONLY JSON in this shape:
       }
 
       const scorePct = max ? Math.round((earned / max) * 100) : 0;
-      return sendJSON(res, 200, { success: true, score_pct: scorePct, earned_points: earned, max_points: max, passed: scorePct >= 70, detailed_feedback });
+      const passed = scorePct >= 70;
+
+      let userStats = null;
+      const user_id = payload.user_id || payload.userId;
+      if (user_id) {
+        try {
+          const userDoc = await User.findOne({ user_id });
+          if (userDoc) {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const actDates = Array.isArray(userDoc.activity_dates) ? [...userDoc.activity_dates] : [];
+            if (!actDates.includes(todayStr)) {
+              actDates.push(todayStr);
+            }
+            userDoc.activity_dates = actDates;
+            userDoc.last_active_date = todayStr;
+            const xpGained = Math.round(150 * (scorePct / 100));
+            userDoc.xp = (userDoc.xp || 0) + xpGained;
+            userDoc.streak = calculateUserStreak(userDoc.activity_dates);
+            userDoc.level = Math.floor(userDoc.xp / 300) + 1;
+            
+            const badges = Array.isArray(userDoc.badges) ? [...userDoc.badges] : ['🐣 Fresh Start'];
+            if (userDoc.streak >= 3 && !badges.includes('🔥 3-Day Streak')) badges.push('🔥 3-Day Streak');
+            userDoc.badges = badges;
+
+            await userDoc.save();
+
+            userStats = {
+              streak: userDoc.streak,
+              xp: userDoc.xp,
+              level: userDoc.level,
+              badges: userDoc.badges
+            };
+          }
+        } catch (uErr) {
+          console.warn('Could not update user assessment stats:', uErr.message);
+        }
+      }
+
+      return sendJSON(res, 200, {
+        success: true,
+        score_pct: scorePct,
+        earned_points: earned,
+        max_points: max,
+        passed,
+        detailed_feedback,
+        userStats
+      });
     } catch (err) {
       console.error('❌ Daily assessment grading error:', err);
       return sendJSON(res, 500, { error: 'Daily assessment grading failed: ' + err.message });
@@ -4745,6 +5351,24 @@ Return ONLY JSON in this shape:
       if (err) {
 
         if (err.code === 'ENOENT') {
+
+          const spaRoutes = [
+            'dashboard', 'roadmap', 'tasks', 'daily-hub', 'profile', 'progress', 'analytics',
+            'tech-news', 'internships', 'applications', 'my-applications', 'login', 'register',
+            'domain-selection', 'diagnostic', 'concept-quiz', 'interview-questions', 'assessment-report'
+          ];
+          const cleanPath = (requestedPath || '').toLowerCase().split('/')[0];
+
+          if (!ext || spaRoutes.includes(cleanPath)) {
+            return fs.readFile(path.join(__dirname, 'index.html'), (spaErr, spaContent) => {
+              if (spaErr) {
+                res.writeHead(500, { 'Content-Type': 'text/plain' });
+                return res.end('Server Error loading Placify application');
+              }
+              res.writeHead(200, { 'Content-Type': 'text/html' });
+              return res.end(spaContent);
+            });
+          }
 
           res.writeHead(404, {
             'Content-Type':

@@ -381,6 +381,44 @@ body {
   box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
 }
 
+.btn-success {
+  background: var(--grad-emerald) !important;
+  color: #fff !important;
+  box-shadow: var(--shadow-emerald);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.task-complete-toggle {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  position: relative !important;
+  z-index: 10 !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.task-complete-toggle:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+
+.task-complete-toggle:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.task-complete-toggle:disabled {
+  cursor: default !important;
+  pointer-events: auto !important;
+  opacity: 0.85 !important;
+}
+
+.task-complete-toggle.loading {
+  cursor: wait !important;
+}
+
 .btn-secondary {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-main);
