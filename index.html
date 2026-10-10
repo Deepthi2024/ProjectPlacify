@@ -35,6 +35,9 @@
       <button id="nav-btn-daily-hub" class="nav-item" data-view="dailyHub">
         <i class="ph ph-calendar-check"></i> <span>Daily Hub</span>
       </button>
+      <button id="nav-btn-interview-questions" class="nav-item" data-view="interviewQuestions">
+        <i class="ph ph-chats-circle"></i> <span>Interview Questions</span>
+      </button>
       <button id="nav-btn-tech-news" class="nav-item" data-view="techNews">
         <i class="ph ph-newspaper"></i> <span>Tech News</span>
       </button>
@@ -377,13 +380,17 @@
             </div>
           </div>
 
-          <!-- OPTIONAL TOPIC-WISE SELF RATING -->
-          <div style="margin-top: 1.2rem; background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 1rem;">
-            <div style="font-size: 0.85rem; font-weight: 700; color: #fff; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 0.4rem;">
-              <i class="ph ph-list-checks" style="color: var(--accent-violet);"></i> Optional: Mark Specific Topics Needing Remediation
+          <!-- SYLLABUS COVERED IN YOUR ROADMAP -->
+          <div id="syllabus-container" style="margin-top: 1.2rem; background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; flex-wrap: wrap; gap: 0.5rem;">
+              <div style="font-size: 0.88rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 0.45rem;">
+                <i class="ph ph-books" style="color: var(--accent-cyan); font-size: 1.15rem;"></i>
+                Syllabus Covered in Your Roadmap
+              </div>
+              <span id="syllabus-level-badge" class="tier-label BEGINNER" style="font-size: 0.75rem; padding: 0.15rem 0.55rem;">BEGINNER SYLLABUS</span>
             </div>
-            <div id="manual-topic-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.6rem; margin-top: 0.6rem;">
-              <!-- Dynamically populated per chosen domain in app.js -->
+            <div id="roadmap-syllabus-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.55rem; margin-top: 0.6rem;">
+              <!-- Dynamically populated based on selected level & domain in app.js -->
             </div>
           </div>
         </div>
@@ -446,23 +453,57 @@
             </div>
           </div>
         </div>
+      </div>
+    </section>
 
-        <!-- WRAPPER: DIAGNOSTIC QUIZ CONTAINER (Hidden until user clicks "Take Diagnostic Quiz") -->
-        <div id="diagnostic-quiz-wrapper" style="display: none; margin-top: 1.5rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 1.2rem;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
-            <div style="font-size: 0.9rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-              <i class="ph ph-question" style="color: var(--accent-violet);"></i> NPTEL Diagnostic Test for <span id="quiz-domain-title" style="color: var(--accent-cyan);">Chosen Domain</span>
-            </div>
-            <div style="font-size: 0.8rem; color: var(--text-muted);">
-              Declared Baseline: <strong id="quiz-declared-level-tag" class="tier-label BEGINNER" style="font-size: 0.75rem; padding: 0.15rem 0.5rem;">BEGINNER</strong>
+    <!-- VIEW 2b: Dedicated Technical Diagnostic Quiz Page -->
+    <section id="view-diagnostic-quiz" class="view-section">
+      <div class="glass-card">
+        <!-- Top Bar with Back button & Header Info -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 0.8rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 1rem;">
+          <div style="display: flex; align-items: center; gap: 0.8rem;">
+            <button type="button" id="quiz-back-to-baseline-btn" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.82rem;" title="Return to Baseline Setup">
+              <i class="ph ph-arrow-left"></i> Back to Setup
+            </button>
+            <div>
+              <h2 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="ph ph-exam" style="color: var(--accent-violet);"></i>
+                NPTEL Technical Diagnostic Assessment
+              </h2>
+              <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">
+                Domain: <strong id="quiz-page-domain-title" style="color: var(--accent-cyan);">Chosen Domain</strong>
+              </div>
             </div>
           </div>
 
+          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <span id="quiz-page-level-badge" class="tier-label BEGINNER" style="font-size: 0.78rem; padding: 0.25rem 0.7rem;">BEGINNER</span>
+            <span id="quiz-page-count-badge" style="font-size: 0.78rem; background: rgba(139, 92, 246, 0.15); color: var(--accent-violet); padding: 0.25rem 0.7rem; border-radius: 50px; font-weight: 700;">10 Questions</span>
+          </div>
+        </div>
+
+        <!-- Empty / Error state if page opened with no quiz -->
+        <div id="quiz-empty-state" style="display: none; text-align: center; padding: 3rem 1rem;">
+          <i class="ph ph-warning-circle" style="font-size: 3rem; color: var(--accent-rose); margin-bottom: 1rem;"></i>
+          <h3 style="color: #fff; font-size: 1.2rem; margin-bottom: 0.5rem;">No Active Assessment Found</h3>
+          <p style="color: var(--text-muted); max-width: 480px; margin: 0 auto 1.5rem;">
+            Please select your domain, skill level, and question count on the baseline setup page first to generate a personalized diagnostic quiz.
+          </p>
+          <button type="button" id="quiz-empty-return-btn" class="btn btn-primary">
+            <i class="ph ph-arrow-left"></i> Go to Baseline Setup
+          </button>
+        </div>
+
+        <!-- Main Quiz Content Area -->
+        <div id="quiz-active-content">
           <!-- Question Palette Navigation -->
-          <div style="margin-bottom: 1rem;">
-            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.4rem;">Question Palette (Click to jump):</div>
+          <div style="margin-bottom: 1.2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-muted);">Question Palette (Click to jump):</span>
+              <span style="font-size: 0.75rem; color: var(--text-muted);"><span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent-emerald); margin-right: 4px;"></span>Answered &bull; <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent-violet); margin-right: 4px;"></span>Current</span>
+            </div>
             <div id="diagnostic-palette-container" style="display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0.8rem; background: rgba(0, 0, 0, 0.25); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08);">
-              <!-- Palette buttons 1..30 populated dynamically -->
+              <!-- Palette buttons 1..N populated dynamically -->
             </div>
           </div>
 
@@ -481,7 +522,7 @@
                 </button>
               </div>
 
-              <div style="display: flex; gap: 0.6rem; align-items: center;">
+              <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
                 <button type="button" id="quiz-skip-btn" class="btn btn-secondary" style="border-color: rgba(245, 158, 11, 0.4); color: #f59e0b;">
                   <i class="ph ph-skip-forward"></i> Skip Quiz & Use Declared Level
                 </button>
@@ -498,14 +539,10 @@
     <!-- VIEW 3: Skill Assessment & Gap Report -->
     <section id="view-assessment-report" class="view-section">
       <div class="glass-card">
-        <div class="section-title">
+        <div class="section-title" style="margin-bottom: 1.5rem;">
           <i class="ph ph-chart-polar"></i>
           Phase 2 Output: Diagnostic Evaluation & Topic-Wise Proficiency Report
         </div>
-        <p class="section-subtitle">Evaluated by <strong style="color: var(--accent-rose);">`quiz_evaluator`</strong>.
-          The Supervisor Agent will now pass these parameters to <strong
-            style="color: var(--accent-cyan);">`roadmap_generator`</strong> and <strong
-            style="color: var(--accent-violet);">`personalized_roadmap`</strong>.</p>
 
         <div class="assessment-results-grid">
           <!-- Left: Tier Card -->
@@ -515,8 +552,6 @@
               Baseline</span>
             <div id="tier-score-display" class="tier-score-ring">0%</div>
             <div id="tier-label-display" class="tier-label BEGINNER">BEGINNER</div>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 1rem;" id="tier-summary-text">Initial
-              baseline calculated based on diagnostic domain accuracy.</p>
           </div>
 
           <!-- Right: Gaps, Intermediate, and Mastered breakdown -->
@@ -589,9 +624,6 @@
             </p>
           </div>
           <div style="display: flex; gap: 0.6rem; align-items: center;">
-            <button id="regenerate-roadmap-btn" class="btn btn-secondary" style="font-size: 0.82rem; padding: 0.4rem 0.8rem;">
-              <i class="ph ph-arrows-counter-clockwise"></i> Regenerate Roadmap
-            </button>
             <span class="node-tag STANDARD" id="roadmap-domain-tag">Domain</span>
           </div>
         </div>
@@ -683,7 +715,7 @@
               <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
                 <span id="current-day-badge"
                   style="background: rgba(139, 92, 246, 0.2); color: var(--accent-violet); font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 4px; text-transform: uppercase;">
-                  Day 1 Tasks
+                  PHASE 1 TASK EXECUTION
                 </span>
                 <span id="current-day-progress-badge"
                   style="background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 4px;">
@@ -692,7 +724,7 @@
               </div>
               <h2 id="current-task-title"
                 style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 700; margin-top: 0.4rem; color: #fff;">
-                Daily Task Execution
+                Phase Task Execution
               </h2>
             </div>
             <div style="display: flex; gap: 0.6rem; align-items: center;">
@@ -717,80 +749,15 @@
             <button id="view-all-roadmap-btn" class="btn btn-secondary back-to-weekly-roadmap-btn">
               <i class="ph ph-arrow-left"></i> Back to Weekly Roadmap
             </button>
-            <div style="display:flex; gap:0.6rem; flex-wrap:wrap; justify-content:flex-end;">
-              <button id="start-concept-quiz-btn" class="btn btn-emerald">
-                Take Day Assessment <i class="ph ph-note-pencil"></i>
+            <div style="display:flex; gap:0.6rem; flex-wrap:wrap; justify-content:flex-end; align-items:center;">
+              <button id="start-concept-quiz-btn" class="btn btn-emerald" disabled aria-disabled="true" style="opacity: 0.5; cursor: not-allowed;" title="Complete all tasks in this phase to unlock the assessment.">
+                Take Phase Assessment <i class="ph ph-note-pencil"></i>
               </button>
               <button id="skip-day-assessment-btn" class="btn btn-secondary">
                 Skip Assessment <i class="ph ph-arrow-right"></i>
               </button>
             </div>
           </div>
-        </div>
-
-        <!-- Sidebar: User Stats & Progress Summary -->
-        <div class="glass-card" style="display: flex; flex-direction: column; justify-content: space-between;">
-          <div>
-            <h3
-              style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-              <i class="ph ph-chart-line-up" style="color: var(--accent-emerald);"></i> Domain Mastery
-            </h3>
-            <div
-              style="display: flex; justify-content: space-between; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.4rem;">
-              <span>Overall Progress</span>
-              <span id="mastery-pct-num">0%</span>
-            </div>
-            <div class="progress-bar-container">
-              <div id="mastery-bar-fill" class="progress-bar-fill"></div>
-            </div>
-
-            <div style="margin-top: 1.5rem;">
-              <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 0.6rem; color: var(--text-muted);">
-                Unlocked Badges (<span id="badge-count-num">1</span>)
-              </h4>
-              <div id="user-badge-grid" class="badge-grid">
-                <!-- Dynamically populated -->
-              </div>
-            </div>
-          </div>
-
-          <div
-            style="margin-top: 1.5rem; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-glass); padding: 1rem; border-radius: var(--radius-sm);">
-            <div
-              style="font-size: 0.8rem; font-weight: 700; color: var(--accent-amber); margin-bottom: 0.3rem; display: flex; align-items: center; gap: 0.4rem;">
-              <i class="ph ph-lightning"></i> Level Up Eligible?
-            </div>
-            <div id="level-up-status-text" style="font-size: 0.8rem; color: var(--text-muted);">
-              Complete daily assessments to earn XP and trigger skill tier upgrades!
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- TECH NEWS SECTION -->
-      <div id="tech-news-section" class="glass-card" style="margin-top: 1.5rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding-bottom: 1rem; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 0.8rem;">
-          <div>
-            <div class="section-title" style="display: flex; align-items: center; gap: 0.6rem; font-size: 1.25rem;">
-              <i class="ph ph-newspaper" style="color: var(--accent-cyan);"></i> 📰 Tech News
-            </div>
-            <p class="section-subtitle" style="margin-bottom: 0;">
-              Personalized for: <strong id="news-personalized-tag-v5" class="news-personalized-tag" style="color: var(--accent-cyan);">Loading profile...</strong>
-            </p>
-          </div>
-          <div style="display: flex; align-items: center; gap: 0.8rem;">
-            <span id="news-last-updated-v5" class="news-last-updated" style="font-size: 0.78rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.05); padding: 0.3rem 0.7rem; border-radius: var(--radius-full); border: 1px solid var(--border-glass);">
-              <i class="ph ph-clock"></i> Updating...
-            </span>
-            <button id="refresh-news-btn-v5" class="refresh-news-btn btn btn-secondary" style="font-size: 0.78rem; padding: 0.3rem 0.7rem;" title="Refresh News">
-              <i class="ph ph-arrows-counter-clockwise"></i> Refresh
-            </button>
-          </div>
-        </div>
-
-        <!-- News Cards Container -->
-        <div id="tech-news-feed-container-v5" class="news-feed-container news-feed-grid">
-          <!-- Dynamically populated tech news cards -->
         </div>
       </div>
     </section>
@@ -861,17 +828,6 @@
               Detailed question-by-question evaluation, score breakdown, and targeted revision recommendations.
             </p>
           </div>
-          <div style="display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center;">
-            <button type="button" id="eval-back-to-roadmap-btn" class="btn btn-secondary eval-nav-roadmap-btn" style="font-size: 0.82rem; padding: 0.45rem 0.9rem;">
-              <i class="ph ph-arrow-left"></i> Back to Weekly Roadmap
-            </button>
-            <button type="button" id="eval-review-phase-btn" class="btn btn-secondary eval-nav-review-btn" style="font-size: 0.82rem; padding: 0.45rem 0.9rem;">
-              <i class="ph ph-book-open"></i> Review Phase
-            </button>
-            <button type="button" id="eval-retake-assessment-btn" class="btn btn-emerald eval-nav-retake-btn" style="font-size: 0.82rem; padding: 0.45rem 0.95rem;">
-              <i class="ph ph-arrows-counter-clockwise"></i> Retake Assessment
-            </button>
-          </div>
         </div>
 
         <!-- Dynamic Container for Evaluation Summary, Question Breakdown, Concepts to Review -->
@@ -886,7 +842,7 @@
           </button>
           <div style="display: flex; gap: 0.8rem; flex-wrap: wrap;">
             <button type="button" id="eval-bottom-review-phase-btn" class="btn btn-secondary eval-nav-review-btn">
-              <i class="ph ph-book-open"></i> Review Phase Tasks & Resources
+              <i class="ph ph-book-open"></i> Review Phase
             </button>
             <button type="button" id="eval-bottom-retake-btn" class="btn btn-emerald eval-nav-retake-btn">
               <i class="ph ph-arrows-counter-clockwise"></i> Retake Assessment
@@ -897,20 +853,303 @@
       </div>
     </section>
 
-    <!-- VIEW 7: Optional Interview Practice -->
+    <!-- VIEW 7: Dedicated Interview Preparation Studio -->
     <section id="view-interview-questions" class="view-section">
-      <div class="glass-card">
-        <div class="section-title"><i class="ph ph-microphone"></i> Optional Interview Practice</div>
-        <p class="section-subtitle">Practice common placement interview questions from today's topics. This is optional and does not block Day 2.</p>
-        <div id="interview-questions-container"></div>
-        <div style="margin-top:1.5rem; display:flex; justify-content:flex-end; gap:0.7rem; flex-wrap:wrap;">
-          <button id="skip-interview-questions-btn" class="btn btn-secondary">Skip Interview Practice</button>
-          <button id="continue-after-interview-btn" class="btn btn-primary">Continue to Next Day <i class="ph ph-arrow-right"></i></button>
+      <div class="glass-card" style="padding: 2rem;">
+        
+        <!-- Header & Domain Banner -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 1.2rem;">
+          <div>
+            <div class="section-title" style="margin-bottom: 0.3rem;">
+              <i class="ph ph-chats-circle" style="color: var(--accent-cyan);"></i> Interview Preparation Studio
+            </div>
+            <p class="section-subtitle" style="margin: 0;">
+              Prepare for technical interviews using curated learning resources or practice questions tailored to your domain.
+            </p>
+          </div>
+          <div id="interview-domain-badge-container" style="display: flex; align-items: center; gap: 0.6rem; background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); padding: 0.5rem 1rem; border-radius: var(--radius-full);">
+            <i class="ph ph-briefcase" style="color: var(--accent-cyan); font-size: 1.1rem;"></i>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Target Domain:</span>
+            <strong id="interview-user-domain-label" style="color: #fff; font-size: 0.9rem;">Full-Stack Web Development</strong>
+          </div>
         </div>
+
+        <!-- 1. LANDING MODE SELECTION CARDS -->
+        <div id="interview-landing-hub">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            
+            <!-- Option 1: Learn from Other Websites -->
+            <div id="select-option-external-btn" class="glass-card" style="cursor: pointer; padding: 1.8rem; border: 1px solid var(--border-glass); transition: all 0.25s ease; background: rgba(255,255,255,0.02); display: flex; flex-direction: column; justify-content: space-between;" onmouseover="this.style.borderColor='var(--accent-cyan)'; this.style.transform='translateY(-3px)';" onmouseout="this.style.borderColor='var(--border-glass)'; this.style.transform='translateY(0)';">
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                  <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(6, 182, 212, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: var(--accent-cyan);">
+                    <i class="ph ph-globe"></i>
+                  </div>
+                  <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-cyan); background: rgba(6, 182, 212, 0.12); padding: 0.25rem 0.75rem; border-radius: 50px; border: 1px solid rgba(6, 182, 212, 0.25);">
+                    External Resources
+                  </span>
+                </div>
+                <h3 style="color: #fff; font-family: var(--font-heading); margin-bottom: 0.6rem; font-size: 1.3rem;">Learn from Other Websites</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.2rem;">
+                  Explore interview questions, explanations, coding problems, and interview experiences from trusted external platforms.
+                </p>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--accent-cyan); font-weight: 700; font-size: 0.9rem;">
+                <span>Explore External Platforms</span> <i class="ph ph-arrow-right"></i>
+              </div>
+            </div>
+
+            <!-- Option 2: Prepare on Placify AI -->
+            <div id="select-option-placify-btn" class="glass-card" style="cursor: pointer; padding: 1.8rem; border: 1px solid var(--border-glass); transition: all 0.25s ease; background: rgba(255,255,255,0.02); display: flex; flex-direction: column; justify-content: space-between;" onmouseover="this.style.borderColor='var(--accent-violet)'; this.style.transform='translateY(-3px)';" onmouseout="this.style.borderColor='var(--border-glass)'; this.style.transform='translateY(0)';">
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                  <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(139, 92, 246, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: var(--accent-violet);">
+                    <i class="ph ph-sparkle"></i>
+                  </div>
+                  <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-violet); background: rgba(139, 92, 246, 0.12); padding: 0.25rem 0.75rem; border-radius: 50px; border: 1px solid rgba(139, 92, 246, 0.25);">
+                    Placify AI Simulator
+                  </span>
+                </div>
+                <h3 style="color: #fff; font-family: var(--font-heading); margin-bottom: 0.6rem; font-size: 1.3rem;">Prepare on Placify AI</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.2rem;">
+                  Practice interview questions directly inside Placify AI, tailored to your domain, roadmap topics, and skill level.
+                </p>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--accent-violet); font-weight: 700; font-size: 0.9rem;">
+                <span>Start AI Practice Session</span> <i class="ph ph-arrow-right"></i>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Past Practice History -->
+          <div id="interview-history-section" style="margin-top: 1.5rem; display: none;">
+            <h4 style="color: #fff; font-family: var(--font-heading); margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="ph ph-clock-counter-clockwise" style="color: var(--accent-amber);"></i> Recent Interview Practice History
+            </h4>
+            <div id="interview-history-list" style="display: grid; gap: 0.75rem;"></div>
+          </div>
+        </div>
+
+        <!-- 2. OPTION 1 WORKFLOW: LEARN FROM OTHER WEBSITES -->
+        <div id="interview-external-workflow" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
+            <button type="button" class="btn btn-secondary back-to-interview-hub-btn">
+              <i class="ph ph-arrow-left"></i> Back to Studio Hub
+            </button>
+            <span style="font-size: 0.82rem; color: var(--text-muted);">
+              Showing interview resources for <strong id="ext-current-topic-label" style="color: var(--accent-cyan);">Core Concepts</strong>
+            </span>
+          </div>
+
+          <!-- Step A: Choose Preparation Day or Topic -->
+          <div style="background: rgba(255,255,255,0.02); padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-glass); margin-bottom: 1.5rem;">
+            <h4 style="color: #fff; font-family: var(--font-heading); margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="ph ph-calendar" style="color: var(--accent-cyan);"></i> Choose Interview Preparation Phase / Day
+            </h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; align-items: center;">
+              <div>
+                <label for="interview-ext-phase-select" style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 0.3rem;"><i class="ph ph-calendar"></i> Roadmap Phase / Day:</label>
+                <select id="interview-ext-phase-select" class="form-control" style="background: rgba(15, 23, 42, 0.8);">
+                  <option value="">-- Select from your Roadmap Phases --</option>
+                </select>
+              </div>
+              <div id="interview-ext-custom-topic-container">
+                <label for="interview-ext-custom-topic" style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 0.3rem;"><i class="ph ph-pencil-simple"></i> Or Specific Topic / Concept:</label>
+                <input type="text" id="interview-ext-custom-topic" class="form-control" placeholder="e.g. Asynchronous JavaScript, Closures, System Design">
+              </div>
+              <div>
+                <label for="interview-ext-resource-type" style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 0.3rem;"><i class="ph ph-tag"></i> Resource Type:</label>
+                <select id="interview-ext-resource-type" class="form-control" style="background: rgba(15, 23, 42, 0.8);">
+                  <option value="all" selected>All Resource Types</option>
+                  <option value="interview_questions">Interview Questions & Answers</option>
+                  <option value="coding_practice">Coding Practice & Challenges</option>
+                  <option value="tutorials">Tutorials & Concept Guides</option>
+                  <option value="documentation">Official Documentation</option>
+                  <option value="mock_interviews">Mock Interviews & Problem Kits</option>
+                </select>
+              </div>
+              <div style="padding-top: 1.4rem;">
+                <button type="button" id="interview-ext-fetch-resources-btn" class="btn btn-primary" style="width: 100%;">
+                  <i class="ph ph-magnifying-glass"></i> Explore Resources
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step B: Recommended External Websites Grid -->
+          <div id="interview-external-cards-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.2rem;">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- 3. OPTION 2 WORKFLOW: PREPARE ON PLACIFY AI -->
+        <div id="interview-placify-workflow" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
+            <button type="button" class="btn btn-secondary back-to-interview-hub-btn">
+              <i class="ph ph-arrow-left"></i> Back to Studio Hub
+            </button>
+            <span style="font-size: 0.82rem; color: var(--text-muted);">
+              AI Interview Simulator & Bullseye Evaluator
+            </span>
+          </div>
+
+          <!-- Configuration Panel -->
+          <div id="interview-config-panel" style="background: rgba(255,255,255,0.02); padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-glass); margin-bottom: 1.5rem;">
+            <h4 style="color: #fff; font-family: var(--font-heading); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="ph ph-sliders" style="color: var(--accent-violet);"></i> Configure Interview Practice Session
+            </h4>
+
+            <form id="interview-config-form">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.2rem;">
+                
+                <!-- Domain -->
+                <div class="form-group">
+                  <label style="font-size: 0.82rem; color: var(--text-muted);"><i class="ph ph-briefcase"></i> Target Domain:</label>
+                  <input type="text" id="interview-cfg-domain" class="form-control" readonly style="background: rgba(255,255,255,0.03); color: var(--accent-cyan); font-weight: 700;">
+                </div>
+
+                <!-- Topic Selector -->
+                <div class="form-group">
+                  <label for="interview-cfg-phase-select" style="font-size: 0.82rem; color: var(--text-muted);"><i class="ph ph-book-open"></i> Roadmap Topic / Phase:</label>
+                  <select id="interview-cfg-phase-select" class="form-control" style="background: rgba(15, 23, 42, 0.8);">
+                    <option value="">-- Choose Roadmap Phase Topic --</option>
+                  </select>
+                </div>
+
+                <!-- Custom Topic Input -->
+                <div class="form-group">
+                  <label for="interview-cfg-custom-topic" style="font-size: 0.82rem; color: var(--text-muted);"><i class="ph ph-pencil-simple"></i> Or Specific Topic Name:</label>
+                  <input type="text" id="interview-cfg-custom-topic" class="form-control" placeholder="e.g. React Hooks, Spring Boot, REST APIs">
+                </div>
+
+                <!-- Difficulty -->
+                <div class="form-group">
+                  <label for="interview-cfg-difficulty" style="font-size: 0.82rem; color: var(--text-muted);"><i class="ph ph-chart-bar"></i> Difficulty Level:</label>
+                  <select id="interview-cfg-difficulty" class="form-control" style="background: rgba(15, 23, 42, 0.8);">
+                    <option value="Beginner">Beginner (Fundamentals & Syntax)</option>
+                    <option value="Intermediate" selected>Intermediate (Core Placement Questions)</option>
+                    <option value="Advanced">Advanced (System Design & Edge Cases)</option>
+                  </select>
+                </div>
+
+                <!-- Number of Questions -->
+                <div class="form-group">
+                  <label for="interview-cfg-count" style="font-size: 0.82rem; color: var(--text-muted);"><i class="ph ph-list-numbers"></i> Number of Questions:</label>
+                  <select id="interview-cfg-count" class="form-control" style="background: rgba(15, 23, 42, 0.8);">
+                    <option value="5" selected>5 Questions (Quick Drill)</option>
+                    <option value="10">10 Questions (Standard Round)</option>
+                    <option value="15">15 Questions (Full Mock)</option>
+                    <option value="20">20 Questions (Intensive Screening)</option>
+                  </select>
+                </div>
+
+                <!-- Question Type -->
+                <div class="form-group">
+                  <label for="interview-cfg-type" style="font-size: 0.82rem; color: var(--text-muted);"><i class="ph ph-terminal-window"></i> Question Type:</label>
+                  <select id="interview-cfg-type" class="form-control" style="background: rgba(15, 23, 42, 0.8);">
+                    <option value="Mixed" selected>Mixed (Theory, Coding, SQL & MCQs)</option>
+                    <option value="MCQ">Multiple Choice (MCQ)</option>
+                    <option value="Technical Theory">Technical Theory & Core Concepts</option>
+                    <option value="Coding">Coding & Algorithm Implementation</option>
+                    <option value="SQL">SQL & Database Queries</option>
+                    <option value="Scenario-based">Scenario-based & System Architecture</option>
+                  </select>
+                </div>
+
+                <!-- Category -->
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label for="interview-cfg-category" style="font-size: 0.82rem; color: var(--text-muted);"><i class="ph ph-target"></i> Interview Category / Round:</label>
+                  <select id="interview-cfg-category" class="form-control" style="background: rgba(15, 23, 42, 0.8);">
+                    <option value="Technical Fundamentals" selected>Technical Fundamentals (Core Concepts)</option>
+                    <option value="Data Structures & Algorithms">Data Structures and Algorithms (DSA)</option>
+                    <option value="Programming">Programming & Code Implementation</option>
+                    <option value="Database & SQL">Database and SQL Architecture</option>
+                    <option value="Project Discussion">Project Discussion & System Design</option>
+                    <option value="HR & Behavioral">HR & Behavioral Discussion</option>
+                  </select>
+                </div>
+
+              </div>
+
+              <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.8rem; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary back-to-interview-hub-btn" style="padding: 0.75rem 1.4rem; font-size: 0.95rem;">
+                  <i class="ph ph-x"></i> Cancel
+                </button>
+                <button type="submit" id="generate-interview-practice-btn" class="btn btn-primary" style="padding: 0.75rem 1.8rem; font-size: 0.95rem;">
+                  <i class="ph ph-sparkle"></i> Generate Interview Questions
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Loading Indicator -->
+          <div id="interview-practice-loading" style="display: none; text-align: center; padding: 3rem 1rem;">
+            <div class="spinner" style="margin: 0 auto 1.2rem auto; width: 44px; height: 44px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--accent-violet); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+            <h4 style="color: #fff; font-family: var(--font-heading); margin-bottom: 0.5rem;">Generating Tailored Interview Questions...</h4>
+            <p style="color: var(--text-muted); font-size: 0.88rem;">Analyzing domain specifications, topic depth, and placement criteria.</p>
+          </div>
+
+          <!-- Error Indicator -->
+          <div id="interview-practice-error" style="display: none; text-align: center; padding: 3rem 1rem; background: rgba(239, 68, 68, 0.05); border-radius: var(--radius-md); border: 1px solid rgba(239, 68, 68, 0.2); margin-bottom: 1.5rem;">
+            <i class="ph ph-warning-circle" style="font-size: 2.5rem; color: var(--accent-rose); margin-bottom: 0.8rem; display: block;"></i>
+            <h4 style="color: #fff; font-family: var(--font-heading); margin-bottom: 0.4rem;">Question Generation Issue</h4>
+            <p id="interview-practice-error-msg" style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.2rem; max-width: 500px; margin-left: auto; margin-right: auto;">Failed to generate interview questions. Please try again.</p>
+            <div style="display: flex; gap: 0.75rem; justify-content: center;">
+              <button type="button" class="btn btn-secondary back-to-interview-hub-btn">Back to Hub</button>
+              <button type="button" id="btn-retry-generate-questions" class="btn btn-primary"><i class="ph ph-arrow-clockwise"></i> Try Again</button>
+            </div>
+          </div>
+
+          <!-- Interactive Practice Runner Interface -->
+          <div id="interview-practice-runner" style="display: none;">
+            
+            <!-- Runner Header & Palette -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.2rem; background: rgba(255,255,255,0.02); padding: 1rem 1.2rem; border-radius: var(--radius-sm); border: 1px solid var(--border-glass);">
+              <div>
+                <span id="interview-runner-badge" style="font-size: 0.75rem; font-weight: 700; color: var(--accent-cyan); background: rgba(6, 182, 212, 0.12); padding: 0.2rem 0.6rem; border-radius: 50px;">
+                  Technical Round
+                </span>
+                <strong id="interview-runner-topic-title" style="margin-left: 0.5rem; color: #fff; font-size: 0.95rem;">Topic</strong>
+              </div>
+              <div id="interview-question-palette" style="display: flex; gap: 0.4rem; flex-wrap: wrap;"></div>
+            </div>
+
+            <!-- Active Question Card -->
+            <div id="interview-active-question-card" class="glass-card" style="padding: 1.8rem; margin-bottom: 1.5rem; border: 1px solid var(--border-glass);">
+              <!-- Rendered dynamically -->
+            </div>
+
+            <!-- Runner Controls -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+              <button type="button" id="interview-prev-q-btn" class="btn btn-secondary">
+                <i class="ph ph-arrow-left"></i> Previous Question
+              </button>
+              <div style="display: flex; gap: 0.6rem;">
+                <button type="button" id="interview-clear-q-btn" class="btn btn-secondary" style="font-size: 0.8rem;">
+                  <i class="ph ph-eraser"></i> Clear Answer
+                </button>
+                <button type="button" id="interview-next-q-btn" class="btn btn-secondary">
+                  Next Question <i class="ph ph-arrow-right"></i>
+                </button>
+                <button type="button" id="interview-submit-practice-btn" class="btn btn-emerald" style="font-weight: 700;">
+                  <i class="ph ph-check-circle"></i> Submit Practice
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Evaluation Results View -->
+          <div id="interview-practice-results" style="display: none;">
+            <!-- Rendered dynamically -->
+          </div>
+
+        </div>
+
       </div>
     </section>
 
-    <!-- VIEW 7: Progress & Mastery Dashboard -->
+    <!-- VIEW 8: Progress & Mastery Dashboard -->
     <section id="view-progress-analytics" class="view-section">
       <div class="glass-card">
         <div class="section-title">
@@ -944,11 +1183,11 @@
             <div style="font-size: 0.8rem; color: var(--text-muted);">Total XP Earned</div>
           </div>
 
-          <div class="glass-card" style="text-align: center; padding: 1.2rem;">
+          <div class="glass-card" style="text-align: center; padding: 1.2rem; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 0;">
             <i class="ph ph-shield-check" style="font-size: 2rem; color: var(--accent-emerald);"></i>
-            <div style="font-size: 1.8rem; font-family: var(--font-heading); font-weight: 800; margin: 0.4rem 0;"
+            <div style="font-size: clamp(1rem, 1.4vw, 1.35rem); font-family: var(--font-heading); font-weight: 800; margin: 0.4rem 0; min-width: 0; max-width: 100%; overflow-wrap: break-word; word-break: break-word; line-height: 1.25; text-align: center; color: #fff;"
               id="analytics-tier-name">BEGINNER</div>
-            <div style="font-size: 0.8rem; color: var(--text-muted);">Current Skill Tier</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.2;">Current Skill Tier</div>
           </div>
         </div>
 
@@ -982,9 +1221,6 @@
             <span id="news-last-updated" class="news-last-updated" style="font-size: 0.78rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.05); padding: 0.35rem 0.85rem; border-radius: var(--radius-full); border: 1px solid var(--border-glass);">
               <i class="ph ph-clock"></i> Updating...
             </span>
-            <button id="refresh-news-btn" class="refresh-news-btn btn btn-secondary" style="font-size: 0.8rem; padding: 0.35rem 0.85rem;" title="Refresh Tech News">
-              <i class="ph ph-arrows-counter-clockwise"></i> Refresh
-            </button>
           </div>
         </div>
 

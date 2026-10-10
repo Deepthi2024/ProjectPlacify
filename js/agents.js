@@ -344,6 +344,13 @@ class AuthAgent {
     if (window.placifySupervisor?.progressTracker && profile?.user_id) {
       window.placifySupervisor.progressTracker.setActiveUser(profile.user_id);
     }
+    try {
+      if (profile) {
+        sessionStorage.setItem(this.sessionKey, JSON.stringify(profile));
+      } else {
+        sessionStorage.removeItem(this.sessionKey);
+      }
+    } catch (e) {}
   }
 
 
@@ -352,7 +359,18 @@ class AuthAgent {
      ========================================================== */
 
   getActiveSession() {
-    return this.activeSession;
+    if (this.activeSession) return this.activeSession;
+    try {
+      const raw = sessionStorage.getItem(this.sessionKey);
+      if (raw) {
+        this.activeSession = JSON.parse(raw);
+        if (window.placifySupervisor?.progressTracker && this.activeSession?.user_id) {
+          window.placifySupervisor.progressTracker.setActiveUser(this.activeSession.user_id);
+        }
+        return this.activeSession;
+      }
+    } catch (e) {}
+    return null;
   }
 
 
@@ -1559,10 +1577,10 @@ class ResourceSuggesterAgent {
       week_resource_ids: this.getWeekResourceIds(userId, weekNum)
     };
 
-    // 2. Attempt RAG API call with 5s timeout
+    // 2. Attempt RAG API call with 30s timeout
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
 
       const baseUrl = window.location.origin && window.location.origin !== 'null' ? window.location.origin : 'http://localhost:5000';
       const res = await fetch(`${baseUrl}/api/rag/day-resources`, {
@@ -1637,14 +1655,16 @@ class ResourceFetcherAgent {
     return { conceptTitle, topic, retrievedContentSummary: `NPTEL-style assessment covering today's ${tasks.length} task${tasks.length === 1 ? '' : 's'}.`, questions: data.questions };
   }
 
-  async gradeAssessment(questions, userAnswers) {
+  async gradeAssessment(questions, userAnswers, userId) {
+    const session = window.placifySupervisor?.authAgent?.getActiveSession?.();
+    const uid = userId || session?.user_id;
     const response = await fetch('http://localhost:5000/api/daily-assessment/grade', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ questions, user_answers: userAnswers })
+      body: JSON.stringify({ questions, user_answers: userAnswers, user_id: uid })
     });
     const data = await response.json();
     if (!response.ok || !data.success) throw new Error(data.error || 'Daily assessment grading failed.');
-    return { score: data.earned_points, total: data.max_points, scorePct: data.score_pct, passed: data.passed, detailedFeedback: data.detailed_feedback };
+    return { score: data.earned_points, total: data.max_points, scorePct: data.score_pct, passed: data.passed, detailedFeedback: data.detailed_feedback, userStats: data.userStats };
   }
 
   async generateInterviewQuestions(taskContext = {}) {
@@ -1669,6 +1689,62 @@ class ProgressTrackerAgent {
   constructor() {
     this.activeUserId = null;
     this.storagePrefix = 'placify_user_state_';
+    this.memoryState = {};
+    this.cleanupLegacyStorage();
+  }
+
+  /**
+   * Cleans up legacy oversized localStorage state objects to prevent QuotaExceededError
+   */
+  cleanupLegacyStorage() {
+    try {
+      if (typeof localStorage === 'undefined') return;
+      const keysToRemove = [];
+      const keysToSanitize = [];
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key) continue;
+        if (key.startsWith('placify_rag_res_')) {
+          keysToRemove.push(key);
+        } else if (key.startsWith('placify_user_state') || key === 'placify_user_state') {
+          const val = localStorage.getItem(key);
+          if (val && (val.length > 4000 || val.includes('monthly_roadmap') || val.includes('dailyTasks') || val.includes('quizEvaluation'))) {
+            keysToSanitize.push(key);
+          }
+        }
+      }
+
+      keysToRemove.forEach(k => {
+        try { localStorage.removeItem(k); } catch (e) {}
+      });
+
+      keysToSanitize.forEach(k => {
+        try {
+          const raw = localStorage.getItem(k);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            const minimal = {
+              userId: parsed.userId || null,
+              isOnboarded: Boolean(parsed.isOnboarded),
+              streak: Number(parsed.streak) || 0,
+              xp: Number(parsed.xp) || 0,
+              level: Number(parsed.level) || 1,
+              badges: Array.isArray(parsed.badges) ? parsed.badges : ['🐣 Fresh Start'],
+              masteryPct: Number(parsed.masteryPct) || 0,
+              lastCompletedDate: parsed.lastCompletedDate || null,
+              currentDayIndex: Number(parsed.currentDayIndex) || 0,
+              levelUpEligible: Boolean(parsed.levelUpEligible)
+            };
+            localStorage.setItem(k, JSON.stringify(minimal));
+          }
+        } catch (e) {
+          try { localStorage.removeItem(k); } catch (rErr) {}
+        }
+      });
+    } catch (err) {
+      console.warn('Notice during storage cleanup:', err.message);
+    }
   }
 
   setActiveUser(userId) {
@@ -1713,42 +1789,92 @@ class ProgressTrackerAgent {
      ========================================================== */
 
   getUserState(userId) {
+    const uid = userId || this.activeUserId;
+    const mem = uid ? this.memoryState[uid] : this.memoryState['guest'];
+
     try {
       const key = this.getStorageKey(userId);
       const raw = localStorage.getItem(key);
+      const persisted = raw ? JSON.parse(raw) : {};
 
-      if (!raw) {
-        return this.getDefaultState(userId);
-      }
-
-      const state = JSON.parse(raw);
-
-      return {
-        ...this.getDefaultState(userId),
-        ...state,
-        streak: state.streak !== undefined ? state.streak : 0,
-        xp: state.xp !== undefined ? state.xp : 0,
-        badges: Array.isArray(state.badges) ? state.badges : ['🐣 Fresh Start'],
-        history: Array.isArray(state.history) ? state.history : []
+      const base = this.getDefaultState(userId);
+      const merged = {
+        ...base,
+        ...(mem || {}),
+        ...persisted,
+        streak: persisted.streak !== undefined ? persisted.streak : (mem?.streak ?? 0),
+        xp: persisted.xp !== undefined ? persisted.xp : (mem?.xp ?? 0),
+        level: persisted.level !== undefined ? persisted.level : (mem?.level ?? 1),
+        badges: Array.isArray(persisted.badges) ? persisted.badges : (mem?.badges || ['🐣 Fresh Start']),
+        masteryPct: persisted.masteryPct !== undefined ? persisted.masteryPct : (mem?.masteryPct ?? 0),
+        personalizedRoadmap: mem?.personalizedRoadmap || window.activePersonalizedRoadmap || null,
+        history: Array.isArray(mem?.history) ? mem.history : []
       };
+
+      if (uid) {
+        this.memoryState[uid] = merged;
+      }
+      return merged;
     } catch (error) {
       console.error('❌ Could not read progress state:', error);
-      return this.getDefaultState(userId);
+      return mem || this.getDefaultState(userId);
     }
   }
 
   /* ==========================================================
      SAVE USER STATE
+     Stores rich state in memory and saves strictly minimal metadata to localStorage
      ========================================================== */
 
   saveUserState(state, userId) {
-    const key = this.getStorageKey(userId || state?.userId);
-    localStorage.setItem(key, JSON.stringify(state));
+    const uid = userId || state?.userId || this.activeUserId;
+    if (!state) return this.getDefaultState(uid);
+
+    // Keep rich state in-memory
+    if (uid) {
+      this.memoryState[uid] = state;
+    } else {
+      this.memoryState['guest'] = state;
+    }
+
+    if (state.personalizedRoadmap) {
+      window.activePersonalizedRoadmap = state.personalizedRoadmap;
+    }
+
+    // Persist only lightweight metrics to localStorage
+    const minimalState = {
+      userId: uid,
+      isOnboarded: Boolean(state.isOnboarded),
+      streak: Number(state.streak) || 0,
+      xp: Number(state.xp) || 0,
+      level: Number(state.level) || 1,
+      badges: Array.isArray(state.badges) ? state.badges : ['🐣 Fresh Start'],
+      masteryPct: Number(state.masteryPct) || 0,
+      lastCompletedDate: state.lastCompletedDate || null,
+      currentDayIndex: Number(state.currentDayIndex) || 0,
+      levelUpEligible: Boolean(state.levelUpEligible)
+    };
+
+    try {
+      const key = this.getStorageKey(uid);
+      localStorage.setItem(key, JSON.stringify(minimalState));
+    } catch (storageErr) {
+      console.warn('⚠️ LocalStorage write warning (handled safely):', storageErr.message);
+      // Attempt cleanup and retry once
+      try {
+        this.cleanupLegacyStorage();
+        const key = this.getStorageKey(uid);
+        localStorage.setItem(key, JSON.stringify(minimalState));
+      } catch (retryErr) {
+        console.warn('⚠️ Storage quota full, state maintained safely in memory:', retryErr.message);
+      }
+    }
+
     return state;
   }
 
   /* ==========================================================
-     SYNC WITH BACKEND SOURCE OF TRUTH
+     SYNC WITH BACKEND SOURCE OF TRUTH (MongoDB Atlas)
      ========================================================== */
 
   async syncWithBackend(userId) {
@@ -1756,7 +1882,8 @@ class ProgressTrackerAgent {
     if (!uid) return this.getUserState();
     this.setActiveUser(uid);
     try {
-      const res = await fetch(`http://localhost:5000/api/progress/${encodeURIComponent(uid)}`);
+      const baseUrl = (typeof window !== 'undefined' && window.location.origin && window.location.origin.startsWith('http')) ? window.location.origin : 'http://localhost:5000';
+      const res = await fetch(`${baseUrl}/api/progress/${encodeURIComponent(uid)}`);
       if (res.ok) {
         const data = await res.json();
         if (data && data.success) {
@@ -1785,18 +1912,19 @@ class ProgressTrackerAgent {
     const uid = userId || this.activeUserId;
     const state = this.getUserState(uid);
 
-    if (!state.personalizedRoadmap) {
+    const roadmap = state.personalizedRoadmap || window.activePersonalizedRoadmap;
+    if (!roadmap) {
       return state;
     }
 
-    if (!Array.isArray(state.personalizedRoadmap.dailyTasks)) {
-      state.personalizedRoadmap.dailyTasks = [];
+    if (!Array.isArray(roadmap.dailyTasks)) {
+      roadmap.dailyTasks = [];
       let dayCounter = 1;
-      (state.personalizedRoadmap.monthly_roadmap || []).forEach(m => {
+      (roadmap.monthly_roadmap || []).forEach(m => {
         (m.weeks || []).forEach(w => {
           (w.days || []).forEach(d => {
             (d.tasks || []).forEach(t => {
-              state.personalizedRoadmap.dailyTasks.push({
+              roadmap.dailyTasks.push({
                 ...t,
                 dayNumber: Number(d.day_number || dayCounter),
                 day_number: Number(d.day_number || dayCounter),
@@ -1821,7 +1949,7 @@ class ProgressTrackerAgent {
       });
     }
 
-    const task = state.personalizedRoadmap.dailyTasks.find(
+    const task = roadmap.dailyTasks.find(
       t => Number(t.dayNumber || t.day_number) === Number(dayNumber)
     );
 
@@ -1830,8 +1958,8 @@ class ProgressTrackerAgent {
       task.score = taskScorePct;
     }
 
-    const completedTasks = state.personalizedRoadmap.dailyTasks.filter(t => t.completed);
-    const totalTasks = state.personalizedRoadmap.dailyTasks.length;
+    const completedTasks = roadmap.dailyTasks.filter(t => t.completed);
+    const totalTasks = roadmap.dailyTasks.length;
 
     state.masteryPct = totalTasks > 0 ? Math.round((completedTasks.length / totalTasks) * 100) : 0;
 
@@ -1869,6 +1997,9 @@ class ProgressTrackerAgent {
       xpGained
     });
 
+    state.personalizedRoadmap = roadmap;
+    window.activePersonalizedRoadmap = roadmap;
+
     return this.saveUserState(state, uid);
   }
 
@@ -1891,9 +2022,15 @@ class ProgressTrackerAgent {
      ========================================================== */
 
   resetState(userId) {
-    const key = this.getStorageKey(userId);
-    localStorage.removeItem(key);
-    return this.getUserState(userId);
+    const uid = userId || this.activeUserId;
+    const key = this.getStorageKey(uid);
+    try {
+      localStorage.removeItem(key);
+    } catch (e) {}
+    if (uid) {
+      delete this.memoryState[uid];
+    }
+    return this.getUserState(uid);
   }
 }
 
@@ -2150,52 +2287,80 @@ class PlacifySupervisorAgent {
         return { action: 'QUIZ', route: 'diagnosticQuiz', profile };
       }
 
-      // Priority 2: If quiz_completed is true, quiz must NEVER be shown again! Check existing roadmap.
-      let roadmap = null;
-      try {
-        const rmRes = await fetch(`http://localhost:5000/api/roadmap/user/${userId}`);
+    // Priority 2: If quiz_completed is true, quiz must NEVER be shown again! Check existing evaluation and roadmap.
+    let evaluation = null;
+    try {
+      const evalRes = await fetch(`http://localhost:5000/api/quiz/evaluation/${encodeURIComponent(userId)}`);
+      if (evalRes.ok) {
+        const evalData = await evalRes.json();
+        if (evalData && evalData.success && evalData.evaluation) {
+          evaluation = evalData.evaluation;
+        }
+      }
+    } catch (evalErr) {
+      console.warn('Could not fetch user quiz evaluation:', evalErr.message);
+    }
+
+    let roadmap = null;
+    try {
+      const rmRes = await fetch(`http://localhost:5000/api/roadmap/user/${encodeURIComponent(userId)}`);
+      if (rmRes.ok) {
         const rmData = await rmRes.json();
-        if (rmData.success && rmData.roadmap) {
+        if (rmData && rmData.success && rmData.roadmap) {
           roadmap = rmData.roadmap;
         }
-      } catch (rmErr) {
-        console.warn('Could not fetch user roadmap:', rmErr);
       }
+    } catch (rmErr) {
+      console.warn('Could not fetch user roadmap:', rmErr.message);
+    }
 
-      // Priority 3: If roadmap missing for quiz_completed user, auto-generate roadmap
-      if (!roadmap) {
-        console.log(`⚡ Quiz completed for ${userId} but roadmap missing. Auto-generating...`);
+    // Priority 3: If roadmap missing for quiz_completed user, auto-generate roadmap
+    if (!roadmap) {
+      console.log(`⚡ Quiz completed for ${userId} but roadmap missing. Auto-generating...`);
+      try {
         const genRes = await fetch('http://localhost:5000/api/roadmap/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userId })
+          body: JSON.stringify({ user_id: userId, quizEvaluation: evaluation })
         });
         const genData = await genRes.json();
-        if (genData.success && genData.roadmap) {
+        if (genData && genData.success && genData.roadmap) {
           roadmap = genData.roadmap;
         }
+      } catch (genErr) {
+        console.warn('Could not auto-generate roadmap:', genErr.message);
       }
+    }
 
-      // Save state
-      const state = this.progressTracker.getUserState();
-      state.isOnboarded = true;
-      state.userProfile = profile;
-      if (roadmap) {
-        state.personalizedRoadmap = roadmap;
-      }
-      this.progressTracker.saveUserState(state);
+    // Save state
+    const state = this.progressTracker.getUserState();
+    state.isOnboarded = true;
+    state.userProfile = profile;
+    if (roadmap) {
+      state.personalizedRoadmap = roadmap;
+    }
+    if (evaluation) {
+      state.quizEvaluation = evaluation;
+    }
+    this.progressTracker.saveUserState(state);
 
-      // Target route priority: resume last_route (if not quiz or auth route), else 'roadmap'
-      const targetRoute = (profile.last_route && profile.last_route !== 'diagnosticQuiz' && profile.last_route !== 'login' && profile.last_route !== 'onboarding')
-        ? profile.last_route
-        : 'roadmap';
+    // Target route priority: resume last_route (if not quiz or auth route), else 'assessmentReport' if never started journey, else 'roadmap'
+    let targetRoute = 'roadmap';
+    if (profile.last_route === 'assessmentReport') {
+      targetRoute = 'assessmentReport';
+    } else if (profile.last_route && profile.last_route !== 'diagnosticQuiz' && profile.last_route !== 'login' && profile.last_route !== 'onboarding' && profile.last_route !== 'diagnostic') {
+      targetRoute = profile.last_route;
+    } else if (evaluation && !profile.journey_started) {
+      targetRoute = 'assessmentReport';
+    }
 
-      return {
-        action: 'RESUME',
-        route: targetRoute,
-        profile,
-        roadmap
-      };
+    return {
+      action: 'RESUME',
+      route: targetRoute,
+      profile,
+      roadmap,
+      evaluation
+    };
 
     } catch (err) {
       console.error('Error checking user onboarding state:', err);

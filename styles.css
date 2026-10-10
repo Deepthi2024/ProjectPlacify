@@ -623,15 +623,16 @@ body {
   background: rgba(244, 63, 94, 0.08);
   border: 1px solid rgba(244, 63, 94, 0.3);
   border-radius: var(--radius-sm);
-  padding: 1rem;
-  margin-bottom: 0.8rem;
+  padding: 0.6rem 0.9rem;
+  margin-bottom: 0.5rem;
 }
 
 .gap-item h4 {
   color: var(--accent-rose);
   font-size: 0.95rem;
-  margin-bottom: 0.3rem;
+  margin: 0;
   display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 0.5rem;
 }
@@ -736,14 +737,8 @@ body {
 
 .daily-hub-layout {
   display: grid;
-  grid-template-columns: 1fr 340px;
+  grid-template-columns: 1fr;
   gap: 1.5rem;
-}
-
-@media (max-width: 950px) {
-  .daily-hub-layout {
-    grid-template-columns: 1fr;
-  }
 }
 
 .resource-card {
@@ -1976,6 +1971,19 @@ body {
 .status-radio-label input:checked + span {
   color: var(--accent-cyan);
   font-weight: 800;
+}
+
+#analytics-tier-name {
+  font-size: clamp(1rem, 1.4vw, 1.35rem);
+  font-family: var(--font-heading);
+  font-weight: 800;
+  margin: 0.4rem 0;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.25;
+  text-align: center;
 }
 
 

@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     onboarding: document.getElementById('view-onboarding'),
     domainSelection: document.getElementById('view-domain-selection'),
     diagnostic: document.getElementById('view-diagnostic'),
+    diagnosticQuiz: document.getElementById('view-diagnostic-quiz'),
     assessmentReport: document.getElementById('view-assessment-report'),
     roadmap: document.getElementById('view-roadmap'),
     dailyHub: document.getElementById('view-daily-hub'),
@@ -38,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // Protected views requiring authentication
-  const PROTECTED_VIEWS = ['roadmap', 'dailyHub', 'progressAnalytics', 'assessmentEvaluation', 'techNews', 'internships', 'myApplications', 'diagnostic', 'domainSelection', 'conceptQuiz', 'interviewQuestions', 'assessmentReport'];
+  const PROTECTED_VIEWS = ['roadmap', 'dailyHub', 'progressAnalytics', 'assessmentEvaluation', 'techNews', 'internships', 'myApplications', 'diagnostic', 'diagnosticQuiz', 'domainSelection', 'conceptQuiz', 'interviewQuestions', 'assessmentReport'];
 
   const ROUTE_PATH_MAP = {
     '/': 'onboarding',
@@ -48,6 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
     '/roadmap': 'roadmap',
     '/tasks': 'dailyHub',
     '/daily-hub': 'dailyHub',
+    '/assessment-report': 'assessmentReport',
+    '/report': 'assessmentReport',
     '/assessment-evaluation': 'assessmentEvaluation',
     '/evaluation': 'assessmentEvaluation',
     '/analytics': 'progressAnalytics',
@@ -58,7 +61,17 @@ document.addEventListener('DOMContentLoaded', () => {
     '/applications': 'myApplications',
     '/my-applications': 'myApplications',
     '/domain-selection': 'domainSelection',
-    '/diagnostic': 'diagnostic'
+    '/diagnostic': 'diagnostic',
+    '/diagnostic-quiz': 'diagnosticQuiz',
+    '/quiz': 'diagnosticQuiz',
+    '/interview-questions': 'interviewQuestions',
+    '/interview-questions/external-resources': 'interviewQuestions',
+    '/interview-questions/ai-practice': 'interviewQuestions',
+    '/interview-questions/ai-practice/session': 'interviewQuestions',
+    '/interview-questions/ai-practice/evaluation': 'interviewQuestions',
+    '/interview': 'interviewQuestions',
+    '/interview-prep': 'interviewQuestions',
+    '/interview-preparation': 'interviewQuestions'
   };
 
   const HASH_MAP = {
@@ -68,6 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
     '#roadmap': 'roadmap',
     '#tasks': 'dailyHub',
     '#dailyHub': 'dailyHub',
+    '#assessmentreport': 'assessmentReport',
+    '#report': 'assessmentReport',
     '#assessmentevaluation': 'assessmentEvaluation',
     '#evaluation': 'assessmentEvaluation',
     '#analytics': 'progressAnalytics',
@@ -75,7 +90,20 @@ document.addEventListener('DOMContentLoaded', () => {
     '#profile': 'progressAnalytics',
     '#techNews': 'techNews',
     '#internships': 'internships',
-    '#myApplications': 'myApplications'
+    '#myApplications': 'myApplications',
+    '#diagnostic': 'diagnostic',
+    '#diagnostic-quiz': 'diagnosticQuiz',
+    '#quiz': 'diagnosticQuiz',
+    '#interview-questions': 'interviewQuestions',
+    '#interview-questions/external-resources': 'interviewQuestions',
+    '#interview-questions/ai-practice': 'interviewQuestions',
+    '#interview-questions/ai-practice/session': 'interviewQuestions',
+    '#interview-questions/ai-practice/evaluation': 'interviewQuestions',
+    '#interview': 'interviewQuestions',
+    '#interviewquestions': 'interviewQuestions',
+    '#interviewprep': 'interviewQuestions',
+    '#interview-external': 'interviewQuestions',
+    '#interview-practice': 'interviewQuestions'
   };
 
   function getRequestedViewFromUrl() {
@@ -138,12 +166,54 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Sync browser URL location
-    const canonicalPath = actualView === 'onboarding' ? '/login' : (`/${actualView === 'dailyHub' ? 'tasks' : (actualView === 'progressAnalytics' ? 'analytics' : (actualView === 'assessmentEvaluation' ? 'assessment-evaluation' : actualView))}`);
+    let canonicalPath = actualView === 'onboarding' ? '/login' : (`/${actualView === 'dailyHub' ? 'tasks' : (actualView === 'progressAnalytics' ? 'analytics' : (actualView === 'assessmentEvaluation' ? 'assessment-evaluation' : (actualView === 'diagnosticQuiz' ? 'diagnostic-quiz' : (actualView === 'interviewQuestions' ? 'interview-questions' : actualView))))}`);
+    if (actualView === 'interviewQuestions') {
+      const curPath = (window.location.pathname || '').toLowerCase();
+      if (curPath.startsWith('/interview-questions/')) {
+        canonicalPath = window.location.pathname;
+      } else {
+        canonicalPath = '/interview-questions';
+      }
+    }
     if (window.location.pathname !== canonicalPath && window.history && window.history.pushState) {
       window.history.pushState(null, '', canonicalPath);
     }
 
-    if (actualView === 'techNews' && activeSession) {
+    if (actualView === 'diagnosticQuiz') {
+      const activeList = typeof getActiveDiagnosticList === 'function' ? getActiveDiagnosticList() : [];
+      const emptyState = document.getElementById('quiz-empty-state');
+      const activeContent = document.getElementById('quiz-active-content');
+
+      if (!activeList || activeList.length === 0) {
+        try {
+          const saved = sessionStorage.getItem('placify_active_diagnostic_quiz');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed && Array.isArray(parsed.questions) && parsed.questions.length > 0) {
+              if (parsed.level && typeof selectedSelfLevel !== 'undefined') selectedSelfLevel = parsed.level;
+              if (typeof renderDiagnosticQuiz === 'function') {
+                renderDiagnosticQuiz(parsed.domainId || 'fullstack', parsed.questions);
+              }
+              if (parsed.userAnswers && typeof diagnosticUserAnswers !== 'undefined') {
+                diagnosticUserAnswers = parsed.userAnswers;
+                if (typeof updatePaletteStatus === 'function') updatePaletteStatus();
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Could not restore diagnostic quiz from session:', e);
+        }
+      }
+
+      const refreshedList = typeof getActiveDiagnosticList === 'function' ? getActiveDiagnosticList() : [];
+      if (refreshedList && refreshedList.length > 0) {
+        if (emptyState) emptyState.style.display = 'none';
+        if (activeContent) activeContent.style.display = 'block';
+      } else {
+        if (emptyState) emptyState.style.display = 'block';
+        if (activeContent) activeContent.style.display = 'none';
+      }
+    } else if (actualView === 'techNews' && activeSession) {
       fetchTechNews();
     } else if (actualView === 'internships' && activeSession) {
       fetchInternships();
@@ -153,10 +223,12 @@ document.addEventListener('DOMContentLoaded', () => {
       updateAnalyticsView();
     } else if (actualView === 'assessmentEvaluation' && activeSession) {
       loadAssessmentEvaluationFromState(activeSession.user_id);
+    } else if (actualView === 'interviewQuestions' && activeSession) {
+      initInterviewPreparationStudio();
     }
 
     // Asynchronously persist last_route in MongoDB Atlas for authenticated users
-    if (activeSession && activeSession.user_id && actualView !== 'onboarding' && actualView !== 'diagnostic' && actualView !== 'domainSelection') {
+    if (activeSession && activeSession.user_id && actualView !== 'onboarding' && actualView !== 'diagnostic' && actualView !== 'diagnosticQuiz' && actualView !== 'domainSelection') {
       fetch('http://localhost:5000/api/user/route', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -513,20 +585,109 @@ document.addEventListener('DOMContentLoaded', () => {
   // Render Domain Grid immediately (no-op now)
   renderDomainGrid();
 
-  // Always clear active session on application open / page load
-  supervisor.authAgent.clearSession();
-  supervisor.progressTracker.clearActiveUser();
-  window.activePersonalizedRoadmap = null;
-  window.currentDraftProfile = null;
-  window.currentAssessmentTaskContext = null;
-  window.currentAssessmentData = null;
-  updateHeaderUserPill(null);
-  updateHeaderStats();
+  async function initializeApplicationSession() {
+    const activeSession = supervisor.authAgent.getActiveSession();
+    const requestedView = getRequestedViewFromUrl();
 
-  // Check initial requested URL path against Auth Guard
-  const initialView = getRequestedViewFromUrl();
-  enforceAuthRouteGuard(initialView);
-  switchView('onboarding');
+    if (activeSession && activeSession.user_id) {
+      updateHeaderUserPill(activeSession);
+      updateHeaderStats();
+
+      try {
+        const baseUrl = (window.location.protocol && window.location.protocol.startsWith('http')) ? window.location.origin : 'http://localhost:5000';
+        
+        // Fetch fresh profile, roadmap, and initial evaluation in parallel directly from MongoDB Atlas backend
+        const [userRes, rmRes, evalRes] = await Promise.all([
+          fetch(`${baseUrl}/api/user/${encodeURIComponent(activeSession.user_id)}`),
+          fetch(`${baseUrl}/api/roadmap/user/${encodeURIComponent(activeSession.user_id)}`),
+          fetch(`${baseUrl}/api/quiz/evaluation/${encodeURIComponent(activeSession.user_id)}`)
+        ]);
+
+        let freshProfile = null;
+        if (userRes.ok) {
+          const uData = await userRes.json();
+          if (uData && uData.success && uData.profile) {
+            freshProfile = uData.profile;
+            supervisor.authAgent.setActiveSession(freshProfile);
+            updateHeaderUserPill(freshProfile);
+            updateHeaderStats({
+              streak: freshProfile.streak,
+              xp: freshProfile.xp,
+              level: freshProfile.level,
+              badges: freshProfile.badges,
+              masteryPct: freshProfile.mastery_pct
+            });
+          }
+        }
+
+        let roadmapDoc = null;
+        if (rmRes.ok) {
+          const rmData = await rmRes.json();
+          if (rmData && rmData.success && rmData.roadmap) {
+            roadmapDoc = rmData.roadmap;
+            window.activePersonalizedRoadmap = roadmapDoc;
+            const state = supervisor.progressTracker.getUserState(activeSession.user_id);
+            if (state) {
+              state.personalizedRoadmap = roadmapDoc;
+              supervisor.progressTracker.saveUserState(state, activeSession.user_id);
+            }
+          }
+        }
+
+        let evalDoc = null;
+        if (evalRes.ok) {
+          const evalData = await evalRes.json();
+          if (evalData && evalData.success && evalData.evaluation) {
+            evalDoc = evalData.evaluation;
+            window.currentAssessmentEvaluation = evalDoc;
+            const state = supervisor.progressTracker.getUserState(activeSession.user_id);
+            if (state) {
+              state.quizEvaluation = evalDoc;
+              supervisor.progressTracker.saveUserState(state, activeSession.user_id);
+            }
+            renderAssessmentReport(evalDoc, roadmapDoc);
+          }
+        }
+
+        const profile = freshProfile || activeSession;
+        let targetView = (requestedView && requestedView !== 'onboarding') ? requestedView : (profile.last_route || 'roadmap');
+
+        if (profile.last_route === 'assessmentReport' || (evalDoc && !profile.journey_started && requestedView === 'onboarding' && profile.last_route !== 'dailyHub' && profile.last_route !== 'roadmap' && profile.last_route !== 'progressAnalytics' && profile.last_route !== 'internships' && profile.last_route !== 'techNews')) {
+          targetView = 'assessmentReport';
+        }
+
+        if (evalDoc) {
+          renderAssessmentReport(evalDoc, roadmapDoc);
+        }
+
+        if (targetView === 'roadmap' && roadmapDoc) {
+          await renderRoadmapView(roadmapDoc);
+        } else if (targetView === 'dailyHub' && roadmapDoc) {
+          let savedSpec = null;
+          try {
+            const raw = localStorage.getItem(`placify_selected_day_spec_${profile.user_id}`) || localStorage.getItem('placify_selected_day_spec');
+            if (raw) savedSpec = JSON.parse(raw);
+          } catch(e) {}
+          await renderDailyHub(savedSpec);
+        } else if (roadmapDoc) {
+          await renderRoadmapView(roadmapDoc);
+        }
+
+        switchView(targetView);
+        return;
+      } catch (err) {
+        console.warn('Notice during session re-hydration:', err.message);
+      }
+    }
+
+    // Unauthenticated -> Onboarding
+    updateHeaderUserPill(null);
+    updateHeaderStats();
+    enforceAuthRouteGuard(requestedView);
+    switchView('onboarding');
+  }
+
+  initializeApplicationSession();
 
   // Logout Handler
   document.getElementById('logout-btn').addEventListener('click', () => {
@@ -731,7 +892,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       } else {
         // Returning user with quiz_completed = true!
+        if (onboardingState.evaluation) {
+          window.currentAssessmentEvaluation = onboardingState.evaluation;
+          renderAssessmentReport(onboardingState.evaluation, onboardingState.roadmap);
+        }
         if (onboardingState.roadmap) {
+          window.activePersonalizedRoadmap = onboardingState.roadmap;
           await renderRoadmapView(onboardingState.roadmap);
         }
         const routeToSwitch = onboardingState.route || 'roadmap';
@@ -747,6 +913,8 @@ document.addEventListener('DOMContentLoaded', () => {
             savedSpec = { day: activeDay };
           }
           renderDailyHub(savedSpec);
+        } else if (routeToSwitch === 'assessmentReport' && onboardingState.evaluation) {
+          renderAssessmentReport(onboardingState.evaluation, onboardingState.roadmap);
         }
         switchView(routeToSwitch);
       }
@@ -963,28 +1131,49 @@ document.addEventListener('DOMContentLoaded', () => {
     const quizDomainTitle = document.getElementById('quiz-domain-title');
     if (quizDomainTitle) quizDomainTitle.textContent = domainNameText;
 
-    // Reset Quiz Wrapper to hidden initially
-    const quizWrapper = document.getElementById('diagnostic-quiz-wrapper');
-    if (quizWrapper) quizWrapper.style.display = 'none';
+    const pageDomainTitle = document.getElementById('quiz-page-domain-title');
+    if (pageDomainTitle) pageDomainTitle.textContent = domainNameText;
 
-    const topicGrid = document.getElementById('manual-topic-grid');
-    if (topicGrid) {
-      const topicSource = activeDiagnostics.length > 0 ? activeDiagnostics : allDiagnostics;
-      const domainTopics = (domain && domain.topics && domain.topics.length > 0)
-        ? domain.topics
-        : Array.from(new Set(topicSource.map(d => d.topic))).filter(Boolean);
-      topicGrid.innerHTML = domainTopics.map((topic, idx) => `
-        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 0.7rem 0.9rem; border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
-          <span style="font-size: 0.82rem; font-weight: 600; color: #fff;">${topic}</span>
-          <label style="font-size: 0.75rem; color: var(--accent-rose); display: flex; align-items: center; gap: 0.3rem; cursor: pointer;">
-            <input type="checkbox" class="manual-weak-topic-cb" data-topic="${topic}" style="accent-color: var(--accent-rose);">
-            Need Practice
-          </label>
-        </div>
-      `).join('');
+    const pageLevelBadge = document.getElementById('quiz-page-level-badge');
+    if (pageLevelBadge) {
+      pageLevelBadge.textContent = selectedSelfLevel || 'BEGINNER';
+      pageLevelBadge.className = `tier-label ${selectedSelfLevel || 'BEGINNER'}`;
     }
 
-    // Render Palette Buttons for the 10 active randomized questions
+    const pageCountBadge = document.getElementById('quiz-page-count-badge');
+    if (pageCountBadge) {
+      pageCountBadge.textContent = `${activeDiagnostics.length} Questions`;
+    }
+
+    const emptyState = document.getElementById('quiz-empty-state');
+    const activeContent = document.getElementById('quiz-active-content');
+    if (activeDiagnostics.length > 0) {
+      if (emptyState) emptyState.style.display = 'none';
+      if (activeContent) activeContent.style.display = 'block';
+    } else {
+      if (emptyState) emptyState.style.display = 'block';
+      if (activeContent) activeContent.style.display = 'none';
+    }
+
+    // Persist active quiz in sessionStorage for refresh resiliency
+    if (Array.isArray(customQuestions) && customQuestions.length > 0) {
+      try {
+        sessionStorage.setItem('placify_active_diagnostic_quiz', JSON.stringify({
+          domainId: currentDiagnosticDomainObj.id,
+          domainName: domainNameText,
+          level: selectedSelfLevel,
+          questions: activeDiagnostics,
+          userAnswers: diagnosticUserAnswers
+        }));
+      } catch (e) {}
+    }
+
+    // Synchronize Proficiency Level Cards, Tick Marks, and Roadmap Syllabus
+    if (typeof updateProficiencyLevelSelection === 'function') {
+      updateProficiencyLevelSelection(selectedSelfLevel || 'BEGINNER');
+    }
+
+    // Render Palette Buttons for the active questions
     if (paletteContainer) {
       paletteContainer.innerHTML = activeDiagnostics.map((q, idx) => `
         <button type="button" class="palette-btn ${idx === 0 ? 'active' : ''}" data-qidx="${idx}" id="palette-btn-${idx}" style="min-width: 32px; height: 32px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.05); color: #fff; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">
@@ -1083,6 +1272,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateDiagnosticControls();
 
+    function persistAnswersToSession() {
+      try {
+        const raw = sessionStorage.getItem('placify_active_diagnostic_quiz');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          parsed.userAnswers = diagnosticUserAnswers;
+          sessionStorage.setItem('placify_active_diagnostic_quiz', JSON.stringify(parsed));
+        }
+      } catch (e) {}
+    }
+
     // Attach Event Handlers for Options / Numerical / Text / MSQ
     const handleInputChange = function(e) {
       if (e.target.classList.contains('text-answer-input') || e.target.classList.contains('numerical-input')) {
@@ -1093,6 +1293,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           delete diagnosticUserAnswers[qid];
         }
+        persistAnswersToSession();
         updatePaletteStatus();
       }
       if (e.target.classList.contains('msq-checkbox')) {
@@ -1105,6 +1306,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           delete diagnosticUserAnswers[qid];
         }
+        persistAnswersToSession();
         updatePaletteStatus();
       }
     };
@@ -1130,6 +1332,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const icon = btn.querySelector('i');
       if (icon) icon.className = 'ph ph-check-circle';
 
+      persistAnswersToSession();
       updatePaletteStatus();
     };
   }
@@ -1192,6 +1395,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   window.renderDiagnosticQuiz = renderDiagnosticQuiz;
+
+  // Dedicated Quiz Page Back Button listeners
+  const quizBackBtn = document.getElementById('quiz-back-to-baseline-btn');
+  if (quizBackBtn) {
+    quizBackBtn.addEventListener('click', () => switchView('diagnostic'));
+  }
+  const quizEmptyReturnBtn = document.getElementById('quiz-empty-return-btn');
+  if (quizEmptyReturnBtn) {
+    quizEmptyReturnBtn.addEventListener('click', () => switchView('diagnostic'));
+  }
 
   // Prev / Next button listeners
   const prevBtn = document.getElementById('quiz-prev-btn');
@@ -1303,6 +1516,46 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function renderRoadmapSyllabus(domainId, level) {
+    const syllabusList = document.getElementById('roadmap-syllabus-list');
+    const badge = document.getElementById('syllabus-level-badge');
+    if (!syllabusList) return;
+
+    const normalizedLevel = (level || selectedSelfLevel || 'BEGINNER').toUpperCase();
+    const cleanDomain = domainId || (currentDiagnosticDomainObj ? currentDiagnosticDomainObj.id : selectedDomainId) || 'fullstack';
+
+    if (badge) {
+      badge.textContent = `${normalizedLevel} SYLLABUS`;
+      badge.className = `tier-label ${normalizedLevel}`;
+      if (normalizedLevel === 'INTERMEDIATE') {
+        badge.style.background = 'rgba(245, 158, 11, 0.2)';
+        badge.style.color = '#f59e0b';
+      } else if (normalizedLevel === 'ADVANCED') {
+        badge.style.background = 'rgba(139, 92, 246, 0.2)';
+        badge.style.color = 'var(--accent-violet)';
+      } else {
+        badge.style.background = 'rgba(16, 185, 129, 0.2)';
+        badge.style.color = 'var(--accent-emerald)';
+      }
+    }
+
+    const topics = window.getDomainSyllabus ? window.getDomainSyllabus(cleanDomain, normalizedLevel) : [];
+
+    let accentColor = 'var(--accent-emerald)';
+    if (normalizedLevel === 'INTERMEDIATE') {
+      accentColor = '#f59e0b';
+    } else if (normalizedLevel === 'ADVANCED') {
+      accentColor = 'var(--accent-violet)';
+    }
+
+    syllabusList.innerHTML = topics.map(topic => `
+      <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); padding: 0.65rem 0.85rem; border-radius: 8px; display: flex; align-items: center; gap: 0.6rem; transition: all 0.2s;">
+        <i class="ph ph-check-circle" style="color: ${accentColor}; font-size: 1.1rem; flex-shrink: 0;"></i>
+        <span style="font-size: 0.83rem; font-weight: 600; color: #f1f5f9; line-height: 1.35;">${topic}</span>
+      </div>
+    `).join('');
+  }
+
   function updateDeclaredLevelUI(level) {
     selectedSelfLevel = level;
     const pill = document.getElementById('selected-level-pill');
@@ -1312,6 +1565,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (level === 'INTERMEDIATE') {
         pill.style.background = 'rgba(245, 158, 11, 0.2)';
         pill.style.color = '#f59e0b';
+      } else if (level === 'ADVANCED') {
+        pill.style.background = 'rgba(139, 92, 246, 0.2)';
+        pill.style.color = 'var(--accent-violet)';
       } else {
         pill.style.background = '';
         pill.style.color = '';
@@ -1329,6 +1585,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (level === 'INTERMEDIATE') {
         tag.style.background = 'rgba(245, 158, 11, 0.2)';
         tag.style.color = '#f59e0b';
+      } else if (level === 'ADVANCED') {
+        tag.style.background = 'rgba(139, 92, 246, 0.2)';
+        tag.style.color = 'var(--accent-violet)';
       } else {
         tag.style.background = '';
         tag.style.color = '';
@@ -1336,37 +1595,50 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function updateProficiencyLevelSelection(level) {
+    const normalizedLevel = (level || 'BEGINNER').toUpperCase();
+    selectedSelfLevel = normalizedLevel;
+
+    document.querySelectorAll('.manual-level-card').forEach(c => {
+      const cLevel = (c.dataset.level || '').toUpperCase();
+      const isSelected = cLevel === normalizedLevel;
+      const icon = c.querySelector('.manual-card-icon');
+
+      if (isSelected) {
+        c.classList.add('active');
+        let borderColor = 'var(--accent-emerald)';
+        let iconColor = 'var(--accent-emerald)';
+        if (normalizedLevel === 'INTERMEDIATE') {
+          borderColor = '#f59e0b';
+          iconColor = '#f59e0b';
+        } else if (normalizedLevel === 'ADVANCED') {
+          borderColor = 'var(--accent-violet)';
+          iconColor = 'var(--accent-violet)';
+        }
+        c.style.border = `2px solid ${borderColor}`;
+        if (icon) {
+          icon.className = 'ph ph-check-circle manual-card-icon';
+          icon.style.color = iconColor;
+        }
+      } else {
+        c.classList.remove('active');
+        c.style.border = '1px solid rgba(255, 255, 255, 0.12)';
+        if (icon) {
+          icon.className = 'ph ph-circle manual-card-icon';
+          icon.style.color = 'var(--text-muted)';
+        }
+      }
+    });
+
+    updateDeclaredLevelUI(normalizedLevel);
+    renderRoadmapSyllabus(currentDiagnosticDomainObj ? currentDiagnosticDomainObj.id : selectedDomainId, normalizedLevel);
+  }
+
   // Handle Level Card Clicks (Step 1)
   document.querySelectorAll('.manual-level-card').forEach(card => {
     card.addEventListener('click', () => {
-      document.querySelectorAll('.manual-level-card').forEach(c => {
-        c.classList.remove('active');
-        c.style.border = '1px solid rgba(255, 255, 255, 0.12)';
-        const icon = c.querySelector('.manual-card-icon');
-        if (icon) {
-          icon.className = 'ph ph-circle';
-          icon.style.color = 'var(--text-muted)';
-        }
-      });
-      card.classList.add('active');
       const level = card.dataset.level || 'BEGINNER';
-
-      let borderColor = 'var(--accent-emerald)';
-      let iconColor = 'var(--accent-emerald)';
-      if (level === 'INTERMEDIATE') {
-        borderColor = '#f59e0b';
-        iconColor = '#f59e0b';
-      } else if (level === 'ADVANCED') {
-        borderColor = 'var(--accent-violet)';
-        iconColor = 'var(--accent-violet)';
-      }
-      card.style.border = `2px solid ${borderColor}`;
-      const icon = card.querySelector('.manual-card-icon');
-      if (icon) {
-        icon.className = 'ph ph-check-circle';
-        icon.style.color = iconColor;
-      }
-      updateDeclaredLevelUI(level);
+      updateProficiencyLevelSelection(level);
     });
   });
 
@@ -1408,19 +1680,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // Render Quiz with backend-generated dynamic questions
         renderDiagnosticQuiz(chosenDomain, quizData.questions);
 
-        if (quizWrapper) {
-          quizWrapper.style.display = 'block';
-          quizWrapper.scrollIntoView({ behavior: 'smooth' });
-        }
+        // Navigate to dedicated Diagnostic Quiz page
+        switchView('diagnosticQuiz');
 
       } catch (err) {
         console.error('Quiz Generation error:', err);
-        alert('Could not generate dynamic quiz: ' + err.message + '\n\nFalling back to domain diagnostic pool.');
-        renderDiagnosticQuiz(chosenDomain);
-        if (quizWrapper) {
-          quizWrapper.style.display = 'block';
-          quizWrapper.scrollIntoView({ behavior: 'smooth' });
-        }
+        alert('⚠️ Unable to generate diagnostic quiz:\n\n' + err.message + '\n\nPlease click "Generate Quiz" to try again.');
       } finally {
         startQuizBtn.disabled = false;
         startQuizBtn.innerHTML = `<i class="ph ph-play"></i> Generate <span id="quiz-count-btn-label">${selectedQuestionCount}-Question</span> Quiz`;
@@ -1495,61 +1760,59 @@ document.addEventListener('DOMContentLoaded', () => {
   // VIEW 3: ASSESSMENT REPORT & TOPIC PROFICIENCY
   // =========================================================================
   function renderAssessmentReport(evaluation, roadmap) {
+    if (!evaluation) return;
     const scoreDisplay = document.getElementById('tier-score-display');
-    const summaryDisplay = document.getElementById('tier-summary-text');
     const tierLabel = document.getElementById('tier-label-display');
     
     const skillTierVal = evaluation.skillTier || evaluation.skill_level || evaluation.skillLevel || 'BEGINNER';
     const scoreVal = evaluation.scorePct !== undefined ? evaluation.scorePct : (evaluation.score_pct !== undefined ? evaluation.score_pct : 0);
     const correctVal = evaluation.correctCount !== undefined ? evaluation.correctCount : (evaluation.correct_count !== undefined ? evaluation.correct_count : 0);
     const totalVal = evaluation.totalQuestions !== undefined ? evaluation.totalQuestions : (evaluation.total_questions !== undefined ? evaluation.total_questions : 0);
-    const levelDesc = evaluation.levelDescription || evaluation.level_description || '';
 
-    tierLabel.textContent = skillTierVal;
-    tierLabel.className = `tier-label ${skillTierVal}`;
+    if (tierLabel) {
+      tierLabel.textContent = skillTierVal;
+      tierLabel.className = `tier-label ${skillTierVal}`;
+    }
 
     if (evaluation.isSelfAssessed || evaluation.is_self_assessed) {
       if (scoreDisplay) {
         scoreDisplay.textContent = 'SELF';
         scoreDisplay.style.fontSize = '1.3rem';
       }
-      if (summaryDisplay) {
-        summaryDisplay.textContent = `Baseline established via User Self-Assessment (${skillTierVal}). Dynamic roadmap configured to match declared proficiency.`;
-      }
     } else {
       if (scoreDisplay) {
         scoreDisplay.textContent = `${scoreVal}%`;
         scoreDisplay.style.fontSize = '2rem';
       }
-      if (summaryDisplay) {
-        summaryDisplay.textContent = `Evaluated by Placify Quiz Performance Evaluator Agent. Score: ${scoreVal}%. Correct: ${correctVal}/${totalVal}. ${levelDesc}`;
-      }
     }
 
     // WEAK Topics / Gaps
     const gapContainer = document.getElementById('gaps-list-container');
-    const weakList = evaluation.weakTopics || evaluation.knowledgeGaps || [];
-    document.getElementById('gap-count-num').textContent = weakList.length;
+    const weakList = evaluation.weakTopics || evaluation.knowledgeGaps || evaluation.knowledge_gaps || [];
+    const gapCountEl = document.getElementById('gap-count-num');
+    if (gapCountEl) gapCountEl.textContent = weakList.length;
 
-    if (weakList.length === 0) {
-      gapContainer.innerHTML = `<div style="font-size: 0.85rem; color: var(--accent-emerald);">No critical knowledge gaps detected! Prerequisites satisfied.</div>`;
-    } else {
-      gapContainer.innerHTML = weakList.map(item => `
-        <div class="gap-item" style="border-left: 3px solid var(--accent-rose);">
-          <h4><i class="ph ph-warning"></i> ${item.topic} <span style="font-size: 0.75rem; background: rgba(239,68,68,0.15); color: #ef4444; padding: 0.2rem 0.5rem; border-radius: 4px; float: right;">WEAK (${item.score_pct !== undefined ? item.score_pct : (item.accuracy || 0)}%)</span></h4>
-          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem;">
-            ${item.reason || 'Needs targeted remedial practice.'}
+    if (gapContainer) {
+      if (weakList.length === 0) {
+        gapContainer.innerHTML = `<div style="font-size: 0.85rem; color: var(--accent-emerald);">No critical knowledge gaps detected! Prerequisites satisfied.</div>`;
+      } else {
+        gapContainer.innerHTML = weakList.map(item => `
+          <div class="gap-item" style="border-left: 3px solid var(--accent-rose);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong style="color: var(--accent-rose);"><i class="ph ph-warning"></i> ${item.topic}</strong>
+              <span style="font-size: 0.75rem; background: rgba(239,68,68,0.2); color: #ef4444; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">WEAK (${item.score_pct !== undefined ? item.score_pct : (item.accuracy || 0)}%)</span>
+            </div>
           </div>
-          ${item.weakConcepts && item.weakConcepts.length > 0 ? `
-            <div style="font-size: 0.75rem; color: var(--accent-rose); margin-top: 0.2rem;">Weak concepts: ${item.weakConcepts.join(', ')}</div>
-          ` : ''}
-        </div>
-      `).join('');
+        `).join('');
+      }
     }
 
     // INTERMEDIATE Topics
     const intermediateContainer = document.getElementById('intermediate-list-container');
-    const intermediateList = evaluation.intermediateTopics || [];
+    const intermediateList = evaluation.intermediateTopics || (evaluation.topic_evaluations || evaluation.topicEvaluations || []).filter(t => (t.proficiency_level || t.proficiencyLevel) === 'INTERMEDIATE').map(t => ({
+      topic: t.topic,
+      score_pct: t.score_pct !== undefined ? t.score_pct : (t.accuracy || 0)
+    }));
     const interCountEl = document.getElementById('intermediate-count-num');
     if (interCountEl) interCountEl.textContent = intermediateList.length;
 
@@ -1563,7 +1826,6 @@ document.addEventListener('DOMContentLoaded', () => {
               <strong style="color: #f59e0b;"><i class="ph ph-chart-bar"></i> ${item.topic}</strong>
               <span style="font-size: 0.75rem; background: rgba(245, 158, 11, 0.2); color: #f59e0b; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">INTERMEDIATE (${item.score_pct !== undefined ? item.score_pct : item.accuracy}%)</span>
             </div>
-            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.2rem;">${item.reason || 'Solid applied foundation. Ready for guided project implementation.'}</div>
           </div>
         `).join('');
       }
@@ -1571,26 +1833,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // STRONG Topics / Mastered
     const masteredContainer = document.getElementById('mastered-list-container');
-    const strongList = evaluation.strongTopics || evaluation.masteredTopics || [];
-    document.getElementById('mastered-count-num').textContent = strongList.length;
+    const strongList = evaluation.strongTopics || evaluation.masteredTopics || evaluation.mastered_topics || [];
+    const masteredCountEl = document.getElementById('mastered-count-num');
+    if (masteredCountEl) masteredCountEl.textContent = strongList.length;
 
-    if (strongList.length === 0) {
-      masteredContainer.innerHTML = `<div style="font-size: 0.85rem; color: var(--text-muted);">No topics marked as strong/mastered yet.</div>`;
-    } else {
-      masteredContainer.innerHTML = strongList.map(item => `
-        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-sm); padding: 0.6rem 0.9rem; margin-bottom: 0.5rem; font-size: 0.85rem;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <strong style="color: var(--accent-emerald);"><i class="ph ph-check-circle"></i> ${item.topic}</strong>
-            <span style="font-size: 0.75rem; background: rgba(16, 185, 129, 0.2); color: var(--accent-emerald); padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">STRONG (${item.score_pct !== undefined ? item.score_pct : (item.accuracy_pct || 100)}%)</span>
+    if (masteredContainer) {
+      if (strongList.length === 0) {
+        masteredContainer.innerHTML = `<div style="font-size: 0.85rem; color: var(--text-muted);">No topics marked as strong/mastered yet.</div>`;
+      } else {
+        masteredContainer.innerHTML = strongList.map(item => `
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-sm); padding: 0.6rem 0.9rem; margin-bottom: 0.5rem; font-size: 0.85rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong style="color: var(--accent-emerald);"><i class="ph ph-check-circle"></i> ${item.topic}</strong>
+              <span style="font-size: 0.75rem; background: rgba(16, 185, 129, 0.2); color: var(--accent-emerald); padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">STRONG (${item.score_pct !== undefined ? item.score_pct : (item.accuracy_pct || 100)}%)</span>
+            </div>
           </div>
-          <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.2rem;">Verified Prerequisite. Ready for advanced topics.</div>
-        </div>
-      `).join('');
+        `).join('');
+      }
     }
 
     // TOPIC PROFICIENCY TABLE
     const tableContainer = document.getElementById('topic-proficiency-table-container');
-    if (tableContainer && evaluation.topicEvaluations) {
+    const topicList = evaluation.topicEvaluations || evaluation.topic_evaluations || [];
+    if (tableContainer && topicList.length > 0) {
       tableContainer.innerHTML = `
         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 0.5rem;">
           <thead>
@@ -1600,34 +1865,40 @@ document.addEventListener('DOMContentLoaded', () => {
               <th style="padding: 0.7rem 0.8rem; color: var(--text-muted);">Accuracy</th>
               <th style="padding: 0.7rem 0.8rem; color: var(--text-muted);">Difficulty Breakdown (Beg / Int / Adv)</th>
               <th style="padding: 0.7rem 0.8rem; color: var(--text-muted);">Proficiency</th>
-              <th style="padding: 0.7rem 0.8rem; color: var(--text-muted);">Evaluation Insight</th>
             </tr>
           </thead>
           <tbody>
-            ${evaluation.topicEvaluations.map(t => {
+            ${topicList.map(t => {
+              const profLevel = t.proficiencyLevel || t.proficiency_level || 'INTERMEDIATE';
               let badgeColor = 'var(--accent-rose)';
               let badgeBg = 'rgba(239, 68, 68, 0.15)';
-              if (t.proficiencyLevel === 'STRONG') {
+              if (profLevel === 'STRONG') {
                 badgeColor = 'var(--accent-emerald)';
                 badgeBg = 'rgba(16, 185, 129, 0.15)';
-              } else if (t.proficiencyLevel === 'INTERMEDIATE') {
+              } else if (profLevel === 'INTERMEDIATE') {
                 badgeColor = '#f59e0b';
                 badgeBg = 'rgba(245, 158, 11, 0.15)';
               }
+              const totalQ = t.totalQuestions !== undefined ? t.totalQuestions : (t.total_questions !== undefined ? t.total_questions : 1);
+              const correctQ = t.correctAnswers !== undefined ? t.correctAnswers : (t.correct_count !== undefined ? t.correct_count : 0);
+              const accuracy = t.accuracy !== undefined ? t.accuracy : (t.score_pct !== undefined ? t.score_pct : 0);
+              const begAcc = t.beginnerAccuracy !== undefined ? t.beginnerAccuracy : (t.beginner_accuracy !== undefined ? t.beginner_accuracy : 100);
+              const intAcc = t.intermediateAccuracy !== undefined ? t.intermediateAccuracy : (t.intermediate_accuracy !== undefined ? t.intermediate_accuracy : 100);
+              const advAcc = t.advancedAccuracy !== undefined ? t.advancedAccuracy : (t.advanced_accuracy !== undefined ? t.advanced_accuracy : 0);
+
               return `
                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                   <td style="padding: 0.7rem 0.8rem; font-weight: 600;">${t.topic}</td>
-                  <td style="padding: 0.7rem 0.8rem;">${t.correctAnswers}/${t.totalQuestions}</td>
-                  <td style="padding: 0.7rem 0.8rem; font-weight: 700;">${t.accuracy}%</td>
+                  <td style="padding: 0.7rem 0.8rem;">${correctQ}/${totalQ}</td>
+                  <td style="padding: 0.7rem 0.8rem; font-weight: 700;">${accuracy}%</td>
                   <td style="padding: 0.7rem 0.8rem; font-size: 0.8rem; color: var(--text-muted);">
-                    Beg: <span style="color: #fff;">${t.beginnerAccuracy !== undefined ? t.beginnerAccuracy : 100}%</span> | 
-                    Int: <span style="color: #fff;">${t.intermediateAccuracy !== undefined ? t.intermediateAccuracy : 100}%</span> | 
-                    Adv: <span style="color: #fff;">${t.advancedAccuracy !== undefined ? t.advancedAccuracy : 0}%</span>
+                    Beg: <span style="color: #fff;">${begAcc}%</span> | 
+                    Int: <span style="color: #fff;">${intAcc}%</span> | 
+                    Adv: <span style="color: #fff;">${advAcc}%</span>
                   </td>
                   <td style="padding: 0.7rem 0.8rem;">
-                    <span style="background: ${badgeBg}; color: ${badgeColor}; padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: 700; font-size: 0.75rem;">${t.proficiencyLevel}</span>
+                    <span style="background: ${badgeBg}; color: ${badgeColor}; padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: 700; font-size: 0.75rem;">${profLevel}</span>
                   </td>
-                  <td style="padding: 0.7rem 0.8rem; font-size: 0.8rem; color: var(--text-muted);">${t.reason || 'Evaluated'}</td>
                 </tr>
               `;
             }).join('')}
@@ -1638,8 +1909,38 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   document.getElementById('build-roadmap-btn').addEventListener('click', async () => {
-    const state = supervisor.progressTracker.getUserState();
-    await renderRoadmapView(state.personalizedRoadmap);
+    let roadmap = window.activePersonalizedRoadmap;
+    if (!roadmap) {
+      const state = supervisor.progressTracker.getUserState();
+      roadmap = state ? state.personalizedRoadmap : null;
+    }
+    if (!roadmap) {
+      const activeSession = supervisor.authAgent.getActiveSession();
+      if (activeSession && activeSession.user_id) {
+        try {
+          const genRes = await fetch('http://localhost:5000/api/roadmap/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: activeSession.user_id })
+          });
+          const genData = await genRes.json();
+          if (genData.success && genData.roadmap) {
+            roadmap = genData.roadmap;
+            window.activePersonalizedRoadmap = roadmap;
+            const state = supervisor.progressTracker.getUserState(activeSession.user_id);
+            if (state) {
+              state.personalizedRoadmap = roadmap;
+              supervisor.progressTracker.saveUserState(state, activeSession.user_id);
+            }
+          }
+        } catch (e) {
+          console.warn('Could not generate roadmap on button click:', e.message);
+        }
+      }
+    }
+    if (roadmap) {
+      await renderRoadmapView(roadmap);
+    }
     switchView('roadmap');
   });
 
@@ -1808,6 +2109,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const domainTag = document.getElementById('roadmap-domain-tag');
     if (domainTag) domainTag.textContent = roadmap.domain_id || 'DOM';
+
+    const enterHubBtn = document.getElementById('enter-daily-hub-btn');
+    if (enterHubBtn) {
+      if (!journeyStarted) {
+        enterHubBtn.disabled = true;
+        enterHubBtn.setAttribute('aria-disabled', 'true');
+        enterHubBtn.style.opacity = '0.5';
+        enterHubBtn.style.cursor = 'not-allowed';
+        enterHubBtn.title = 'Click "Start My Journey" above to begin your roadmap.';
+      } else {
+        enterHubBtn.disabled = false;
+        enterHubBtn.removeAttribute('aria-disabled');
+        enterHubBtn.style.opacity = '1';
+        enterHubBtn.style.cursor = 'pointer';
+        enterHubBtn.title = 'Enter Daily Learning Hub';
+      }
+    }
     
     document.getElementById('rm-summary-domain').textContent = roadmap.domain || 'Full-Stack Web Development';
     document.getElementById('rm-summary-timeline').textContent = `${roadmap.timeline_months || 4} Months`;
@@ -2147,17 +2465,34 @@ document.addEventListener('DOMContentLoaded', () => {
           `;
         } else {
           // Case A: No tasks completed yet -> Launch Phase
-          actionButtonsHTML = `
-            <button class="btn btn-emerald open-phase-hub-btn launch-day-hub-btn" 
-              data-roadmap-id="${roadmapId}" 
-              data-month="${mNum}" 
-              data-week="${wNum}" 
-              data-day="${dNum}" 
-              data-day-id="${dId}" 
-              style="padding: 0.35rem 0.75rem; font-size: 0.78rem;">
-              Launch Phase <i class="ph ph-arrow-right"></i>
-            </button>
-          `;
+          if (!isStarted) {
+            actionButtonsHTML = `
+              <button class="btn btn-emerald open-phase-hub-btn launch-day-hub-btn" 
+                disabled
+                aria-disabled="true"
+                data-roadmap-id="${roadmapId}" 
+                data-month="${mNum}" 
+                data-week="${wNum}" 
+                data-day="${dNum}" 
+                data-day-id="${dId}" 
+                title="Click 'Start My Journey' to begin your roadmap."
+                style="padding: 0.35rem 0.75rem; font-size: 0.78rem; opacity: 0.5; cursor: not-allowed;">
+                Launch Phase <i class="ph ph-arrow-right"></i>
+              </button>
+            `;
+          } else {
+            actionButtonsHTML = `
+              <button class="btn btn-emerald open-phase-hub-btn launch-day-hub-btn" 
+                data-roadmap-id="${roadmapId}" 
+                data-month="${mNum}" 
+                data-week="${wNum}" 
+                data-day="${dNum}" 
+                data-day-id="${dId}" 
+                style="padding: 0.35rem 0.75rem; font-size: 0.78rem; cursor: pointer;">
+                Launch Phase <i class="ph ph-arrow-right"></i>
+              </button>
+            `;
+          }
         }
 
         return `
@@ -2226,7 +2561,23 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
 
     container.querySelectorAll('.open-phase-hub-btn, .launch-day-hub-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (e) => {
+        if (btn.disabled || btn.getAttribute('aria-disabled') === 'true') {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+
+        const activeRoadmap = window.activePersonalizedRoadmap || roadmap;
+        const session = supervisor.authAgent.getActiveSession();
+        const journeyActive = Boolean((activeRoadmap && activeRoadmap.journey_started) || (session && session.journey_started));
+        if (!journeyActive) {
+          e.preventDefault();
+          e.stopPropagation();
+          alert('Please click "Start My Journey" to initialize your calendar roadmap first.');
+          return;
+        }
+
         const daySpec = {
           roadmapId: btn.dataset.roadmapId || '',
           month: parseInt(btn.dataset.month, 10),
@@ -2250,7 +2601,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     container.querySelectorAll('.take-phase-assessment-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
+      btn.addEventListener('click', async (e) => {
+        if (btn.disabled || btn.getAttribute('aria-disabled') === 'true') {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+
+        const activeRoadmap = window.activePersonalizedRoadmap || roadmap;
+        const session = supervisor.authAgent.getActiveSession();
+        const journeyActive = Boolean((activeRoadmap && activeRoadmap.journey_started) || (session && session.journey_started));
+        if (!journeyActive) {
+          e.preventDefault();
+          e.stopPropagation();
+          alert('Please click "Start My Journey" to initialize your calendar roadmap first.');
+          return;
+        }
         const mNum = parseInt(btn.dataset.month, 10) || 1;
         const wNum = parseInt(btn.dataset.week, 10) || 1;
         const dNum = parseInt(btn.dataset.day, 10) || 1;
@@ -2346,54 +2712,100 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  document.getElementById('regenerate-roadmap-btn').addEventListener('click', async () => {
-    const activeSession = supervisor.authAgent.getActiveSession();
-    const userId = activeSession ? activeSession.user_id : (window.currentDraftProfile ? window.currentDraftProfile.user_id : null);
+  const regenBtn = document.getElementById('regenerate-roadmap-btn');
+  if (regenBtn) {
+    regenBtn.addEventListener('click', async () => {
+      const activeSession = supervisor.authAgent.getActiveSession();
+      const userId = activeSession ? activeSession.user_id : (window.currentDraftProfile ? window.currentDraftProfile.user_id : null);
 
-    if (!userId) {
-      alert('Please log in or register first to generate a personalized roadmap.');
-      return;
-    }
-
-    try {
-      const btn = document.getElementById('regenerate-roadmap-btn');
-      btn.disabled = true;
-      btn.innerHTML = `<i class="ph ph-spinner spinner"></i> Regenerating...`;
-
-      const res = await fetch('http://localhost:5000/api/roadmap/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId })
-      });
-
-      const data = await res.json();
-      btn.disabled = false;
-      btn.innerHTML = `<i class="ph ph-arrows-counter-clockwise"></i> Regenerate Roadmap`;
-
-      if (data.success && data.roadmap) {
-        await renderRoadmapView(data.roadmap);
-        alert('✅ Roadmap successfully regenerated and updated from your latest MongoDB Atlas profile and quiz performance!');
-      } else {
-        alert(data.error || 'Failed to regenerate roadmap.');
+      if (!userId) {
+        alert('Please log in or register first to generate a personalized roadmap.');
+        return;
       }
-    } catch (err) {
-      console.error('Roadmap regeneration error:', err);
-      alert('Error regenerating roadmap: ' + err.message);
-      const btn = document.getElementById('regenerate-roadmap-btn');
-      btn.disabled = false;
-      btn.innerHTML = `<i class="ph ph-arrows-counter-clockwise"></i> Regenerate Roadmap`;
-    }
-  });
 
-  document.getElementById('enter-daily-hub-btn').addEventListener('click', () => {
-    let savedSpec = null;
-    try {
-      const raw = localStorage.getItem('placify_selected_day_spec');
-      if (raw) savedSpec = JSON.parse(raw);
-    } catch(e) {}
-    renderDailyHub(savedSpec || { month: 1, week: 1, day: 1 });
-    switchView('dailyHub');
-  });
+      try {
+        const btn = document.getElementById('regenerate-roadmap-btn');
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = `<i class="ph ph-spinner spinner"></i> Regenerating...`;
+        }
+
+        const res = await fetch('http://localhost:5000/api/roadmap/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId })
+        });
+
+        const data = await res.json();
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<i class="ph ph-arrows-counter-clockwise"></i> Regenerate Roadmap`;
+        }
+
+        if (data.success && data.roadmap) {
+          await renderRoadmapView(data.roadmap);
+          alert('✅ Roadmap successfully regenerated and updated from your latest MongoDB Atlas profile and quiz performance!');
+        } else {
+          alert(data.error || 'Failed to regenerate roadmap.');
+        }
+      } catch (err) {
+        console.error('Roadmap regeneration error:', err);
+        alert('Error regenerating roadmap: ' + err.message);
+        const btn = document.getElementById('regenerate-roadmap-btn');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<i class="ph ph-arrows-counter-clockwise"></i> Regenerate Roadmap`;
+        }
+      }
+    });
+  }
+
+  function updateTakeAssessmentButtonState(tasksList) {
+    const quizBtn = document.getElementById('start-concept-quiz-btn');
+    if (!quizBtn) return;
+    const tasks = Array.isArray(tasksList) && tasksList.length > 0 
+      ? tasksList 
+      : (window.currentAssessmentTaskContext?.tasks || []);
+    const totalTasks = tasks.length;
+    const completedTasks = tasks.filter(t => t.completed === true || String(t.status || '').toUpperCase() === 'COMPLETED').length;
+    const allCompleted = totalTasks > 0 && completedTasks === totalTasks;
+
+    if (allCompleted) {
+      quizBtn.disabled = false;
+      quizBtn.removeAttribute('aria-disabled');
+      quizBtn.style.opacity = '1';
+      quizBtn.style.cursor = 'pointer';
+      quizBtn.title = 'Take Phase Assessment';
+    } else {
+      quizBtn.disabled = true;
+      quizBtn.setAttribute('aria-disabled', 'true');
+      quizBtn.style.opacity = '0.45';
+      quizBtn.style.cursor = 'not-allowed';
+      quizBtn.title = `Complete all tasks in this phase to unlock the assessment (${completedTasks}/${totalTasks} completed).`;
+    }
+  }
+  window.updateTakeAssessmentButtonState = updateTakeAssessmentButtonState;
+
+  const enterDailyHubBtn = document.getElementById('enter-daily-hub-btn');
+  if (enterDailyHubBtn) {
+    enterDailyHubBtn.addEventListener('click', (e) => {
+      const roadmap = window.activePersonalizedRoadmap;
+      const session = supervisor.authAgent.getActiveSession();
+      const isStarted = Boolean((roadmap && roadmap.journey_started) || (session && session.journey_started));
+      if (!isStarted) {
+        e.preventDefault();
+        alert('Please click "Start My Journey" to initialize your calendar roadmap first.');
+        return;
+      }
+      let savedSpec = null;
+      try {
+        const raw = localStorage.getItem('placify_selected_day_spec');
+        if (raw) savedSpec = JSON.parse(raw);
+      } catch(e) {}
+      renderDailyHub(savedSpec || { month: 1, week: 1, day: 1 });
+      switchView('dailyHub');
+    });
+  }
 
   // Helper to find the next chronological day in the roadmap hierarchy
   function findNextAvailableDay(roadmap, currentMonth, currentWeek, currentDay) {
@@ -2642,39 +3054,10 @@ document.addEventListener('DOMContentLoaded', () => {
         progressBarFillEl.style.width = `${dayProgressPct}%`;
       }
 
-      console.log('[NEXT DAY CHECK]', {
-        currentDay: dayNumber,
-        allCompleted: allDayTasksCompleted
-      });
-
-      // If all tasks for current day are complete, automatically transition to next available day
-      if (allDayTasksCompleted) {
-        const nextDaySpec = findNextAvailableDay(syncRoadmap, monthNumber, weekNumber, dayNumber);
-        if (nextDaySpec) {
-          console.log('[NEXT DAY]', {
-            month: nextDaySpec.month,
-            week: nextDaySpec.week,
-            day: nextDaySpec.day
-          });
-
-          window.currentSelectedDaySpec = {
-            roadmapId: nextDaySpec.roadmapId,
-            month: nextDaySpec.month,
-            week: nextDaySpec.week,
-            day: nextDaySpec.day,
-            dayId: nextDaySpec.dayId
-          };
-          try {
-            localStorage.setItem('placify_selected_day_spec', JSON.stringify(window.currentSelectedDaySpec));
-            if (userId) localStorage.setItem(`placify_selected_day_spec_${userId}`, JSON.stringify(window.currentSelectedDaySpec));
-          } catch (e) {}
-
-          // Automatically load next day's tasks & resources
-          await renderDailyHub(nextDaySpec);
-        } else {
-          console.log('[ROADMAP COMPLETE] All days completed in roadmap!');
-        }
+      if (window.currentAssessmentTaskContext) {
+        window.currentAssessmentTaskContext.tasks = currentDayTasks;
       }
+      updateTakeAssessmentButtonState(currentDayTasks);
 
     } catch (err) {
       console.error('[TASK STATUS UPDATE]', err);
@@ -2726,20 +3109,11 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.setItem('placify_selected_day_spec', JSON.stringify(window.currentSelectedDaySpec));
     } catch (e) {}
 
-    // Bulletproof roadmap resolution from memory, state, or localStorage
+    // Bulletproof roadmap resolution from memory or backend API
     let roadmap = window.activePersonalizedRoadmap;
     if (!roadmap) {
       const state = supervisor.progressTracker.getUserState();
       roadmap = state ? state.personalizedRoadmap : null;
-    }
-    if (!roadmap) {
-      try {
-        const storedState = localStorage.getItem('placify_user_state');
-        if (storedState) {
-          const parsed = JSON.parse(storedState);
-          roadmap = parsed.personalizedRoadmap || parsed.roadmap;
-        }
-      } catch (e) {}
     }
 
     // Refresh roadmap from database if active session exists to ensure authoritative state
@@ -2863,7 +3237,10 @@ document.addEventListener('DOMContentLoaded', () => {
       (roadmap.journey_start_date || (activeSession ? activeSession.journey_start_date : null));
     const startDate = roadmap ? (roadmap.journey_start_date || (activeSession ? activeSession.journey_start_date : null)) : null;
 
-    let dayFormatted = dayObj ? (dayObj.day_name || `Day ${targetDayNum}`) : `Day ${targetDayNum}`;
+    let dayFormatted = dayObj ? (dayObj.day_name || `Phase ${targetDayNum}`) : `Phase ${targetDayNum}`;
+    if (typeof dayFormatted === 'string' && dayFormatted.startsWith('Day ')) {
+      dayFormatted = dayFormatted.replace(/^Day\s+/i, 'Phase ');
+    }
     if (parentWeekObj && isStarted && startDate) {
       const overallDayOffset = (parentWeekObj.week_number - 1) * 7 + (targetDayNum - 1);
       const dayDateObj = addDaysToDate(startDate, overallDayOffset);
@@ -2900,7 +3277,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const dayBadgeEl = document.getElementById('current-day-badge');
-    if (dayBadgeEl) dayBadgeEl.textContent = `Day ${targetDayNum} Task Execution`;
+    if (dayBadgeEl) dayBadgeEl.textContent = `PHASE ${targetDayNum} TASK EXECUTION`;
 
     const titleEl = document.getElementById('current-task-title');
     if (titleEl) titleEl.textContent = `${dayFormatted} — ${dayTopic}`;
@@ -2922,7 +3299,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (dayTasksList.length === 0) {
         console.error('[ROADMAP TASK CONTRACT ERROR] Day has no tasks assigned:', { targetDayNum, dayTopic, domainKey });
-        resList.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--accent-amber);"><i class="ph ph-warning-circle" style="font-size: 2rem;"></i><br/><br/>No tasks found for Day ${targetDayNum}. Please return to the roadmap and select a valid day.</div>`;
+        resList.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--accent-amber);"><i class="ph ph-warning-circle" style="font-size: 2rem;"></i><br/><br/>No tasks found for Phase ${targetDayNum}. Please return to the roadmap and select a valid phase.</div>`;
         return;
       }
 
@@ -2950,6 +3327,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (progressBarFillEl) {
         progressBarFillEl.style.width = `${dayProgressPct}%`;
       }
+
+      updateTakeAssessmentButtonState(dayTasksList);
 
       console.log('[DAY PROGRESS]', {
         day: targetDayNum,
@@ -2985,6 +3364,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const taskId = taskItem.taskId || taskItem.id || `task_day_${targetDayNum}_${tIdx + 1}`;
         const isTaskDone = taskItem.completed === true || String(taskItem.status || '').toUpperCase() === 'COMPLETED';
+        const rawTaskTitle = taskItem.taskTitle || taskItem.title || 'Phase Task';
+        const displayTaskTitle = rawTaskTitle.replace(/\bDay\s+(\d+)/gi, 'Phase $1');
 
         fullHTML += `
           <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 1.2rem; margin-bottom: 1.5rem;">
@@ -2993,14 +3374,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.4rem; flex-wrap: wrap;">
                   <span class="node-tag ${typeClass}" style="font-size: 0.75rem; padding: 0.15rem 0.5rem;">${taskItem.taskType || 'LEARN'}</span>
                   <span class="tier-badge ${taskItem.difficulty || userLevel}" style="font-size: 0.7rem; padding: 0.15rem 0.5rem;">${taskItem.difficulty || userLevel}</span>
-                  <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff; margin: 0;">${taskItem.taskTitle || taskItem.title || 'Daily Task'}</h3>
+                  <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff; margin: 0;">${displayTaskTitle}</h3>
                 </div>
                 <button class="btn ${isTaskDone ? 'btn-success' : 'btn-secondary'} task-complete-toggle"
                   data-task-id="${taskId}"
                   data-month="${parentMonthObj?.month_number || requestedMonth || 1}"
                   data-week="${parentWeekObj?.week_number || requestedWeek || 1}"
                   data-day="${targetDayNum}"
-                  data-title="${(taskItem.taskTitle || taskItem.title || 'Daily Task').replace(/"/g, '&quot;')}"
+                  data-title="${rawTaskTitle.replace(/"/g, '&quot;')}"
                   data-skill-id="${taskItem.skillId || ''}"
                   data-completed="${isTaskDone}"
                   ${isTaskDone ? 'disabled' : ''}
@@ -3096,17 +3477,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         </span>
                       </div>
                     </div>
-                    <h5 style="font-size: 0.98rem; font-weight: 700; color: #fff; margin: 0.3rem 0;">${r.title}</h5>
-                    <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 0.5rem;">${r.description}</p>
+                    <h5 style="font-size: 0.98rem; font-weight: 700; color: #fff; margin: 0.35rem 0 0.5rem 0;">${r.title}</h5>
                     
-                    <div style="font-size: 0.76rem; color: var(--accent-cyan); background: rgba(6, 182, 212, 0.08); padding: 0.3rem 0.6rem; border-radius: 4px; margin-bottom: 0.5rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.3rem;">
+                    <div style="font-size: 0.76rem; color: var(--accent-cyan); background: rgba(6, 182, 212, 0.08); padding: 0.35rem 0.6rem; border-radius: 4px; margin-bottom: 0.65rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.3rem;">
                       <span>🎯 <strong>Topic:</strong> ${r.topic || taskTopic} &bull; <strong>Difficulty:</strong> ${r.difficulty || userLevel}</span>
                       <span>⏳ <strong>Time fit:</strong> ${r.duration_minutes || r.estimated_minutes || 20} / ${taskBudgetMins} min</span>
                     </div>
-
-                    <p style="font-size: 0.76rem; color: var(--text-dim); font-style: italic; margin-bottom: 0.6rem;">
-                      💡 <strong>Why this resource:</strong> ${r.relevance_reason || 'Directly aligned with today\'s task and time budget.'}
-                    </p>
 
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                       <span style="font-size: 0.75rem; color: var(--text-muted);">${r.platform}</span>
@@ -3148,7 +3524,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     updateHeaderStats();
-    fetchTechNews();
   }
 
   // =========================================================================
@@ -4188,15 +4563,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const state = supervisor.progressTracker.getUserState(userId);
       roadmap = state ? state.personalizedRoadmap : null;
     }
-    if (!roadmap) {
-      try {
-        const rawState = localStorage.getItem('placify_user_state');
-        if (rawState) {
-          const parsed = JSON.parse(rawState);
-          roadmap = parsed.personalizedRoadmap || parsed.roadmap;
-        }
-      } catch (e) {}
-    }
 
     const cur = window.currentSelectedDaySpec || {};
     const reqMonth = cur.month !== undefined && cur.month !== null ? parseInt(cur.month, 10) : (currentSelectedMonthObj ? parseInt(currentSelectedMonthObj.month_number, 10) : 1);
@@ -4241,19 +4607,34 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', returnToWeeklyRoadmap);
   });
 
-  document.getElementById('start-concept-quiz-btn').addEventListener('click', async () => {
-    try {
+  const startConceptQuizBtn = document.getElementById('start-concept-quiz-btn');
+  if (startConceptQuizBtn) {
+    startConceptQuizBtn.addEventListener('click', async (e) => {
+      if (startConceptQuizBtn.disabled || startConceptQuizBtn.getAttribute('aria-disabled') === 'true') {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
       const context = window.currentAssessmentTaskContext || {};
-      const firstTask = (context.tasks || [])[0] || {};
-      renderConceptQuizLoading();
-      switchView('conceptQuiz');
-      await renderConceptQuiz(firstTask.title || firstTask.taskTitle || 'Daily Assessment', firstTask.topic || context.domain, context);
-    } catch (err) {
-      console.error('[DAILY ASSESSMENT OPEN]', err);
-      alert("Unable to generate today's assessment. Please try again.");
-      switchView('dailyHub');
-    }
-  });
+      const tasks = Array.isArray(context.tasks) ? context.tasks : [];
+      const allCompleted = tasks.length > 0 && tasks.every(t => t.completed === true || String(t.status || '').toUpperCase() === 'COMPLETED');
+      if (!allCompleted && tasks.length > 0) {
+        e.preventDefault();
+        alert('Please complete all tasks in this phase to unlock the assessment.');
+        return;
+      }
+      try {
+        const firstTask = tasks[0] || {};
+        renderConceptQuizLoading();
+        switchView('conceptQuiz');
+        await renderConceptQuiz(firstTask.title || firstTask.taskTitle || 'Phase Assessment', firstTask.topic || context.domain, context);
+      } catch (err) {
+        console.error('[DAILY ASSESSMENT OPEN]', err);
+        alert("Unable to generate today's assessment. Please try again.");
+        switchView('dailyHub');
+      }
+    });
+  }
 
   document.getElementById('skip-day-assessment-btn').addEventListener('click', async () => {
     await continueToNextDay(true);
@@ -4384,15 +4765,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const userId = session?.user_id;
       let roadmap = window.activePersonalizedRoadmap || supervisor.progressTracker.getUserState()?.personalizedRoadmap;
 
-      if (!roadmap) {
-        try {
-          const rawState = localStorage.getItem('placify_user_state');
-          if (rawState) {
-            const parsed = JSON.parse(rawState);
-            roadmap = parsed.personalizedRoadmap || parsed.roadmap;
-          }
-        } catch (e) {}
-      }
 
       if (userId) {
         try {
@@ -4753,7 +5125,7 @@ document.addEventListener('DOMContentLoaded', () => {
     container.innerHTML = summaryHTML + questionsHTML + conceptsHTML;
   }
 
-  function loadAssessmentEvaluationFromState(userId) {
+  async function loadAssessmentEvaluationFromState(userId) {
     if (!userId) return;
     if (window.currentEvaluationData && window.currentEvaluationData.userId === userId) {
       renderAssessmentEvaluationPage(window.currentEvaluationData);
@@ -4771,6 +5143,38 @@ document.addEventListener('DOMContentLoaded', () => {
         if (parsed && parsed.userId === userId) {
           renderAssessmentEvaluationPage(parsed);
           return;
+        }
+      }
+      // Fallback: Fetch latest assessment from MongoDB backend
+      const res = await fetch(`http://localhost:5000/api/phase-assessment/user/${encodeURIComponent(userId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.assessments) && data.assessments.length > 0) {
+          const latest = data.assessments[0];
+          const reconstructed = {
+            submissionId: latest.submission_id,
+            userId: latest.user_id,
+            roadmapId: latest.roadmap_id,
+            phaseKey: latest.phase_key,
+            monthNumber: latest.month_number,
+            weekNumber: latest.week_number,
+            dayNumber: latest.day_number,
+            dayId: latest.day_id,
+            phaseTitle: latest.phase_title,
+            submittedAt: latest.submitted_at,
+            scorePct: latest.score_pct,
+            earnedPoints: latest.marks_obtained,
+            maxPoints: latest.total_marks,
+            passed: latest.passed,
+            totalQuestions: latest.total_questions,
+            correctCount: latest.correct_count,
+            partiallyCorrectCount: latest.partially_correct_count,
+            incorrectCount: latest.incorrect_count,
+            detailedQuestions: latest.detailed_questions || [],
+            conceptsToReview: latest.concepts_to_review || [],
+            taskContext: latest.task_context || {}
+          };
+          renderAssessmentEvaluationPage(reconstructed);
         }
       }
     } catch (e) {}
@@ -5043,12 +5447,15 @@ document.addEventListener('DOMContentLoaded', () => {
           submissionId: attemptId,
           userId: userId,
           roadmapId: taskCtx.roadmapId || curSpec.roadmapId || (activeRoadmap?.roadmap_id || activeRoadmap?._id || activeRoadmap?.id || ''),
+          domain: taskCtx.domain || activeRoadmap?.domain || activeSession?.chosen_domain || 'fullstack',
           phaseKey: phaseKey,
+          phaseNumber: dNum,
           monthNumber: mNum,
           weekNumber: wNum,
           dayNumber: dNum,
           dayId: dId,
           phaseTitle: targetDayTopic || taskCtx.topic || `Phase ${dNum} Mastery`,
+          topic: targetDayTopic || taskCtx.topic || `Phase ${dNum} Mastery`,
           submittedAt: new Date().toISOString(),
           scorePct: result.grade?.scorePct !== undefined ? result.grade.scorePct : 0,
           earnedPoints: result.grade?.score !== undefined ? result.grade.score : (result.grade?.earnedPoints || 0),
@@ -5063,10 +5470,35 @@ document.addEventListener('DOMContentLoaded', () => {
           taskContext: taskCtx
         };
 
+        // Persist evaluation in MongoDB backend Atlas
+        let savedUserStats = null;
+        try {
+          const saveRes = await fetch('http://localhost:5000/api/phase-assessment/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(evalData)
+          });
+          if (saveRes.ok) {
+            const saveJson = await saveRes.json();
+            if (saveJson.success && saveJson.userStats) {
+              savedUserStats = saveJson.userStats;
+              console.log('✅ [ASSESSMENT PERSISTED TO MONGODB]', saveJson);
+            }
+          }
+        } catch (sErr) {
+          console.warn('[ASSESSMENT SAVE WARNING] Could not persist to MongoDB:', sErr.message);
+        }
+
         // Persist evaluation in user state and storage
         const state = supervisor.progressTracker.getUserState(userId);
         if (state) {
           if (activeRoadmap) state.personalizedRoadmap = activeRoadmap;
+          if (savedUserStats) {
+            if (Array.isArray(savedUserStats.badges)) state.badges = savedUserStats.badges;
+            if (savedUserStats.xp !== undefined) state.xp = savedUserStats.xp;
+            if (savedUserStats.streak !== undefined) state.streak = savedUserStats.streak;
+            if (savedUserStats.level !== undefined) state.level = savedUserStats.level;
+          }
           if (!state.phaseAssessments) state.phaseAssessments = {};
           state.phaseAssessments[phaseKey] = {
             taken: true,
@@ -5104,7 +5536,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Render dedicated evaluation page and navigate
-        updateHeaderStats();
+        updateHeaderStats(savedUserStats);
         renderAssessmentEvaluationPage(evalData);
         switchView('assessmentEvaluation');
       } catch (err) {
@@ -5222,6 +5654,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const domainName = userRoadmap?.domain || session.chosen_domain || 'Technology';
       const userName = session.name || session.full_name || session.username || session.email || 'Learner';
       const topicStats = progressMetrics?.topicStats || {};
+      const badges = Array.isArray(progressMetrics?.badges) && progressMetrics.badges.length > 0
+        ? progressMetrics.badges
+        : (Array.isArray(state.badges) && state.badges.length > 0 ? state.badges : ['🐣 Fresh Start']);
 
       // 4. NO DATA STATE
       if (totalTasks === 0) {
@@ -5242,22 +5677,94 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // 5. SUCCESS DASHBOARD UI
-      const topicBarsHTML = Object.keys(topicStats).map(topic => {
-        const stat = topicStats[topic];
-        const pct = stat.total > 0 ? Math.round((stat.completed / stat.total) * 100) : 0;
-        return `
-          <div style="margin-bottom: 1.2rem;">
-            <div style="display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 0.4rem;">
-              <span style="font-weight: 600; color: #fff;">${escapeHtml(topic)}</span>
-              <span style="color: var(--accent-cyan); font-weight: 700;">${pct}% (${stat.completed}/${stat.total} tasks)</span>
+      // 3. EXTRACT ALL ROADMAP PHASES
+      const phaseList = [];
+      let overallPhaseNum = 0;
+
+      if (userRoadmap && Array.isArray(userRoadmap.monthly_roadmap)) {
+        userRoadmap.monthly_roadmap.forEach(month => {
+          (month.weeks || []).forEach(week => {
+            (week.days || []).forEach(day => {
+              overallPhaseNum++;
+              const phaseNum = day.day_number || overallPhaseNum;
+              const phaseKey = `m${month.month_number}_w${week.week_number}_d${day.day_number}`;
+              const phaseTitle = day.topic || (week.topics && week.topics[0]) || `Phase ${phaseNum} Mastery`;
+              const dayId = day.id || day.day_id || `day_${phaseNum}`;
+
+              phaseList.push({
+                phaseNumber: phaseNum,
+                overallPhaseIndex: overallPhaseNum,
+                monthNumber: month.month_number,
+                weekNumber: week.week_number,
+                dayNumber: day.day_number,
+                phaseKey,
+                dayId,
+                phaseTitle,
+                topic: day.topic || phaseTitle,
+                dayName: day.day_name || `Phase ${phaseNum}`,
+                roadmapAssessmentTaken: Boolean(day.assessment_taken || day.assessmentTaken),
+                roadmapAssessmentScore: day.assessment_score,
+                roadmapAssessmentPassed: day.assessment_passed,
+                roadmapSubmittedAt: day.assessment_submitted_at
+              });
+            });
+          });
+        });
+      }
+
+      const savedAssessments = Array.isArray(progressMetrics?.phaseAssessments) ? progressMetrics.phaseAssessments : [];
+
+      // Collect all valid submitted assessment scores from MongoDB
+      const validScores = [];
+      savedAssessments.forEach(pa => {
+        const s = pa.score_pct !== undefined ? pa.score_pct : pa.scorePct;
+        if (s !== null && s !== undefined && !isNaN(Number(s))) {
+          validScores.push(Number(s));
+        }
+      });
+
+      // Fallback: If no saved assessments array, check roadmap days for submitted scores
+      if (validScores.length === 0 && userRoadmap && Array.isArray(userRoadmap.monthly_roadmap)) {
+        userRoadmap.monthly_roadmap.forEach(m => {
+          (m.weeks || []).forEach(w => {
+            (w.days || []).forEach(d => {
+              if ((d.assessment_taken || d.assessmentTaken) && d.assessment_score !== null && d.assessment_score !== undefined && !isNaN(Number(d.assessment_score))) {
+                validScores.push(Number(d.assessment_score));
+              }
+            });
+          });
+        });
+      }
+
+      const isAnyAssessmentAttempted = validScores.length > 0;
+      let formattedAvgAssessmentScore = 'Not attempted';
+      let assessmentScoreColor = 'var(--text-muted)';
+      let progressBarWidth = 0;
+
+      if (isAnyAssessmentAttempted) {
+        const sumScores = validScores.reduce((acc, val) => acc + val, 0);
+        const avgScore = sumScores / validScores.length;
+        const roundedScore = Number.isInteger(avgScore) ? avgScore : Number(avgScore.toFixed(1));
+        formattedAvgAssessmentScore = `${roundedScore}%`;
+        assessmentScoreColor = avgScore >= 70 ? 'var(--accent-emerald)' : (avgScore >= 40 ? '#f59e0b' : 'var(--accent-rose)');
+        progressBarWidth = Math.min(100, Math.max(0, avgScore));
+      }
+
+      let latestAssessmentSummaryHTML = '<i class="ph ph-info" style="color: var(--accent-cyan);"></i> Daily concept assessments evaluate technical mastery. A minimum of 70% average score is required to pass.';
+      if (savedAssessments.length > 0) {
+        const latest = savedAssessments[0];
+        const statusText = latest.passed ? '<strong style="color:var(--accent-emerald);">PASSED</strong>' : '<strong style="color:var(--accent-rose);">NEEDS REVIEW</strong>';
+        latestAssessmentSummaryHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+            <div>
+              <strong style="color:#fff;"><i class="ph ph-check-circle" style="color:var(--accent-cyan);"></i> Latest Assessment:</strong> ${escapeHtml(latest.phase_title || `Phase ${latest.phase_number}`)} &bull; Latest Score: <strong style="color:var(--accent-cyan);">${latest.score_pct}%</strong> (${statusText})
             </div>
-            <div style="height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;">
-              <div style="width: ${pct}%; height: 100%; background: linear-gradient(90deg, var(--accent-cyan), var(--accent-emerald)); border-radius: 4px; transition: width 0.5s ease;"></div>
+            <div style="font-size:0.8rem; color:var(--text-muted);">
+              ${latest.correct_count} Correct &bull; ${latest.partially_correct_count} Partial &bull; ${latest.incorrect_count} Incorrect
             </div>
           </div>
         `;
-      }).join('');
+      }
 
       analyticsContainer.innerHTML = `
         <div class="glass-card">
@@ -5271,7 +5778,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
           <!-- OVERALL PROGRESS CARD -->
           <div style="background: rgba(255,255,255,0.02); padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-glass); margin-bottom: 1.8rem;">
-            <div style="display:flex; justify-style:space-between; justify-content:space-between; align-items:center; margin-bottom:0.6rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem;">
               <span style="font-size:1.05rem; font-weight:700; color:#fff;">Overall Roadmap Completion</span>
               <span style="font-size:1.2rem; font-weight:800; color:var(--accent-emerald);">${taskCompletionPct}%</span>
             </div>
@@ -5295,6 +5802,20 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
 
             <div class="glass-card" style="text-align: center; padding: 1.2rem;">
+              <i class="ph ph-exam" style="font-size: 2rem; color: var(--accent-cyan);"></i>
+              <div style="font-size: ${isAnyAssessmentAttempted ? '1.8rem' : '1.35rem'}; font-family: var(--font-heading); font-weight: 800; margin: 0.4rem 0; color: ${assessmentScoreColor};" id="analytics-assessment-score-num">
+                ${formattedAvgAssessmentScore}
+              </div>
+              ${isAnyAssessmentAttempted ? `
+                <div style="width: 80px; height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; margin: 0.4rem auto; overflow: hidden;">
+                  <div style="width: ${progressBarWidth}%; height: 100%; background: ${assessmentScoreColor}; border-radius: 3px;"></div>
+                </div>
+              ` : ''}
+              <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Assessment Score</div>
+              <div style="font-size: 0.72rem; color: rgba(255,255,255,0.45); margin-top: 0.2rem;">Average of submitted assessments</div>
+            </div>
+
+            <div class="glass-card" style="text-align: center; padding: 1.2rem;">
               <i class="ph ph-flame" style="font-size: 2rem; color: var(--accent-amber);"></i>
               <div style="font-size: 1.8rem; font-family: var(--font-heading); font-weight: 800; margin: 0.4rem 0;" id="analytics-streak-num">${streak} Days</div>
               <div style="font-size: 0.8rem; color: var(--text-muted);">Current Streak</div>
@@ -5306,24 +5827,31 @@ document.addEventListener('DOMContentLoaded', () => {
               <div style="font-size: 0.8rem; color: var(--text-muted);">Total XP Earned</div>
             </div>
 
-            <div class="glass-card" style="text-align: center; padding: 1.2rem;">
+            <div class="glass-card" style="text-align: center; padding: 1.2rem; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 0;">
               <i class="ph ph-shield-check" style="font-size: 2rem; color: var(--accent-emerald);"></i>
-              <div style="font-size: 1.8rem; font-family: var(--font-heading); font-weight: 800; margin: 0.4rem 0;" id="analytics-tier-name">${escapeHtml(tier)}</div>
-              <div style="font-size: 0.8rem; color: var(--text-muted);">Current Skill Tier</div>
+              <div style="font-size: clamp(1rem, 1.4vw, 1.35rem); font-family: var(--font-heading); font-weight: 800; margin: 0.4rem 0; min-width: 0; max-width: 100%; overflow-wrap: break-word; word-break: break-word; line-height: 1.25; text-align: center; color: #fff;" id="analytics-tier-name">${escapeHtml(tier)}</div>
+              <div style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.2;">Current Skill Tier</div>
             </div>
           </div>
 
-          <!-- DOMAIN & TOPIC BREAKDOWN -->
+          <!-- UNLOCKED BADGES & ACHIEVEMENTS -->
           <div style="background: rgba(255,255,255,0.02); padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-glass); margin-bottom: 1.8rem;">
-            <h4 style="color: #fff; margin-bottom: 1.2rem; font-family: var(--font-heading); display: flex; align-items: center; gap: 0.5rem;">
-              <i class="ph ph-tree-structure" style="color: var(--accent-cyan);"></i> Domain Progress Breakdown
-            </h4>
-            ${topicBarsHTML || '<div style="color:var(--text-muted);font-size:0.88rem;">No topic breakdown available yet.</div>'}
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+              <h4 style="color: #fff; margin: 0; font-family: var(--font-heading); display: flex; align-items: center; gap: 0.5rem;">
+                <i class="ph ph-trophy" style="color: var(--accent-amber);"></i> Unlocked Badges & Achievements
+              </h4>
+              <span style="font-size: 0.78rem; font-weight: 700; color: var(--accent-amber); background: rgba(245, 158, 11, 0.12); padding: 0.25rem 0.75rem; border-radius: var(--radius-full); border: 1px solid rgba(245, 158, 11, 0.3);">
+                ${badges.length} Badges Earned
+              </span>
+            </div>
+            <div class="badge-grid" id="analytics-badges-grid">
+              ${badges.map(b => `<div class="badge-item">${escapeHtml(b)}</div>`).join('')}
+            </div>
           </div>
 
           <!-- ASSESSMENT SUMMARY PANEL -->
           <div id="assessment-result-summary" style="padding: 1.2rem; border: 1px solid var(--border-glass); border-radius: var(--radius-sm); background: rgba(255,255,255,0.02); color: var(--text-muted);">
-            <i class="ph ph-info" style="color: var(--accent-cyan);"></i> Daily concept assessments evaluate technical mastery. A minimum of 70% is required to pass each assessment.
+            ${latestAssessmentSummaryHTML}
           </div>
 
           <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.7rem; flex-wrap: wrap;">
@@ -5361,8 +5889,939 @@ document.addEventListener('DOMContentLoaded', () => {
     const summary = document.getElementById('assessment-result-summary');
     if (summary) summary.innerHTML = `<strong style="color:var(--accent-emerald);">Assessment Score: ${g.scorePct ?? 0}%</strong><br/><span style="color:var(--text-muted);">${g.passed ? 'Assessment passed (70%+). Great job! You can continue learning or optionally practice interview questions.' : 'Score below 70%. Use the feedback to review weak areas and try again.'}</span>`;
     const interviewBtn = document.getElementById('take-interview-btn');
-    if (interviewBtn) interviewBtn.style.display = 'inline-flex';
+    if (interviewBtn) {
+      interviewBtn.style.display = 'inline-flex';
+      interviewBtn.onclick = () => switchView('interviewQuestions');
+    }
     updateAnalyticsView();
+  }
+
+  // =========================================================================
+  // INTERVIEW PREPARATION STUDIO CONTROLLER
+  // =========================================================================
+  let interviewPracticeState = {
+    domain: 'Full-Stack Web Development',
+    topic: 'Web Fundamentals',
+    phaseNumber: 1,
+    phaseTitle: '',
+    difficulty: 'Intermediate',
+    count: 5,
+    questionType: 'mixed',
+    category: 'technical_fundamentals',
+    questions: [],
+    userAnswers: {},
+    currentQuestionIndex: 0,
+    isSubmitting: false,
+    results: null
+  };
+
+  function getDomainDisplayName(domainId) {
+    if (!domainId) return 'Full-Stack Web Development';
+    const domainObj = window.PLACIFY_DATA ? window.PLACIFY_DATA.findDomain(domainId) : null;
+    return domainObj ? domainObj.name : domainId;
+  }
+
+  async function initInterviewPreparationStudio(targetSubView) {
+    const activeSession = supervisor.authAgent.getActiveSession();
+    if (!activeSession) return;
+
+    const userState = supervisor.progressTracker.getUserState(activeSession.user_id) || {};
+    const userProfile = activeSession.profile || userState.profile || {};
+    const domainRaw = activeSession.chosen_domain || activeSession.domainId || userProfile.chosen_domain || userProfile.domainId || userState.chosen_domain || 'fullstack';
+    const domainName = getDomainDisplayName(domainRaw);
+    const userLevel = (userProfile.skill_tier || userState.tier || userProfile.level || 'Intermediate').toUpperCase();
+
+    interviewPracticeState.domain = domainName;
+
+    // Update target domain badges in UI
+    const domainBadgeEl = document.getElementById('interview-user-domain-label');
+    if (domainBadgeEl) domainBadgeEl.textContent = domainName;
+
+    const extDomainNameEl = document.getElementById('interview-ext-domain-name');
+    if (extDomainNameEl) extDomainNameEl.textContent = domainName;
+
+    const cfgDomainNameEl = document.getElementById('interview-cfg-domain-name');
+    if (cfgDomainNameEl) cfgDomainNameEl.textContent = domainName;
+
+    const cfgDomainInput = document.getElementById('interview-cfg-domain');
+    if (cfgDomainInput) cfgDomainInput.value = domainName;
+
+    // DOM views
+    const hubView = document.getElementById('interview-landing-hub');
+    const extView = document.getElementById('interview-external-workflow');
+    const placifyView = document.getElementById('interview-placify-workflow');
+
+    // DOM states for Placify AI practice
+    const formConfig = document.getElementById('interview-config-form');
+    const loadingState = document.getElementById('interview-practice-loading');
+    const errorState = document.getElementById('interview-practice-error');
+    const runnerState = document.getElementById('interview-practice-runner');
+    const resultsState = document.getElementById('interview-practice-results');
+
+    // Fetch roadmap phases to populate dropdowns
+    let roadmap = userState.personalizedRoadmap || window.activePersonalizedRoadmap;
+    if (!roadmap && activeSession.user_id) {
+      try {
+        const resp = await fetch(`http://localhost:5000/api/roadmap/${encodeURIComponent(activeSession.user_id)}`);
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data && data.roadmap) roadmap = data.roadmap;
+        }
+      } catch (e) {
+        console.warn('Could not fetch roadmap for interview studio:', e);
+      }
+    }
+
+    let phases = [];
+    if (roadmap) {
+      if (Array.isArray(roadmap.monthly_roadmap)) {
+        phases = roadmap.monthly_roadmap;
+      } else if (Array.isArray(roadmap.phases)) {
+        phases = roadmap.phases;
+      } else if (Array.isArray(roadmap)) {
+        phases = roadmap;
+      }
+    }
+
+    // Populate phase selects
+    const extPhaseSelect = document.getElementById('interview-ext-phase-select');
+    const cfgPhaseSelect = document.getElementById('interview-cfg-phase-select');
+
+    function populatePhaseSelect(selectEl) {
+      if (!selectEl) return;
+      selectEl.innerHTML = '';
+      if (phases && phases.length > 0) {
+        const generalOpt = document.createElement('option');
+        generalOpt.value = 'all';
+        generalOpt.textContent = '⚡ All Domain Topics (Comprehensive)';
+        selectEl.appendChild(generalOpt);
+
+        phases.forEach((p, idx) => {
+          const opt = document.createElement('option');
+          const pNum = p.phase || p.phase_number || idx + 1;
+          const pTitle = p.title || p.topic || `Phase ${pNum}`;
+          const topics = Array.isArray(p.focus_areas) ? p.focus_areas.join(', ') : (p.topic || '');
+          opt.value = String(pNum);
+          opt.dataset.title = pTitle;
+          opt.dataset.topics = topics;
+          opt.textContent = `Phase ${pNum}: ${pTitle}`;
+          selectEl.appendChild(opt);
+        });
+      } else {
+        const opt = document.createElement('option');
+        opt.value = 'all';
+        opt.textContent = `General ${domainName} Core Topics`;
+        selectEl.appendChild(opt);
+      }
+    }
+
+    populatePhaseSelect(extPhaseSelect);
+    populatePhaseSelect(cfgPhaseSelect);
+
+    // Pre-select difficulty in config
+    const diffSelect = document.getElementById('interview-cfg-difficulty');
+    if (diffSelect) {
+      if (userLevel.includes('ADV')) diffSelect.value = 'Advanced';
+      else if (userLevel.includes('BEG')) diffSelect.value = 'Beginner';
+      else diffSelect.value = 'Intermediate';
+    }
+
+    function showPlacifyConfigForm() {
+      if (formConfig) formConfig.style.display = 'block';
+      if (loadingState) loadingState.style.display = 'none';
+      if (errorState) errorState.style.display = 'none';
+      if (runnerState) runnerState.style.display = 'none';
+      if (resultsState) resultsState.style.display = 'none';
+      const domainField = document.getElementById('interview-cfg-domain');
+      if (domainField) domainField.value = domainName;
+    }
+
+    // View Navigation Transition Helpers
+    function openExternalWorkflow(pushRoute = true) {
+      if (hubView) hubView.style.display = 'none';
+      if (extView) extView.style.display = 'block';
+      if (placifyView) placifyView.style.display = 'none';
+      if (pushRoute && window.location.pathname !== '/interview-questions/external-resources' && window.history && window.history.pushState) {
+        window.history.pushState(null, '', '/interview-questions/external-resources');
+      }
+      loadExternalResources();
+    }
+
+    function openPlacifyWorkflow(pushRoute = true) {
+      if (hubView) hubView.style.display = 'none';
+      if (extView) extView.style.display = 'none';
+      if (placifyView) placifyView.style.display = 'block';
+      if (pushRoute && window.location.pathname !== '/interview-questions/ai-practice' && window.history && window.history.pushState) {
+        window.history.pushState(null, '', '/interview-questions/ai-practice');
+      }
+      showPlacifyConfigForm();
+    }
+
+    function backToHub(pushRoute = true) {
+      if (hubView) hubView.style.display = 'block';
+      if (extView) extView.style.display = 'none';
+      if (placifyView) placifyView.style.display = 'none';
+      if (pushRoute && window.location.pathname !== '/interview-questions' && window.history && window.history.pushState) {
+        window.history.pushState(null, '', '/interview-questions');
+      }
+      loadInterviewHistory(activeSession.user_id);
+    }
+
+    // Wire Card Click Handlers on Landing Hub
+    const optExternalTargets = [
+      document.getElementById('select-option-external-btn'),
+      document.getElementById('card-opt-external-interview'),
+      ...document.querySelectorAll('.select-option-external-btn')
+    ].filter(Boolean);
+
+    optExternalTargets.forEach(el => {
+      el.onclick = (e) => {
+        e.preventDefault();
+        openExternalWorkflow(true);
+      };
+    });
+
+    const optPlacifyTargets = [
+      document.getElementById('select-option-placify-btn'),
+      document.getElementById('card-opt-placify-interview'),
+      ...document.querySelectorAll('.select-option-placify-btn')
+    ].filter(Boolean);
+
+    optPlacifyTargets.forEach(el => {
+      el.onclick = (e) => {
+        e.preventDefault();
+        openPlacifyWorkflow(true);
+      };
+    });
+
+    // Wire Back to Hub & Cancel Buttons across all workflows
+    const backTargets = [
+      ...document.querySelectorAll('.back-to-interview-hub-btn'),
+      document.getElementById('btn-back-to-interview-hub-1'),
+      document.getElementById('btn-back-to-interview-hub-2'),
+      document.getElementById('btn-return-interview-studio')
+    ].filter(Boolean);
+
+    backTargets.forEach(btn => {
+      btn.onclick = (e) => {
+        e.preventDefault();
+        backToHub(true);
+      };
+    });
+
+    // -----------------------------------------------------------------------
+    // Option 1 Logic: External Resources
+    // -----------------------------------------------------------------------
+    const loadExtBtn = document.getElementById('interview-ext-load-btn') || document.getElementById('interview-ext-fetch-resources-btn');
+    if (loadExtBtn) {
+      loadExtBtn.onclick = () => loadExternalResources();
+    }
+    const extFetchBtn = document.getElementById('interview-ext-fetch-resources-btn');
+    if (extFetchBtn) {
+      extFetchBtn.onclick = () => loadExternalResources();
+    }
+    if (extPhaseSelect) {
+      extPhaseSelect.onchange = () => loadExternalResources();
+    }
+    const extResTypeSelect = document.getElementById('interview-ext-resource-type');
+    if (extResTypeSelect) {
+      extResTypeSelect.onchange = () => loadExternalResources();
+    }
+
+    async function loadExternalResources() {
+      const container = document.getElementById('interview-external-cards-container');
+      if (!container) return;
+
+      let topic = '';
+      const customTopic = (document.getElementById('interview-ext-custom-topic')?.value || '').trim();
+      if (customTopic) {
+        topic = customTopic;
+      } else if (extPhaseSelect && extPhaseSelect.value !== 'all') {
+        const selectedOpt = extPhaseSelect.selectedOptions[0];
+        topic = selectedOpt ? `${selectedOpt.dataset.title || ''} ${selectedOpt.dataset.topics || ''}`.trim() : '';
+      }
+
+      const resType = document.getElementById('interview-ext-resource-type')?.value || 'all';
+
+      const topicLabel = document.getElementById('ext-current-topic-label');
+      if (topicLabel) {
+        topicLabel.textContent = topic || `${domainName} Core Topics`;
+      }
+
+      container.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem 1rem; color: var(--text-muted);">
+          <div class="spinner" style="margin: 0 auto 1rem; width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--accent-cyan); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+          <p style="font-size: 0.95rem;">Finding verified interview questions & preparation platforms for <strong>${escapeHtml(domainName)}</strong>...</p>
+        </div>
+      `;
+
+      try {
+        const url = `http://localhost:5000/api/interview-resources?domain=${encodeURIComponent(domainName)}&topic=${encodeURIComponent(topic)}&level=${encodeURIComponent(userLevel)}&resource_type=${encodeURIComponent(resType)}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Server returned status ${res.status}`);
+        const data = await res.json();
+        let resources = data.resources || [];
+
+        if (resType !== 'all') {
+          const typeKeywords = {
+            'interview_questions': ['interview', 'question', 'q&a'],
+            'coding_practice': ['coding', 'problem', 'algorithm', 'challenge', 'practice'],
+            'tutorials': ['tutorial', 'guide', 'learn'],
+            'documentation': ['doc', 'reference', 'specification', 'manual'],
+            'mock_interviews': ['track', 'kit', 'mock', 'assessment']
+          }[resType] || [];
+
+          if (typeKeywords.length > 0) {
+            const filtered = resources.filter(r => {
+              const text = `${r.name} ${r.category || ''} ${r.description || ''}`.toLowerCase();
+              return typeKeywords.some(k => text.includes(k));
+            });
+            if (filtered.length > 0) resources = filtered;
+          }
+        }
+
+        if (resources.length === 0) {
+          container.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 2.5rem; background: rgba(255,255,255,0.02); border-radius: var(--radius-md); border: 1px dashed var(--border-glass);">
+              <i class="ph ph-magnifying-glass" style="font-size: 2.5rem; color: var(--text-muted); margin-bottom: 0.8rem;"></i>
+              <h4 style="color: #fff; margin-bottom: 0.4rem;">No matching resources in catalog</h4>
+              <p style="color: var(--text-muted); font-size: 0.88rem;">Try selecting a different phase or adjusting your topic / resource filter.</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = resources.map(r => `
+          <div class="glass-card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s ease, border-color 0.2s ease; border: 1px solid var(--border-glass);">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.8rem; margin-bottom: 0.8rem;">
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                  <div style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: rgba(6, 182, 212, 0.12); display: flex; align-items: center; justify-content: center; color: var(--accent-cyan); font-size: 1.25rem;">
+                    <i class="ph ${r.icon || 'ph-globe'}"></i>
+                  </div>
+                  <h4 style="color: #fff; font-family: var(--font-heading); font-size: 1.05rem; margin: 0;">${escapeHtml(r.name)}</h4>
+                </div>
+                <span style="font-size: 0.72rem; font-weight: 700; color: var(--accent-cyan); background: rgba(6, 182, 212, 0.12); padding: 0.2rem 0.6rem; border-radius: var(--radius-full); border: 1px solid rgba(6, 182, 212, 0.3); text-transform: uppercase;">
+                  ${escapeHtml(r.recommended_category || r.category || 'Interview Prep')}
+                </span>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.45; margin-bottom: 0.9rem;">${escapeHtml(r.description)}</p>
+              <div style="background: rgba(255,255,255,0.03); padding: 0.8rem; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.05); margin-bottom: 1.2rem;">
+                <div style="font-size: 0.72rem; font-weight: 700; color: var(--accent-emerald); text-transform: uppercase; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.3rem;">
+                  <i class="ph ph-sparkle"></i> Why this resource:
+                </div>
+                <div style="font-size: 0.8rem; color: rgba(255,255,255,0.85); line-height: 1.4;">${escapeHtml(r.why_relevant || r.whyRelevant || `Curated high-yield preparation platform covering ${topic || 'domain concepts'}.`)}</div>
+              </div>
+            </div>
+            <a href="${escapeHtml(r.url)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="width: 100%; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-weight: 600;">
+              Visit Website <i class="ph ph-arrow-square-out"></i>
+            </a>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error('Failed to load interview resources:', err);
+        container.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 2.5rem; background: rgba(239, 68, 68, 0.05); border-radius: var(--radius-md); border: 1px solid rgba(239, 68, 68, 0.2);">
+            <i class="ph ph-warning-circle" style="font-size: 2.2rem; color: var(--accent-rose); margin-bottom: 0.5rem;"></i>
+            <h4 style="color: #fff; margin-bottom: 0.3rem;">Unable to load resources</h4>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">${escapeHtml(err.message || 'An error occurred while fetching resources.')}</p>
+            <button class="btn btn-secondary" id="retry-ext-res-btn">Retry <i class="ph ph-arrow-clockwise"></i></button>
+          </div>
+        `;
+        const retryBtn = document.getElementById('retry-ext-res-btn');
+        if (retryBtn) retryBtn.onclick = () => loadExternalResources();
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // Option 2 Logic: Placify AI Interview Practice Runner
+    // -----------------------------------------------------------------------
+    if (formConfig) {
+      formConfig.onsubmit = async (e) => {
+        e.preventDefault();
+        await generatePracticeQuestions();
+      };
+    }
+
+    async function generatePracticeQuestions() {
+      if (interviewPracticeState.isSubmitting) return;
+
+      const customTopic = (document.getElementById('interview-cfg-custom-topic')?.value || '').trim();
+      let topic = customTopic;
+      let phaseNum = 1;
+      let phaseTitle = '';
+
+      if (!topic && cfgPhaseSelect) {
+        if (cfgPhaseSelect.value !== 'all' && cfgPhaseSelect.value !== '') {
+          const opt = cfgPhaseSelect.selectedOptions[0];
+          phaseNum = parseInt(cfgPhaseSelect.value, 10) || 1;
+          phaseTitle = opt ? opt.dataset.title || '' : '';
+          topic = opt ? `${phaseTitle} ${opt.dataset.topics || ''}`.trim() : 'Core Concepts';
+        } else {
+          topic = `Core ${domainName} Topics`;
+        }
+      }
+
+      const difficulty = document.getElementById('interview-cfg-difficulty')?.value || 'Intermediate';
+      const count = parseInt(document.getElementById('interview-cfg-count')?.value || '5', 10);
+      const questionType = document.getElementById('interview-cfg-type')?.value || 'mixed';
+      const category = document.getElementById('interview-cfg-category')?.value || 'technical_fundamentals';
+
+      interviewPracticeState.domain = domainName;
+      interviewPracticeState.topic = topic || 'General Technical Fundamentals';
+      interviewPracticeState.phaseNumber = phaseNum;
+      interviewPracticeState.phaseTitle = phaseTitle;
+      interviewPracticeState.difficulty = difficulty;
+      interviewPracticeState.count = count;
+      interviewPracticeState.questionType = questionType;
+      interviewPracticeState.category = category;
+      interviewPracticeState.userAnswers = {};
+      interviewPracticeState.currentQuestionIndex = 0;
+      interviewPracticeState.questions = [];
+      interviewPracticeState.isSubmitting = true;
+
+      // Switch to loading UI
+      if (formConfig) formConfig.style.display = 'none';
+      if (errorState) errorState.style.display = 'none';
+      if (runnerState) runnerState.style.display = 'none';
+      if (resultsState) resultsState.style.display = 'none';
+      if (loadingState) loadingState.style.display = 'block';
+
+      try {
+        const res = await fetch('http://localhost:5000/api/interview-questions/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            domain: domainName,
+            topic: interviewPracticeState.topic,
+            difficulty,
+            count,
+            question_type: questionType,
+            category,
+            user_id: activeSession.user_id,
+            phase_number: phaseNum,
+            phase_title: phaseTitle
+          })
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `Server returned error status ${res.status}`);
+        }
+
+        const data = await res.json();
+        if (!data.questions || data.questions.length === 0) {
+          throw new Error('No interview questions were generated. Please try again.');
+        }
+
+        interviewPracticeState.questions = data.questions;
+        interviewPracticeState.isSubmitting = false;
+
+        if (window.location.pathname !== '/interview-questions/ai-practice/session' && window.history && window.history.pushState) {
+          window.history.pushState(null, '', '/interview-questions/ai-practice/session');
+        }
+
+        // Render Question Runner
+        if (loadingState) loadingState.style.display = 'none';
+        if (runnerState) runnerState.style.display = 'block';
+        renderQuestionRunner();
+      } catch (err) {
+        interviewPracticeState.isSubmitting = false;
+        console.error('Question generation failed:', err);
+        if (loadingState) loadingState.style.display = 'none';
+        if (errorState) {
+          errorState.style.display = 'block';
+          const errMsgEl = document.getElementById('interview-practice-error-msg');
+          if (errMsgEl) errMsgEl.textContent = err.message || 'Failed to generate interview questions. Please try again.';
+          const retryBtn = document.getElementById('btn-retry-generate-questions');
+          if (retryBtn) retryBtn.onclick = () => generatePracticeQuestions();
+        }
+      }
+    }
+
+    function renderQuestionRunner() {
+      const qList = interviewPracticeState.questions;
+      const curIdx = interviewPracticeState.currentQuestionIndex;
+      const totalQ = qList.length;
+      if (curIdx < 0 || curIdx >= totalQ) return;
+
+      const curQ = qList[curIdx];
+
+      // Update palette
+      const paletteContainer = document.getElementById('interview-question-palette');
+      if (paletteContainer) {
+        paletteContainer.innerHTML = qList.map((q, idx) => {
+          const isAnswered = interviewPracticeState.userAnswers[q.id] !== undefined && String(interviewPracticeState.userAnswers[q.id]).trim() !== '';
+          const isCurrent = idx === curIdx;
+          const bgStyle = isCurrent 
+            ? 'background: var(--accent-cyan); color: #000; font-weight: 800; border-color: var(--accent-cyan); transform: scale(1.08);' 
+            : (isAnswered ? 'background: rgba(16, 185, 129, 0.25); color: var(--accent-emerald); border-color: var(--accent-emerald); font-weight: 700;' : 'background: rgba(255,255,255,0.05); color: var(--text-muted); border-color: var(--border-glass);');
+          return `
+            <button type="button" class="palette-bubble" data-idx="${idx}" style="width: 38px; height: 38px; border-radius: var(--radius-sm); border: 1px solid transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; transition: all 0.2s ease; ${bgStyle}">
+              ${idx + 1}
+            </button>
+          `;
+        }).join('');
+
+        paletteContainer.querySelectorAll('.palette-bubble').forEach(btn => {
+          btn.onclick = () => {
+            saveCurrentAnswer();
+            interviewPracticeState.currentQuestionIndex = parseInt(btn.dataset.idx, 10);
+            renderQuestionRunner();
+          };
+        });
+      }
+
+      // Update Active Question Card
+      const cardContainer = document.getElementById('interview-active-question-card');
+      if (cardContainer) {
+        const savedAnswer = interviewPracticeState.userAnswers[curQ.id] || '';
+        const typeLabel = curQ.type === 'mcq' ? 'Multiple Choice' : (curQ.type === 'coding' ? 'Coding Problem' : (curQ.type === 'scenario' ? 'Scenario / System' : 'Technical Theory'));
+        const typeBadgeColor = curQ.type === 'mcq' ? 'var(--accent-violet)' : (curQ.type === 'coding' ? 'var(--accent-emerald)' : 'var(--accent-amber)');
+
+        let answerInputHtml = '';
+        if (curQ.type === 'mcq' && Array.isArray(curQ.options)) {
+          answerInputHtml = `
+            <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.2rem;">
+              ${curQ.options.map((opt, oIdx) => {
+                const optLetter = String.fromCharCode(65 + oIdx);
+                const isSelected = savedAnswer === optLetter || savedAnswer === opt;
+                return `
+                  <label class="mcq-option-label" style="display: flex; align-items: center; gap: 1rem; padding: 1rem 1.2rem; background: ${isSelected ? 'rgba(6, 182, 212, 0.12)' : 'rgba(255,255,255,0.02)'}; border: 1px solid ${isSelected ? 'var(--accent-cyan)' : 'var(--border-glass)'}; border-radius: var(--radius-sm); cursor: pointer; transition: all 0.2s ease;">
+                    <input type="radio" name="practice_mcq_answer" value="${optLetter}" ${isSelected ? 'checked' : ''} style="accent-color: var(--accent-cyan); width: 18px; height: 18px;">
+                    <span style="font-weight: 700; color: ${isSelected ? 'var(--accent-cyan)' : '#fff'}; width: 22px;">${optLetter}.</span>
+                    <span style="color: ${isSelected ? '#fff' : 'rgba(255,255,255,0.85)'}; font-size: 0.95rem; line-height: 1.4;">${escapeHtml(opt)}</span>
+                  </label>
+                `;
+              }).join('')}
+            </div>
+          `;
+        } else if (curQ.type === 'coding') {
+          answerInputHtml = `
+            <div style="margin-top: 1.2rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                <span style="font-size: 0.78rem; font-weight: 700; color: var(--accent-emerald); text-transform: uppercase;">
+                  <i class="ph ph-code"></i> Code Solution
+                </span>
+                <span style="font-size: 0.72rem; color: var(--text-muted);">Write clean, runnable code with comments</span>
+              </div>
+              <textarea id="practice-answer-input" rows="10" placeholder="// Write your code solution here...\nfunction solution() {\n  \n}" style="width: 100%; font-family: 'Courier New', monospace; font-size: 0.9rem; padding: 1rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-glass); border-radius: var(--radius-sm); color: #38bdf8; line-height: 1.5; resize: vertical;">${escapeHtml(savedAnswer)}</textarea>
+            </div>
+          `;
+        } else {
+          answerInputHtml = `
+            <div style="margin-top: 1.2rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                <span style="font-size: 0.78rem; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase;">
+                  <i class="ph ph-article"></i> Technical Explanation
+                </span>
+                <span style="font-size: 0.72rem; color: var(--text-muted);">Include core principles, tradeoffs, and examples</span>
+              </div>
+              <textarea id="practice-answer-input" rows="7" placeholder="Provide your detailed answer explaining concepts, syntax, use-cases, and architecture..." style="width: 100%; font-size: 0.92rem; padding: 1rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-glass); border-radius: var(--radius-sm); color: #fff; line-height: 1.5; resize: vertical;">${escapeHtml(savedAnswer)}</textarea>
+            </div>
+          `;
+        }
+
+        cardContainer.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+              <span style="font-size: 1.15rem; font-weight: 800; font-family: var(--font-heading); color: #fff;">Question ${curIdx + 1}</span>
+              <span style="font-size: 0.8rem; color: var(--text-muted);">of ${totalQ}</span>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <span style="font-size: 0.72rem; font-weight: 700; color: ${typeBadgeColor}; background: rgba(255,255,255,0.05); padding: 0.25rem 0.6rem; border-radius: var(--radius-full); border: 1px solid rgba(255,255,255,0.1); text-transform: uppercase;">
+                ${typeLabel}
+              </span>
+              <span style="font-size: 0.72rem; font-weight: 700; color: var(--accent-amber); background: rgba(245, 158, 11, 0.1); padding: 0.25rem 0.6rem; border-radius: var(--radius-full); border: 1px solid rgba(245, 158, 11, 0.3);">
+                ${escapeHtml(curQ.difficulty || interviewPracticeState.difficulty)}
+              </span>
+              <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-muted); background: rgba(255,255,255,0.03); padding: 0.25rem 0.6rem; border-radius: var(--radius-full);">
+                ${escapeHtml(curQ.topic || interviewPracticeState.topic)}
+              </span>
+            </div>
+          </div>
+
+          <div style="font-size: 1.1rem; font-weight: 600; color: #fff; line-height: 1.5; margin-bottom: 1rem;">
+            ${escapeHtml(curQ.question)}
+          </div>
+
+          ${answerInputHtml}
+        `;
+
+        // Wire MCQ Option Clicks
+        cardContainer.querySelectorAll('input[name="practice_mcq_answer"]').forEach(radio => {
+          radio.onchange = () => {
+            saveCurrentAnswer();
+            renderQuestionRunner();
+          };
+        });
+
+        // Wire textarea input save on typing
+        const txtArea = cardContainer.querySelector('#practice-answer-input');
+        if (txtArea) {
+          txtArea.oninput = () => {
+            interviewPracticeState.userAnswers[curQ.id] = txtArea.value;
+          };
+        }
+      }
+
+      // Update Navigation Buttons
+      const prevBtn = document.getElementById('interview-prev-q-btn');
+      const nextBtn = document.getElementById('interview-next-q-btn');
+      const clearBtn = document.getElementById('interview-clear-q-btn');
+      const submitBtn = document.getElementById('interview-submit-practice-btn');
+
+      if (prevBtn) {
+        prevBtn.disabled = curIdx === 0;
+        prevBtn.onclick = () => {
+          saveCurrentAnswer();
+          interviewPracticeState.currentQuestionIndex--;
+          renderQuestionRunner();
+        };
+      }
+
+      if (nextBtn) {
+        nextBtn.disabled = curIdx === totalQ - 1;
+        nextBtn.onclick = () => {
+          saveCurrentAnswer();
+          interviewPracticeState.currentQuestionIndex++;
+          renderQuestionRunner();
+        };
+      }
+
+      if (clearBtn) {
+        clearBtn.onclick = () => {
+          delete interviewPracticeState.userAnswers[curQ.id];
+          renderQuestionRunner();
+        };
+      }
+
+      if (submitBtn) {
+        submitBtn.onclick = () => submitPracticeSession();
+      }
+    }
+
+    function saveCurrentAnswer() {
+      const qList = interviewPracticeState.questions;
+      const curIdx = interviewPracticeState.currentQuestionIndex;
+      if (!qList || !qList[curIdx]) return;
+      const curQ = qList[curIdx];
+
+      if (curQ.type === 'mcq') {
+        const checkedRadio = document.querySelector('input[name="practice_mcq_answer"]:checked');
+        if (checkedRadio) {
+          interviewPracticeState.userAnswers[curQ.id] = checkedRadio.value;
+        }
+      } else {
+        const txt = document.getElementById('practice-answer-input');
+        if (txt) {
+          interviewPracticeState.userAnswers[curQ.id] = txt.value;
+        }
+      }
+    }
+
+    async function submitPracticeSession() {
+      if (interviewPracticeState.isSubmitting) return;
+
+      saveCurrentAnswer();
+      const qList = interviewPracticeState.questions;
+      const answeredCount = Object.keys(interviewPracticeState.userAnswers).filter(k => interviewPracticeState.userAnswers[k] && String(interviewPracticeState.userAnswers[k]).trim() !== '').length;
+      const totalQ = qList.length;
+
+      if (answeredCount < totalQ) {
+        const confirmed = confirm(`You have answered ${answeredCount} of ${totalQ} questions. Are you ready to submit for evaluation?`);
+        if (!confirmed) return;
+      }
+
+      interviewPracticeState.isSubmitting = true;
+
+      // Show evaluating state
+      const runnerContainer = document.getElementById('interview-practice-runner');
+      if (runnerContainer) {
+        runnerContainer.innerHTML = `
+          <div style="text-align: center; padding: 4rem 1rem; color: var(--text-muted);">
+            <div class="spinner" style="margin: 0 auto 1.5rem; width: 44px; height: 44px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--accent-emerald); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+            <h3 style="color: #fff; font-family: var(--font-heading); margin-bottom: 0.5rem;">Evaluating Your Technical Answers...</h3>
+            <p style="font-size: 0.95rem; max-width: 500px; margin: 0 auto; color: var(--text-muted);">Analyzing code syntax, core domain principles, accuracy, and best practices...</p>
+          </div>
+        `;
+      }
+
+      try {
+        const evalRes = await fetch('http://localhost:5000/api/interview-questions/evaluate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            questions: qList,
+            answers: interviewPracticeState.userAnswers,
+            domain: interviewPracticeState.domain,
+            topic: interviewPracticeState.topic,
+            difficulty: interviewPracticeState.difficulty
+          })
+        });
+
+        if (!evalRes.ok) {
+          throw new Error('Evaluation failed on server.');
+        }
+
+        const evalData = await evalRes.json();
+        interviewPracticeState.results = evalData;
+
+        // Persist session to MongoDB Atlas
+        try {
+          await fetch('http://localhost:5000/api/interview-practice/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: activeSession.user_id,
+              domain: interviewPracticeState.domain,
+              topic: interviewPracticeState.topic,
+              phase_number: interviewPracticeState.phaseNumber,
+              phase_title: interviewPracticeState.phaseTitle,
+              difficulty: interviewPracticeState.difficulty,
+              question_type: interviewPracticeState.questionType,
+              category: interviewPracticeState.category,
+              score_pct: evalData.score_pct || 0,
+              total_questions: totalQ,
+              correct_count: evalData.correct_count || 0,
+              partially_correct_count: evalData.partially_correct_count || 0,
+              incorrect_count: evalData.incorrect_count || 0,
+              questions: qList,
+              answers: interviewPracticeState.userAnswers,
+              evaluation_details: evalData.evaluation_details || [],
+              concepts_to_review: evalData.concepts_to_review || [],
+              follow_up_questions: evalData.follow_up_questions || []
+            })
+          });
+        } catch (saveErr) {
+          console.warn('Could not persist interview practice session:', saveErr);
+        }
+
+        interviewPracticeState.isSubmitting = false;
+
+        if (window.location.pathname !== '/interview-questions/ai-practice/evaluation' && window.history && window.history.pushState) {
+          window.history.pushState(null, '', '/interview-questions/ai-practice/evaluation');
+        }
+
+        // Render Results
+        if (runnerState) runnerState.style.display = 'none';
+        if (resultsState) resultsState.style.display = 'block';
+        renderPracticeResults(evalData);
+      } catch (err) {
+        interviewPracticeState.isSubmitting = false;
+        console.error('Submission failed:', err);
+        alert(`Evaluation error: ${err.message || 'Please try again.'}`);
+        renderQuestionRunner();
+      }
+    }
+
+    function renderPracticeResults(evalData) {
+      const resultsContainer = document.getElementById('interview-practice-results');
+      if (!resultsContainer) return;
+
+      const score = evalData.score_pct || 0;
+      const scoreColor = score >= 75 ? 'var(--accent-emerald)' : (score >= 50 ? 'var(--accent-amber)' : 'var(--accent-rose)');
+      const qList = interviewPracticeState.questions;
+      const evalDetails = evalData.evaluation_details || [];
+      const concepts = evalData.concepts_to_review || [];
+      const followUps = evalData.follow_up_questions || [];
+
+      resultsContainer.innerHTML = `
+        <div class="glass-card" style="padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border-glass);">
+          <!-- Top Results Header -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 1.2rem;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.3rem;">
+                <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-cyan); background: rgba(6, 182, 212, 0.1); padding: 0.2rem 0.6rem; border-radius: var(--radius-full); border: 1px solid rgba(6, 182, 212, 0.3); text-transform: uppercase;">
+                  ${escapeHtml(interviewPracticeState.domain)}
+                </span>
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">
+                  ${escapeHtml(interviewPracticeState.topic)}
+                </span>
+              </div>
+              <h2 style="color: #fff; font-family: var(--font-heading); margin: 0; font-size: 1.6rem;">Interview Practice Evaluation</h2>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 2.4rem; font-weight: 800; font-family: var(--font-heading); color: ${scoreColor}; line-height: 1;">
+                ${score}%
+              </div>
+              <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-top: 0.2rem;">Overall Performance</div>
+            </div>
+          </div>
+
+          <!-- KPI Metric Chips -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+            <div style="background: rgba(255,255,255,0.02); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-glass); text-align: center;">
+              <div style="font-size: 1.4rem; font-weight: 800; color: #fff;">${qList.length}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">Total Questions</div>
+            </div>
+            <div style="background: rgba(16, 185, 129, 0.05); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid rgba(16, 185, 129, 0.2); text-align: center;">
+              <div style="font-size: 1.4rem; font-weight: 800; color: var(--accent-emerald);">${evalData.correct_count || 0}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">Correct</div>
+            </div>
+            <div style="background: rgba(245, 158, 11, 0.05); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid rgba(245, 158, 11, 0.2); text-align: center;">
+              <div style="font-size: 1.4rem; font-weight: 800; color: var(--accent-amber);">${evalData.partially_correct_count || 0}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">Partially Correct</div>
+            </div>
+            <div style="background: rgba(239, 68, 68, 0.05); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid rgba(239, 68, 68, 0.2); text-align: center;">
+              <div style="font-size: 1.4rem; font-weight: 800; color: var(--accent-rose);">${evalData.incorrect_count || 0}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">Needs Revision</div>
+            </div>
+          </div>
+
+          <!-- Concepts to Revise & Follow-ups -->
+          ${concepts.length > 0 || followUps.length > 0 ? `
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.2rem; margin-bottom: 2rem;">
+              ${concepts.length > 0 ? `
+                <div style="background: rgba(255,255,255,0.02); padding: 1.2rem; border-radius: var(--radius-sm); border: 1px solid var(--border-glass);">
+                  <div style="font-size: 0.85rem; font-weight: 700; color: var(--accent-amber); margin-bottom: 0.7rem; display: flex; align-items: center; gap: 0.4rem;">
+                    <i class="ph ph-warning"></i> Concepts to Revise
+                  </div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+                    ${concepts.map(c => `<span style="font-size: 0.78rem; background: rgba(245, 158, 11, 0.12); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.3); padding: 0.25rem 0.6rem; border-radius: var(--radius-full);">${escapeHtml(c)}</span>`).join('')}
+                  </div>
+                </div>
+              ` : ''}
+
+              ${followUps.length > 0 ? `
+                <div style="background: rgba(255,255,255,0.02); padding: 1.2rem; border-radius: var(--radius-sm); border: 1px solid var(--border-glass);">
+                  <div style="font-size: 0.85rem; font-weight: 700; color: var(--accent-cyan); margin-bottom: 0.7rem; display: flex; align-items: center; gap: 0.4rem;">
+                    <i class="ph ph-lightbulb"></i> Recommended Follow-up Topics
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                    ${followUps.map(f => `<div style="font-size: 0.82rem; color: rgba(255,255,255,0.85); display: flex; align-items: flex-start; gap: 0.4rem;"><i class="ph ph-caret-right" style="color: var(--accent-cyan); margin-top: 0.2rem;"></i> <span>${escapeHtml(f)}</span></div>`).join('')}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          ` : ''}
+
+          <!-- Detailed Question by Question Review -->
+          <h3 style="color: #fff; font-family: var(--font-heading); font-size: 1.2rem; margin-bottom: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="ph ph-list-checks" style="color: var(--accent-cyan);"></i> Question-by-Question Breakdown
+          </h3>
+
+          <div style="display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 2rem;">
+            ${qList.map((q, idx) => {
+              const evalItem = evalDetails[idx] || {};
+              const isCorrect = evalItem.is_correct;
+              const isPartial = evalItem.is_partially_correct;
+              const statusColor = isCorrect ? 'var(--accent-emerald)' : (isPartial ? 'var(--accent-amber)' : 'var(--accent-rose)');
+              const statusIcon = isCorrect ? 'ph-check-circle' : (isPartial ? 'ph-scales' : 'ph-x-circle');
+              const statusText = isCorrect ? 'Correct' : (isPartial ? 'Partially Correct' : 'Incorrect');
+              const userAns = interviewPracticeState.userAnswers[q.id] || '(No answer provided)';
+
+              return `
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-glass); border-left: 4px solid ${statusColor}; border-radius: var(--radius-sm); padding: 1.4rem;">
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.8rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <div style="font-weight: 700; color: #fff; font-size: 0.98rem;">
+                      <span style="color: var(--accent-cyan);">Q${idx + 1}.</span> ${escapeHtml(q.question)}
+                    </div>
+                    <span style="font-size: 0.75rem; font-weight: 700; color: ${statusColor}; background: rgba(255,255,255,0.05); padding: 0.25rem 0.65rem; border-radius: var(--radius-full); border: 1px solid ${statusColor}; display: inline-flex; align-items: center; gap: 0.3rem;">
+                      <i class="ph ${statusIcon}"></i> ${statusText} (${evalItem.score_awarded || 0}/${evalItem.max_score || 10} pts)
+                    </span>
+                  </div>
+
+                  <!-- User Answer -->
+                  <div style="background: rgba(0,0,0,0.3); padding: 0.8rem 1rem; border-radius: var(--radius-sm); margin-bottom: 0.8rem; border: 1px solid rgba(255,255,255,0.05);">
+                    <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem;">Your Answer:</div>
+                    <div style="font-size: 0.88rem; color: #fff; white-space: pre-wrap; font-family: ${q.type === 'coding' ? 'monospace' : 'inherit'};">${escapeHtml(userAns)}</div>
+                  </div>
+
+                  <!-- Model Answer / Correct Answer -->
+                  <div style="background: rgba(16, 185, 129, 0.05); padding: 0.8rem 1rem; border-radius: var(--radius-sm); margin-bottom: 0.8rem; border: 1px solid rgba(16, 185, 129, 0.2);">
+                    <div style="font-size: 0.72rem; font-weight: 700; color: var(--accent-emerald); text-transform: uppercase; margin-bottom: 0.25rem;">Ideal Model Answer / Key Points:</div>
+                    <div style="font-size: 0.88rem; color: rgba(255,255,255,0.9); white-space: pre-wrap; font-family: ${q.type === 'coding' ? 'monospace' : 'inherit'};">${escapeHtml(evalItem.correct_answer || q.answer || q.model_answer || 'Refer to explanation')}</div>
+                  </div>
+
+                  <!-- AI Feedback / Explanation -->
+                  <div style="padding: 0.6rem 0.8rem; background: rgba(255,255,255,0.01); border-radius: var(--radius-sm);">
+                    <div style="font-size: 0.72rem; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 0.3rem;">
+                      <i class="ph ph-sparkle"></i> AI Evaluator Feedback:
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.45;">${escapeHtml(evalItem.feedback || evalItem.explanation || q.explanation || 'Good attempt.')}</div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+
+          <!-- Bottom Action Buttons -->
+          <div style="display: flex; justify-content: flex-end; gap: 0.8rem; flex-wrap: wrap; border-top: 1px solid var(--border-glass); padding-top: 1.4rem;">
+            <button type="button" class="btn btn-secondary" id="btn-retake-same-practice">
+              <i class="ph ph-arrow-counter-clockwise"></i> Retake Same Questions
+            </button>
+            <button type="button" class="btn btn-primary" id="btn-practice-new-topic">
+              <i class="ph ph-plus-circle"></i> Practice Another Topic
+            </button>
+            <button type="button" class="btn btn-secondary" id="btn-return-interview-studio">
+              <i class="ph ph-house"></i> Return to Studio Hub
+            </button>
+          </div>
+        </div>
+      `;
+
+      // Wire action buttons
+      const retakeBtn = document.getElementById('btn-retake-same-practice');
+      if (retakeBtn) {
+        retakeBtn.onclick = () => {
+          interviewPracticeState.userAnswers = {};
+          interviewPracticeState.currentQuestionIndex = 0;
+          if (window.location.pathname !== '/interview-questions/ai-practice/session' && window.history && window.history.pushState) {
+            window.history.pushState(null, '', '/interview-questions/ai-practice/session');
+          }
+          if (resultsState) resultsState.style.display = 'none';
+          if (runnerState) runnerState.style.display = 'block';
+          renderQuestionRunner();
+        };
+      }
+
+      const newTopicBtn = document.getElementById('btn-practice-new-topic');
+      if (newTopicBtn) {
+        newTopicBtn.onclick = () => {
+          if (window.location.pathname !== '/interview-questions/ai-practice' && window.history && window.history.pushState) {
+            window.history.pushState(null, '', '/interview-questions/ai-practice');
+          }
+          showPlacifyConfigForm();
+        };
+      }
+
+      const returnHubBtn = document.getElementById('btn-return-interview-studio');
+      if (returnHubBtn) {
+        returnHubBtn.onclick = () => backToHub(true);
+      }
+    }
+
+    // Detect Sub-view from current URL / Hash or parameter
+    const currentPath = (window.location.pathname || '').toLowerCase();
+    const currentHash = (window.location.hash || '').toLowerCase();
+
+    if (targetSubView === 'external' || currentPath.includes('/external-resources') || currentHash.includes('external')) {
+      openExternalWorkflow(false);
+    } else if (targetSubView === 'practice' || currentPath.includes('/ai-practice') || currentHash.includes('practice') || currentHash.includes('ai-practice')) {
+      if (hubView) hubView.style.display = 'none';
+      if (extView) extView.style.display = 'none';
+      if (placifyView) placifyView.style.display = 'block';
+      if (currentPath.includes('/session') && interviewPracticeState.questions.length > 0) {
+        if (formConfig) formConfig.style.display = 'none';
+        if (loadingState) loadingState.style.display = 'none';
+        if (errorState) errorState.style.display = 'none';
+        if (resultsState) resultsState.style.display = 'none';
+        if (runnerState) runnerState.style.display = 'block';
+        renderQuestionRunner();
+      } else if (currentPath.includes('/evaluation') && interviewPracticeState.results) {
+        if (formConfig) formConfig.style.display = 'none';
+        if (loadingState) loadingState.style.display = 'none';
+        if (errorState) errorState.style.display = 'none';
+        if (runnerState) runnerState.style.display = 'none';
+        if (resultsState) resultsState.style.display = 'block';
+        renderPracticeResults(interviewPracticeState.results);
+      } else {
+        showPlacifyConfigForm();
+      }
+    } else {
+      backToHub(false);
+    }
   }
 
   document.getElementById('continue-learning-btn').addEventListener('click', async () => { await continueToNextDay(); });
@@ -5394,6 +6853,8 @@ document.addEventListener('DOMContentLoaded', () => {
         updateAnalyticsView();
       } else if (targetView === 'techNews') {
         fetchTechNews();
+      } else if (targetView === 'interviewQuestions') {
+        initInterviewPreparationStudio();
       }
       switchView(targetView);
     });

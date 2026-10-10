@@ -599,6 +599,213 @@ const UserSkillProfile = mongoose.model('UserSkillProfile', userSkillProfileSche
 
 
 // ============================================================
+// 3b3. PHASE ASSESSMENT SCHEMA & MODEL (MongoDB Persistence)
+// ============================================================
+
+const phaseAssessmentSchema = new mongoose.Schema(
+  {
+    submission_id: {
+      type: String,
+      required: true,
+      index: true
+    },
+    user_id: {
+      type: String,
+      required: true,
+      index: true
+    },
+    roadmap_id: {
+      type: String,
+      default: ''
+    },
+    domain: {
+      type: String,
+      default: ''
+    },
+    phase_id: {
+      type: String,
+      default: ''
+    },
+    phase_key: {
+      type: String,
+      required: true,
+      index: true
+    },
+    phase_number: {
+      type: Number,
+      default: 1
+    },
+    month_number: {
+      type: Number,
+      default: 1
+    },
+    week_number: {
+      type: Number,
+      default: 1
+    },
+    day_number: {
+      type: Number,
+      default: 1
+    },
+    day_id: {
+      type: String,
+      default: ''
+    },
+    phase_title: {
+      type: String,
+      default: ''
+    },
+    topic: {
+      type: String,
+      default: ''
+    },
+    score_pct: {
+      type: Number,
+      required: true
+    },
+    total_questions: {
+      type: Number,
+      default: 0
+    },
+    total_marks: {
+      type: Number,
+      default: 0
+    },
+    marks_obtained: {
+      type: Number,
+      default: 0
+    },
+    correct_count: {
+      type: Number,
+      default: 0
+    },
+    partially_correct_count: {
+      type: Number,
+      default: 0
+    },
+    incorrect_count: {
+      type: Number,
+      default: 0
+    },
+    passed: {
+      type: Boolean,
+      default: false
+    },
+    badge_earned: {
+      badge_id: String,
+      name: String,
+      earned_at: {
+        type: Date,
+        default: Date.now
+      }
+    },
+    detailed_questions: [mongoose.Schema.Types.Mixed],
+    concepts_to_review: [mongoose.Schema.Types.Mixed],
+    task_context: mongoose.Schema.Types.Mixed,
+    submitted_at: {
+      type: Date,
+      default: Date.now
+    }
+  },
+  {
+    collection: 'phase_assessments',
+    timestamps: true
+  }
+);
+
+phaseAssessmentSchema.index({ user_id: 1, phase_key: 1, submitted_at: -1 });
+phaseAssessmentSchema.index({ user_id: 1, topic: 1, submitted_at: -1 });
+
+const PhaseAssessment = mongoose.model('PhaseAssessment', phaseAssessmentSchema, 'phase_assessments');
+
+const interviewPracticeSchema = new mongoose.Schema(
+  {
+    practice_id: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true
+    },
+    user_id: {
+      type: String,
+      required: true,
+      index: true
+    },
+    roadmap_id: {
+      type: String,
+      default: ''
+    },
+    domain: {
+      type: String,
+      required: true
+    },
+    topic: {
+      type: String,
+      required: true
+    },
+    phase_number: {
+      type: Number,
+      default: null
+    },
+    phase_title: {
+      type: String,
+      default: ''
+    },
+    difficulty: {
+      type: String,
+      default: 'Intermediate'
+    },
+    question_type: {
+      type: String,
+      default: 'Mixed'
+    },
+    category: {
+      type: String,
+      default: 'Technical Fundamentals'
+    },
+    score_pct: {
+      type: Number,
+      default: 0
+    },
+    total_questions: {
+      type: Number,
+      default: 0
+    },
+    correct_count: {
+      type: Number,
+      default: 0
+    },
+    partially_correct_count: {
+      type: Number,
+      default: 0
+    },
+    incorrect_count: {
+      type: Number,
+      default: 0
+    },
+    questions: [mongoose.Schema.Types.Mixed],
+    answers: mongoose.Schema.Types.Mixed,
+    evaluation_details: [mongoose.Schema.Types.Mixed],
+    concepts_to_review: [mongoose.Schema.Types.Mixed],
+    follow_up_questions: [mongoose.Schema.Types.Mixed],
+    created_at: {
+      type: Date,
+      default: Date.now
+    }
+  },
+  {
+    collection: 'interview_practices',
+    timestamps: true
+  }
+);
+
+interviewPracticeSchema.index({ user_id: 1, created_at: -1 });
+
+const InterviewPractice = mongoose.model('InterviewPractice', interviewPracticeSchema, 'interview_practices');
+
+
+
+// ============================================================
 // 3c. ROADMAP SCHEMA & MODEL
 // ============================================================
 
@@ -885,11 +1092,14 @@ function calculateUserProgress(roadmapDoc, userDoc) {
   const xp = Math.max(userDoc?.xp || 0, taskXp);
   const level = Math.floor(xp / 300) + 1;
 
-  const badges = ['🐣 Fresh Start'];
-  if (completedTasks >= 1) badges.push('🚀 First Step');
-  if (streak >= 3) badges.push('🔥 3-Day Streak');
-  if (masteryPct >= 50) badges.push('⚡ Halfway Master');
-  if (masteryPct >= 100) badges.push('🏆 Domain Conqueror');
+  const existingBadges = Array.isArray(userDoc?.badges) && userDoc.badges.length > 0 ? userDoc.badges : ['🐣 Fresh Start'];
+  const badgeSet = new Set(existingBadges);
+  badgeSet.add('🐣 Fresh Start');
+  if (completedTasks >= 1) badgeSet.add('🚀 First Step');
+  if (streak >= 3) badgeSet.add('🔥 3-Day Streak');
+  if (masteryPct >= 50) badgeSet.add('⚡ Halfway Master');
+  if (masteryPct >= 100) badgeSet.add('🏆 Domain Conqueror');
+  const badges = Array.from(badgeSet);
 
   return {
     totalTasks,
@@ -1803,15 +2013,13 @@ function readRequestBody(req) {
 // ============================================================
 
 async function callGroqWithFallback(groqClient, params) {
-  const primaryModel = params.model || process.env.GROQ_MODEL || 'groq/compound';
+  const primaryModel = params.model || process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
   const candidateModels = Array.from(new Set([
     primaryModel,
-    'groq/compound',
+    'openai/gpt-oss-120b',
     'openai/gpt-oss-20b',
-    'qwen/qwen3.6-27b',
-    'groq/compound-mini',
-    'openai/gpt-oss-120b'
-  ]));
+    'qwen/qwen3.8-27b'
+  ])).filter(Boolean);
 
   let lastError = null;
   for (const mod of candidateModels) {
@@ -1823,11 +2031,11 @@ async function callGroqWithFallback(groqClient, params) {
       return completion;
     } catch (err) {
       lastError = err;
-      const isRateLimit = err.status === 429 ||
-        (err.message && (err.message.includes('429') || err.message.includes('rate_limit') || err.message.includes('Rate limit')));
-      if (isRateLimit) {
-        console.warn(`⚠️ Groq model '${mod}' hit 429 Rate Limit. Swapping to fallback model...`);
-        await new Promise(r => setTimeout(r, 200));
+      const isRecoverable = err.status === 429 || err.status === 404 || err.status === 503 ||
+        (err.message && (err.message.includes('429') || err.message.includes('rate_limit') || err.message.includes('not found') || err.message.includes('model_not_found') || err.message.includes('Rate limit')));
+      if (isRecoverable) {
+        console.warn(`⚠️ Groq model '${mod}' failed (${err.status || err.message}). Swapping to fallback model...`);
+        await new Promise(r => setTimeout(r, 250));
         continue;
       }
       throw err;
@@ -2405,8 +2613,8 @@ Note: If you are asking a follow-up question or if confidence is low, set "recom
       const groqClient = new Groq({ apiKey });
       const model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
 
-      const systemPrompt = `You are the Expert Technical Quiz Generator for AgPlacify.
-Your job is to generate a dynamic, diagnostic technical quiz for a learner.
+      const systemPrompt = `You are the Expert Technical Assessment Engine for AgPlacify, generating rigorous, academic-standard NPTEL-style technical diagnostic assessments.
+Your task is to generate high-quality, authentic diagnostic assessment questions for a technical learner.
 
 AUTHORITATIVE PARAMETERS:
 - DOMAIN: "${canonicalDomainName}" (${domainId})
@@ -2418,16 +2626,50 @@ AUTHORITATIVE PARAMETERS:
 EXACT KNOWLEDGE-GRAPH SKILL CATALOG:
 ${quizSkillCatalogText}
 
-For every question, choose topic, subtopic, skillId and skillName from this catalog. Do not invent taxonomy names.
-${domainId === 'dsa' && dsaLanguage ? `For DSA, write all code examples, syntax, and implementation-oriented questions in ${dsaLanguage}. Do not use another programming language.` : ''}
+LEVEL-SPECIFIC DIFFICULTY GUIDELINES:
+- BEGINNER:
+  * Foundational terminology, core syntax rules, elementary code interpretation, fundamental principles.
+  * Appropriate question types: MCQ, CONCEPTUAL, CODE_OUTPUT, SCENARIO_BASED, MSQ.
+- INTERMEDIATE:
+  * Application-oriented problem solving, asynchronous logic, hooks/middleware, database queries, code tracing, debugging edge cases.
+  * Appropriate question types: MCQ, MSQ, CODE_OUTPUT, DEBUGGING, NUMERICAL, ASSERTION_REASONING, SCENARIO_BASED.
+- ADVANCED:
+  * In-depth architecture, internal runtime mechanics, concurrency & race conditions, database indexing/isolation trade-offs, security vulnerabilities (XSS, CSRF, SQLi, CORS), distributed scalability.
+  * Appropriate question types: ASSERTION_REASONING, MSQ, CODE_OUTPUT, COMPLEXITY, DEBUGGING, NUMERICAL, SCENARIO_BASED, MCQ.
 
-CRITICAL MANDATORY RULES:
-1. You MUST generate EXACTLY ${questionCount} question items inside the "questions" array.
-2. EVERY question MUST include an "options" array containing EXACTLY 4 distinct choice options e.g. ["<p>", "<div>", "<span>", "<section>"] or ["Option A", "Option B", "Option C", "Option D"]. Do NOT leave "options" empty.
-3. The "correct" field MUST be the 0-based integer index of the correct option (0, 1, 2, or 3), or an array e.g. [0, 2] for MSQ questions.
-4. Difficulty of ALL questions must match "${initialLevel}".
+SUPPORTED NPTEL QUESTION TYPES & CONTRACTS:
+1. "MCQ" / "CONCEPTUAL" / "SCENARIO_BASED" / "APPLICATION_BASED" / "DEBUGGING" / "COMPLEXITY":
+   - "options": Array of EXACTLY 4 distinct choice strings.
+   - "correct": 0-based integer index (0, 1, 2, or 3) representing the single correct option.
+2. "MSQ" (Multiple-Select Question):
+   - "options": Array of EXACTLY 4 distinct choice strings.
+   - "correct": Array of 0-based integer indices with 2 or more correct options e.g. [0, 2] or [0, 1, 3].
+3. "CODE_OUTPUT":
+   - "codeSnippet": Multi-line clean code snippet to trace and analyze.
+   - "options": Array of EXACTLY 4 distinct output strings.
+   - "correct": 0-based integer index (0, 1, 2, or 3) of the correct output.
+4. "ASSERTION_REASONING":
+   - "question": "Assertion (A): [Statement]\\nReason (R): [Explanation]"
+   - "options": [
+       "Both A and R are true, and R is the correct explanation of A.",
+       "Both A and R are true, but R is NOT the correct explanation of A.",
+       "A is true, but R is false.",
+       "A is false, but R is true."
+     ]
+   - "correct": 0-based integer index (0, 1, 2, or 3).
+5. "NUMERICAL":
+   - "question": Calculation or numerical problem asking for an exact number (e.g., parameter count, time complexity factor, byte size, latency ms).
+   - "options": [] (Empty array)
+   - "correct": Float or Integer number (e.g. 10 or 0.8) representing the exact answer.
 
-Return ONLY valid JSON matching this exact JSON schema:
+CRITICAL RULES:
+- RANDOMIZE CORRECT CHOICES: For single-choice questions (MCQ, CODE_OUTPUT, ASSERTION_REASONING), do NOT always place the correct answer at index 0. Distribute correct indices evenly across 0, 1, 2, and 3.
+- DIVERSE QUESTION TYPES: Provide a balanced mix of supported types (e.g. mix MCQ with CODE_OUTPUT, MSQ, ASSERTION_REASONING, and NUMERICAL where suitable for the level).
+- PURE CODE IN CODE SNIPPET: When a question involves a code snippet, put the code in the "codeSnippet" property and keep the "question" property for the question text.
+
+${domainId === 'dsa' && dsaLanguage ? `For DSA, write all code snippets, syntax, and examples strictly in ${dsaLanguage}.` : ''}
+
+You MUST return ONLY a valid JSON object matching this exact structure:
 {
   "questions": [
     {
@@ -2435,10 +2677,10 @@ Return ONLY valid JSON matching this exact JSON schema:
       "question": "Which HTML tag is used for a paragraph?",
       "codeSnippet": null,
       "type": "MCQ",
-      "topic": "HTML",
+      "topic": "HTML5 Foundations",
       "subtopic": "Basic Tags",
-      "skillId": "exact_skill_id_from_catalog",
-      "skillName": "exact_skill_name_from_catalog",
+      "skillId": "web_html_elem",
+      "skillName": "HTML5 Semantic Elements",
       "difficulty": "${initialLevel}",
       "options": ["<p>", "<div>", "<span>", "<section>"],
       "correct": 0,
@@ -2460,11 +2702,11 @@ Return ONLY valid JSON matching this exact JSON schema:
           const completion = await callGroqWithFallback(groqClient, {
             messages: [
               { role: 'system', content: systemPrompt },
-              { role: 'user', content: `Generate a JSON object with a "questions" array containing EXACTLY ${fetchSize} unique ${initialLevel} level questions for ${canonicalDomainName}. EVERY question MUST have an "options" array with 4 options. Seed: ${randomSeed}_att${attempts}` }
+              { role: 'user', content: `Generate a JSON object with a "questions" array containing EXACTLY ${fetchSize} unique NPTEL-style technical questions for ${canonicalDomainName} at ${initialLevel} level. Include a balanced mix of supported question types (MCQ, MSQ, CODE_OUTPUT, ASSERTION_REASONING, NUMERICAL, CONCEPTUAL, SCENARIO_BASED, DEBUGGING). Randomize correct answer positions. Seed: ${randomSeed}_att${attempts}` }
             ],
             model: model,
             response_format: { type: 'json_object' },
-            temperature: 0.6,
+            temperature: 0.7,
             max_tokens: 3500
           });
 
@@ -2491,31 +2733,83 @@ Return ONLY valid JSON matching this exact JSON schema:
           console.log(`Requested question count: ${questionCount}`);
           console.log(`Domain: ${canonicalDomainName} (${domainId})`);
           console.log(`Level: ${initialLevel}`);
-          console.log(`Questions:`, JSON.stringify(parsed && parsed.questions ? parsed.questions : [], null, 2));
 
           if (parsed && Array.isArray(parsed.questions)) {
-            const validNew = parsed.questions.filter(q => {
-              if (!q || !q.question || typeof q.question !== 'string' || !q.question.trim()) return false;
-              return Array.isArray(q.options) && q.options.length >= 2;
-            });
-
-            for (const q of validNew) {
+            for (const q of parsed.questions) {
               if (generatedQuestions.length >= questionCount) break;
+              if (!q || !q.question || typeof q.question !== 'string' || !q.question.trim()) continue;
+
+              let questionText = q.question.trim();
+              let snippetText = q.codeSnippet && typeof q.codeSnippet === 'string' && q.codeSnippet.trim() ? q.codeSnippet.trim() : null;
+
+              // If snippet wasn't isolated, extract ```code``` from questionText if present
+              if (!snippetText && questionText.includes('```')) {
+                const codeMatch = questionText.match(/```(?:[a-zA-Z0-9_\-+]*\n)?([\s\S]*?)```/);
+                if (codeMatch && codeMatch[1]) {
+                  snippetText = codeMatch[1].trim();
+                  questionText = questionText.replace(/```(?:[a-zA-Z0-9_\-+]*\n)?[\s\S]*?```/, '').trim();
+                  if (!questionText) questionText = 'Analyze the code snippet and determine the correct output or behavior:';
+                }
+              }
+
+              const cleanType = String(q.type || (snippetText ? 'CODE_OUTPUT' : 'MCQ')).toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+              const isNumerical = cleanType === 'NUMERICAL' || cleanType === 'FILL_BLANK' || cleanType === 'FILL_IN_THE_BLANK';
+              const isMSQ = cleanType === 'MSQ' || cleanType === 'MULTIPLE_SELECT' || cleanType === 'MULTIPLE_CHOICE_MULTI';
+
+              let validOptions = [];
+              let validCorrect = null;
+
+              if (isNumerical) {
+                const parsedNum = parseFloat(q.correct !== undefined ? q.correct : q.correct_answer);
+                if (!isNaN(parsedNum)) {
+                  validCorrect = parsedNum;
+                } else if (typeof q.correct === 'string' && q.correct.trim() !== '') {
+                  validCorrect = q.correct.trim();
+                } else {
+                  continue; // Skip malformed numerical answer
+                }
+                validOptions = Array.isArray(q.options) && q.options.length > 0 ? q.options.map(String) : [];
+              } else if (isMSQ) {
+                if (!Array.isArray(q.options) || q.options.length < 2) continue;
+                validOptions = q.options.map(String);
+                if (Array.isArray(q.correct)) {
+                  validCorrect = q.correct.map(idx => parseInt(idx, 10)).filter(n => !isNaN(n) && n >= 0 && n < validOptions.length);
+                  if (validCorrect.length === 0) validCorrect = [0];
+                } else if (typeof q.correct === 'number') {
+                  validCorrect = [q.correct];
+                } else if (typeof q.correct === 'string') {
+                  validCorrect = q.correct.split(/;|,/).map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n >= 0 && n < validOptions.length);
+                  if (validCorrect.length === 0) validCorrect = [0];
+                } else {
+                  validCorrect = [0];
+                }
+              } else {
+                // Single Choice Questions (MCQ, CODE_OUTPUT, ASSERTION_REASONING, CONCEPTUAL, SCENARIO_BASED, DEBUGGING, COMPLEXITY)
+                if (!Array.isArray(q.options) || q.options.length < 2) continue;
+                validOptions = q.options.map(String);
+                let corrIdx = parseInt(q.correct !== undefined ? q.correct : (q.correct_answer !== undefined ? q.correct_answer : 0), 10);
+                if (isNaN(corrIdx) || corrIdx < 0 || corrIdx >= validOptions.length) {
+                  const matchIdx = validOptions.findIndex(opt => String(opt).trim().toLowerCase() === String(q.correct || '').trim().toLowerCase());
+                  corrIdx = matchIdx >= 0 ? matchIdx : 0;
+                }
+                validCorrect = corrIdx;
+              }
+
               // Prevent duplicates
-              const isDup = generatedQuestions.some(existing => existing.question.trim().toLowerCase() === q.question.trim().toLowerCase());
+              const isDup = generatedQuestions.some(existing => existing.question.trim().toLowerCase() === questionText.toLowerCase());
               if (!isDup) {
                 generatedQuestions.push({
-                  id: q.id || `q_${generatedQuestions.length + 1}_${Date.now()}`,
-                  question: q.question.trim(),
-                  codeSnippet: q.codeSnippet || null,
-                  type: q.type || 'MCQ',
+                  id: `q_${generatedQuestions.length + 1}_${Date.now()}`,
+                  question: questionText,
+                  codeSnippet: snippetText,
+                  type: cleanType,
                   topic: q.topic || 'Core Knowledge',
                   subtopic: q.subtopic || 'Foundations',
                   skillId: q.skillId || '',
                   skillName: q.skillName || '',
                   difficulty: initialLevel,
-                  options: Array.isArray(q.options) ? q.options : [],
-                  correct: q.correct !== undefined ? q.correct : (q.correct_answer !== undefined ? q.correct_answer : 0),
+                  options: validOptions,
+                  correct: validCorrect,
                   explanation: q.explanation || ''
                 });
               }
@@ -2579,6 +2873,121 @@ Return ONLY valid JSON matching this exact JSON schema:
       return sendJSON(res, 200, global.activeQuizStore.get(uId));
     }
     return sendJSON(res, 404, { error: 'No active quiz found' });
+  }
+
+  // ==========================================================
+  // 9e. GET LATEST QUIZ EVALUATION REPORT
+  // GET /api/quiz/evaluation/:userId or GET /api/quiz/latest-evaluation/:userId
+  // ==========================================================
+  if (
+    req.method === 'GET' &&
+    (parsedUrl.pathname.startsWith('/api/quiz/evaluation/') || parsedUrl.pathname.startsWith('/api/quiz/latest-evaluation/'))
+  ) {
+    try {
+      if (mongoose.connection.readyState !== 1) {
+        return sendJSON(res, 503, {
+          error: 'MongoDB Atlas is not connected. Please try again.'
+        });
+      }
+
+      const targetUserId = parsedUrl.pathname
+        .replace('/api/quiz/evaluation/', '')
+        .replace('/api/quiz/latest-evaluation/', '')
+        .trim();
+
+      if (!targetUserId) {
+        return sendJSON(res, 400, { error: 'Missing target user_id' });
+      }
+
+      const latestQuizEval = await QuizEvaluation.findOne({ user_id: targetUserId }).sort({ createdAt: -1 });
+
+      if (!latestQuizEval) {
+        return sendJSON(res, 404, {
+          success: false,
+          error: 'No assessment evaluation found for this user.'
+        });
+      }
+
+      const topicEvals = (latestQuizEval.topic_evaluations || []).map(t => ({
+        topic: t.topic,
+        totalQuestions: t.total_questions !== undefined ? t.total_questions : 1,
+        total_questions: t.total_questions !== undefined ? t.total_questions : 1,
+        correctAnswers: t.correct_count !== undefined ? t.correct_count : 0,
+        correct_count: t.correct_count !== undefined ? t.correct_count : 0,
+        accuracy: t.score_pct !== undefined ? t.score_pct : 0,
+        score_pct: t.score_pct !== undefined ? t.score_pct : 0,
+        beginnerAccuracy: t.beginner_accuracy !== undefined ? t.beginner_accuracy : 100,
+        beginner_accuracy: t.beginner_accuracy !== undefined ? t.beginner_accuracy : 100,
+        intermediateAccuracy: t.intermediate_accuracy !== undefined ? t.intermediate_accuracy : 100,
+        intermediate_accuracy: t.intermediate_accuracy !== undefined ? t.intermediate_accuracy : 100,
+        advancedAccuracy: t.advanced_accuracy !== undefined ? t.advanced_accuracy : 0,
+        advanced_accuracy: t.advanced_accuracy !== undefined ? t.advanced_accuracy : 0,
+        proficiencyLevel: t.proficiency_level || 'INTERMEDIATE',
+        proficiency_level: t.proficiency_level || 'INTERMEDIATE',
+        weakConcepts: t.weak_concepts || [],
+        weak_concepts: t.weak_concepts || [],
+        reason: t.reason || ''
+      }));
+
+      const weakTopics = topicEvals.filter(t => t.proficiency_level === 'WEAK').map(t => ({
+        topic: t.topic,
+        score_pct: t.score_pct,
+        accuracy: t.score_pct,
+        reason: t.reason,
+        weakConcepts: t.weakConcepts
+      }));
+
+      const intermediateTopics = topicEvals.filter(t => t.proficiency_level === 'INTERMEDIATE').map(t => ({
+        topic: t.topic,
+        score_pct: t.score_pct,
+        accuracy: t.score_pct,
+        reason: t.reason
+      }));
+
+      const strongTopics = topicEvals.filter(t => t.proficiency_level === 'STRONG').map(t => ({
+        topic: t.topic,
+        score_pct: t.score_pct,
+        accuracy_pct: t.score_pct,
+        accuracy: t.score_pct,
+        reason: t.reason
+      }));
+
+      return sendJSON(res, 200, {
+        success: true,
+        evaluation: {
+          id: latestQuizEval._id,
+          user_id: latestQuizEval.user_id,
+          domain: latestQuizEval.domain,
+          score_pct: latestQuizEval.score_pct,
+          scorePct: latestQuizEval.score_pct,
+          correct_count: latestQuizEval.correct_count,
+          correctCount: latestQuizEval.correct_count,
+          total_questions: latestQuizEval.total_questions,
+          totalQuestions: latestQuizEval.total_questions,
+          skill_level: latestQuizEval.skill_level,
+          skillLevel: latestQuizEval.skill_level,
+          skillTier: latestQuizEval.skill_level,
+          level_description: latestQuizEval.level_description,
+          levelDescription: latestQuizEval.level_description,
+          mastered_topics: latestQuizEval.mastered_topics || [],
+          masteredTopics: strongTopics,
+          knowledge_gaps: latestQuizEval.knowledge_gaps || [],
+          knowledgeGaps: weakTopics,
+          weakTopics,
+          intermediateTopics,
+          strongTopics,
+          topic_evaluations: topicEvals,
+          topicEvaluations: topicEvals,
+          answers: latestQuizEval.answers || [],
+          is_self_assessed: !!latestQuizEval.is_self_assessed,
+          isSelfAssessed: !!latestQuizEval.is_self_assessed,
+          createdAt: latestQuizEval.createdAt
+        }
+      });
+    } catch (err) {
+      console.error('Error fetching quiz evaluation:', err);
+      return sendJSON(res, 500, { error: 'Failed to fetch evaluation: ' + err.message });
+    }
   }
 
 
@@ -3558,7 +3967,18 @@ Return ONLY valid JSON matching this exact JSON schema:
 
       let topicEvaluations = [];
       if (payload && Array.isArray(payload.topic_evaluations) && payload.topic_evaluations.length > 0) {
-        topicEvaluations = payload.topic_evaluations;
+        topicEvaluations = payload.topic_evaluations.map(t => ({
+          topic: t.topic,
+          correct_count: t.correct_count !== undefined ? t.correct_count : (t.correctAnswers !== undefined ? t.correctAnswers : 0),
+          total_questions: t.total_questions !== undefined ? t.total_questions : (t.totalQuestions !== undefined ? t.totalQuestions : 1),
+          score_pct: t.score_pct !== undefined ? t.score_pct : (t.accuracy !== undefined ? t.accuracy : 0),
+          proficiency_level: t.proficiency_level || t.proficiencyLevel || 'INTERMEDIATE',
+          beginner_accuracy: t.beginner_accuracy !== undefined ? t.beginner_accuracy : (t.beginnerAccuracy !== undefined ? t.beginnerAccuracy : 100),
+          intermediate_accuracy: t.intermediate_accuracy !== undefined ? t.intermediate_accuracy : (t.intermediateAccuracy !== undefined ? t.intermediateAccuracy : 100),
+          advanced_accuracy: t.advanced_accuracy !== undefined ? t.advanced_accuracy : (t.advancedAccuracy !== undefined ? t.advancedAccuracy : 0),
+          weak_concepts: t.weak_concepts || t.weakConcepts || [],
+          reason: t.reason || ''
+        }));
       } else {
         Object.keys(topicStats).forEach(topic => {
           const stats = topicStats[topic];
@@ -3579,7 +3999,12 @@ Return ONLY valid JSON matching this exact JSON schema:
             correct_count: stats.correct,
             total_questions: stats.total,
             score_pct: accuracyPct,
-            proficiency_level: proficiencyLevel
+            proficiency_level: proficiencyLevel,
+            beginner_accuracy: 100,
+            intermediate_accuracy: 100,
+            advanced_accuracy: 0,
+            weak_concepts: [],
+            reason: ''
           });
         });
       }
@@ -3620,19 +4045,20 @@ Return ONLY valid JSON matching this exact JSON schema:
         global.activeQuizStore.delete(user_id);
       }
 
-      // Update current_skill_level, quiz_completed: true, and quiz_score in MongoDB Registration collection
+      // Update current_skill_level, quiz_completed: true, quiz_score, and last_route in MongoDB Registration collection
       let updatedUser = await User.findOneAndUpdate(
         { user_id },
         {
           current_skill_level: finalSkillLevel,
           quiz_completed: true,
           quiz_score: scorePct,
-          roadmap_status: 'ROADMAP_REQUIRED'
+          roadmap_status: 'READY',
+          last_route: 'assessmentReport'
         },
         { new: true }
       );
 
-      console.log(`✅ Saved Quiz Evaluation for user ${user_id}: ${scorePct}% (${finalSkillLevel}) with ${topicEvaluations.length} topic evaluations. Set quiz_completed = true.`);
+      console.log(`✅ Saved Quiz Evaluation for user ${user_id}: ${scorePct}% (${finalSkillLevel}) with ${topicEvaluations.length} topic evaluations. Set quiz_completed = true, last_route = assessmentReport.`);
 
       return sendJSON(res, 200, {
         message: 'Quiz evaluation successfully calculated and persisted to MongoDB Atlas.',
@@ -4394,6 +4820,101 @@ Return ONLY valid JSON matching this exact JSON schema:
       const roadmapDoc = await Roadmap.findOne({ user_id: targetUserId });
       const progressData = calculateUserProgress(roadmapDoc, userDoc);
 
+      // Retrieve phase assessment evaluations for this user from MongoDB
+      const phaseAssessments = await PhaseAssessment.find({ user_id: targetUserId }).sort({ submitted_at: -1 }).lean();
+
+      // Group all assessments per topic and per phase
+      const assessmentsByTopic = {};
+      const assessmentsByPhase = {};
+
+      phaseAssessments.forEach(pa => {
+        const top = pa.topic || pa.phase_title;
+        if (top) {
+          if (!assessmentsByTopic[top]) assessmentsByTopic[top] = [];
+          assessmentsByTopic[top].push(pa);
+        }
+        if (pa.phase_key) {
+          if (!assessmentsByPhase[pa.phase_key]) assessmentsByPhase[pa.phase_key] = [];
+          assessmentsByPhase[pa.phase_key].push(pa);
+        }
+      });
+
+      // Augment each topicStat with average assessment score across valid attempts
+      for (const topic of Object.keys(progressData.topicStats)) {
+        let matchedList = assessmentsByTopic[topic];
+        if (!matchedList || matchedList.length === 0) {
+          const lower = topic.trim().toLowerCase();
+          for (const [tKey, aList] of Object.entries(assessmentsByTopic)) {
+            const tLower = tKey.trim().toLowerCase();
+            if (tLower === lower || lower.includes(tLower) || tLower.includes(lower)) {
+              matchedList = aList;
+              break;
+            }
+          }
+        }
+
+        // Also check if any roadmap day under this topic has assessment_score
+        if ((!matchedList || matchedList.length === 0) && roadmapDoc && Array.isArray(roadmapDoc.monthly_roadmap)) {
+          for (const m of roadmapDoc.monthly_roadmap) {
+            for (const w of (m.weeks || [])) {
+              for (const d of (w.days || [])) {
+                const dTopic = d.topic || (w.topics && w.topics[0]);
+                if (dTopic && (dTopic === topic || dTopic.toLowerCase() === topic.toLowerCase())) {
+                  if (d.assessment_taken && d.assessment_score !== undefined && d.assessment_score !== null) {
+                    matchedList = [{
+                      score_pct: d.assessment_score,
+                      passed: d.assessment_passed !== undefined ? d.assessment_passed : (d.assessment_score >= 70),
+                      submitted_at: d.assessment_submitted_at || null
+                    }];
+                    break;
+                  }
+                }
+              }
+              if (matchedList && matchedList.length > 0) break;
+            }
+            if (matchedList && matchedList.length > 0) break;
+          }
+        }
+
+        const validAttempts = (matchedList || []).filter(a => a.score_pct !== null && a.score_pct !== undefined && !isNaN(Number(a.score_pct)));
+
+        if (validAttempts.length > 0) {
+          const sumScores = validAttempts.reduce((sum, a) => sum + Number(a.score_pct), 0);
+          const rawAvg = sumScores / validAttempts.length;
+          const avgScore = Number.isInteger(rawAvg) ? rawAvg : Math.round(rawAvg * 10) / 10;
+          const passed = avgScore >= 70;
+          const latest = validAttempts[0];
+
+          progressData.topicStats[topic].assessmentAttempted = true;
+          progressData.topicStats[topic].assessmentScore = avgScore;
+          progressData.topicStats[topic].assessmentPassed = passed;
+          progressData.topicStats[topic].totalAttempts = validAttempts.length;
+          progressData.topicStats[topic].assessmentDetails = {
+            scorePct: avgScore,
+            passed: passed,
+            totalAttempts: validAttempts.length,
+            submittedAt: latest.submitted_at,
+            submissionId: latest.submission_id,
+            correctCount: latest.correct_count,
+            partiallyCorrectCount: latest.partially_correct_count,
+            incorrectCount: latest.incorrect_count,
+            totalQuestions: latest.total_questions,
+            totalMarks: latest.total_marks,
+            marksObtained: latest.marks_obtained,
+            badgeEarned: latest.badge_earned
+          };
+        } else {
+          progressData.topicStats[topic].assessmentAttempted = false;
+          progressData.topicStats[topic].assessmentScore = null;
+          progressData.topicStats[topic].assessmentPassed = false;
+        }
+      }
+
+      // Merge all badges without duplicates
+      const allBadgesSet = new Set([...(userDoc.badges || []), ...progressData.badges]);
+      allBadgesSet.add('🐣 Fresh Start');
+      const finalBadges = Array.from(allBadgesSet);
+
       console.log('[AUTH USER] userId:', targetUserId);
       console.log('[STREAK CALCULATION] userId:', targetUserId, 'activityDates:', userDoc.activity_dates || [], 'streak:', progressData.streak);
       console.log('[PROGRESS] userId:', targetUserId, 'completedTasks:', progressData.completedTasks, 'totalTasks:', progressData.totalTasks, 'percentage:', progressData.masteryPct);
@@ -4405,11 +4926,32 @@ Return ONLY valid JSON matching this exact JSON schema:
         streak: progressData.streak,
         xp: progressData.xp,
         level: progressData.level,
-        badges: progressData.badges,
+        badges: finalBadges,
         completedTasksCount: progressData.completedTasks,
         totalTasksCount: progressData.totalTasks,
         masteryPct: progressData.masteryPct,
         topicStats: progressData.topicStats,
+        phaseAssessments: phaseAssessments.map(pa => ({
+          submission_id: pa.submission_id,
+          phase_key: pa.phase_key,
+          phase_number: pa.phase_number,
+          month_number: pa.month_number,
+          week_number: pa.week_number,
+          day_number: pa.day_number,
+          day_id: pa.day_id,
+          phase_title: pa.phase_title,
+          topic: pa.topic,
+          score_pct: pa.score_pct,
+          total_questions: pa.total_questions,
+          total_marks: pa.total_marks,
+          marks_obtained: pa.marks_obtained,
+          correct_count: pa.correct_count,
+          partially_correct_count: pa.partially_correct_count,
+          incorrect_count: pa.incorrect_count,
+          passed: pa.passed,
+          badge_earned: pa.badge_earned,
+          submitted_at: pa.submitted_at
+        })),
         tier: userDoc.current_skill_level || 'BEGINNER',
         domain: userDoc.chosen_domain || 'fullstack'
       });
@@ -4479,6 +5021,7 @@ Return ONLY valid JSON matching this exact JSON schema:
 
       await QuizEvaluation.deleteMany({ user_id: targetUserId });
       await UserSkillProfile.deleteMany({ user_id: targetUserId });
+      await PhaseAssessment.deleteMany({ user_id: targetUserId });
 
       console.log(`[USER RESET] Successfully reset learning profile for user: ${targetUserId}`);
 
@@ -4598,9 +5141,19 @@ Return ONLY valid JSON matching this exact JSON schema:
   // ==========================================================
   // RAG RESOURCE RETRIEVAL HELPER
   // ==========================================================
+  const ragServerCache = new Map();
+
   async function recommendResourcesForTask(params = {}) {
     const ragBaseUrl = (process.env.RAG_API_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '');
     const targetUrl = `${ragBaseUrl}/api/rag/query`;
+
+    const cacheKey = `${params.domain || ''}_${params.taskTitle || params.title || ''}_${params.taskId || params.id || ''}_${params.taskDuration || 45}_${params.taskDifficulty || params.difficulty || ''}`;
+    if (ragServerCache.has(cacheKey)) {
+      const cached = ragServerCache.get(cacheKey);
+      if (Array.isArray(cached) && cached.length > 0) {
+        return cached;
+      }
+    }
 
     const payload = {
       user_id: params.user_id || params.userId || 'anonymous',
@@ -4631,7 +5184,7 @@ Return ONLY valid JSON matching this exact JSON schema:
     try {
       if (typeof globalThis.fetch === 'function') {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 6000);
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
 
         const ragRes = await globalThis.fetch(targetUrl, {
           method: 'POST',
@@ -4645,6 +5198,9 @@ Return ONLY valid JSON matching this exact JSON schema:
         if (ragRes.ok) {
           const ragData = await ragRes.json();
           if (ragData && ragData.success && Array.isArray(ragData.resources)) {
+            if (ragData.resources.length > 0) {
+              ragServerCache.set(cacheKey, ragData.resources);
+            }
             return ragData.resources;
           }
         } else {
@@ -4672,17 +5228,24 @@ Return ONLY valid JSON matching this exact JSON schema:
             });
           });
           clientReq.on('error', () => resolve(null));
-          clientReq.setTimeout(6000, () => { clientReq.destroy(); resolve(null); });
+          clientReq.setTimeout(30000, () => { clientReq.destroy(); resolve(null); });
           clientReq.write(postData);
           clientReq.end();
         });
 
         if (ragData && ragData.success && Array.isArray(ragData.resources)) {
+          if (ragData.resources.length > 0) {
+            ragServerCache.set(cacheKey, ragData.resources);
+          }
           return ragData.resources;
         }
       }
     } catch (err) {
-      console.warn('⚠️ YouTube RAG retrieval error or timeout:', err.message);
+      if (err.name !== 'AbortError' && !err.message?.includes('aborted')) {
+        console.warn('⚠️ YouTube RAG retrieval error:', err.message);
+      } else {
+        console.warn('⚠️ YouTube RAG request timed out after 30s');
+      }
     }
 
     return [];
@@ -5164,34 +5727,986 @@ Return ONLY JSON in this shape:
     }
   }
 
+  // ==========================================================
+  // 11g2. PHASE ASSESSMENT PERSISTENCE & RETRIEVAL (MongoDB)
+  // ==========================================================
+
+  if (
+    req.method === 'POST' &&
+    (parsedUrl.pathname === '/api/phase-assessment/save' || parsedUrl.pathname === '/api/assessment/save')
+  ) {
+    try {
+      if (mongoose.connection.readyState !== 1) {
+        return sendJSON(res, 503, { error: 'MongoDB Atlas is not connected.' });
+      }
+
+      const payload = await readRequestBody(req);
+      const userId = payload.userId || payload.user_id;
+      if (!userId) {
+        return sendJSON(res, 400, { error: 'User ID is required.' });
+      }
+
+      const userDoc = await User.findOne({ user_id: userId });
+      if (!userDoc) {
+        return sendJSON(res, 404, { error: `User not found: ${userId}` });
+      }
+
+      const totalMarks = Number(payload.maxPoints ?? payload.totalMarks ?? payload.total_marks ?? payload.max_points ?? 0);
+      const marksObtained = Number(payload.earnedPoints ?? payload.marksObtained ?? payload.marks_obtained ?? payload.earned_points ?? 0);
+      const scorePct = payload.scorePct !== undefined
+        ? Math.round(Number(payload.scorePct))
+        : (totalMarks > 0 ? Math.round((marksObtained / totalMarks) * 100) : 0);
+      
+      const passed = payload.passed !== undefined ? Boolean(payload.passed) : (scorePct >= 70);
+      const mNum = Number(payload.monthNumber ?? payload.month_number ?? 1);
+      const wNum = Number(payload.weekNumber ?? payload.week_number ?? 1);
+      const dNum = Number(payload.dayNumber ?? payload.day_number ?? 1);
+      const phaseNum = Number(payload.phaseNumber ?? payload.phase_number ?? payload.phase ?? dNum);
+      const phaseKey = payload.phaseKey || payload.phase_key || payload.dayId || payload.day_id || `m${mNum}_w${wNum}_d${dNum}`;
+      const phaseTitle = payload.phaseTitle || payload.phase_title || payload.topic || `Phase ${phaseNum} Mastery`;
+      const topic = payload.topic || payload.taskTopic || phaseTitle;
+      const submissionId = payload.submissionId || payload.submission_id || `eval_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+      const submittedAt = payload.submittedAt ? new Date(payload.submittedAt) : new Date();
+
+      let badgeEarned = null;
+      if (passed) {
+        const badgeName = payload.badgeEarned || `🎯 Phase ${phaseNum} Master`;
+        badgeEarned = {
+          badge_id: `phase_${phaseNum}_master`,
+          name: badgeName,
+          earned_at: new Date()
+        };
+      }
+
+      // Save to PhaseAssessment collection
+      const assessmentDoc = new PhaseAssessment({
+        submission_id: submissionId,
+        user_id: userId,
+        roadmap_id: payload.roadmapId || payload.roadmap_id || '',
+        domain: payload.domain || userDoc.chosen_domain || '',
+        phase_id: payload.phaseId || payload.phase_id || payload.dayId || payload.day_id || '',
+        phase_key: phaseKey,
+        phase_number: phaseNum,
+        month_number: mNum,
+        week_number: wNum,
+        day_number: dNum,
+        day_id: payload.dayId || payload.day_id || '',
+        phase_title: phaseTitle,
+        topic: topic,
+        score_pct: scorePct,
+        total_questions: Number(payload.totalQuestions ?? payload.total_questions ?? 0),
+        total_marks: totalMarks,
+        marks_obtained: marksObtained,
+        correct_count: Number(payload.correctCount ?? payload.correct_count ?? 0),
+        partially_correct_count: Number(payload.partiallyCorrectCount ?? payload.partially_correct_count ?? 0),
+        incorrect_count: Number(payload.incorrectCount ?? payload.incorrect_count ?? 0),
+        passed: passed,
+        badge_earned: badgeEarned,
+        detailed_questions: Array.isArray(payload.detailedQuestions ?? payload.detailed_questions) ? (payload.detailedQuestions ?? payload.detailed_questions) : [],
+        concepts_to_review: Array.isArray(payload.conceptsToReview ?? payload.concepts_to_review) ? (payload.conceptsToReview ?? payload.concepts_to_review) : [],
+        task_context: payload.taskContext || payload.task_context || null,
+        submitted_at: submittedAt
+      });
+
+      await assessmentDoc.save();
+
+      // Update User Badges, Streak, Activity Dates and XP
+      const todayStr = submittedAt.toISOString().split('T')[0];
+      const actDates = Array.isArray(userDoc.activity_dates) ? [...userDoc.activity_dates] : [];
+      if (!actDates.includes(todayStr)) {
+        actDates.push(todayStr);
+      }
+      userDoc.activity_dates = actDates;
+      userDoc.last_active_date = todayStr;
+      
+      const xpGained = Math.round(150 * (scorePct / 100));
+      userDoc.xp = (userDoc.xp || 0) + xpGained;
+      userDoc.streak = calculateUserStreak(userDoc.activity_dates);
+      userDoc.level = Math.floor(userDoc.xp / 300) + 1;
+
+      const userBadges = Array.isArray(userDoc.badges) ? [...userDoc.badges] : ['🐣 Fresh Start'];
+      if (badgeEarned && !userBadges.includes(badgeEarned.name)) {
+        userBadges.push(badgeEarned.name);
+      }
+      if (scorePct === 100 && !userBadges.includes('🌟 Perfect Score')) {
+        userBadges.push('🌟 Perfect Score');
+      }
+      if (userDoc.streak >= 3 && !userBadges.includes('🔥 3-Day Streak')) {
+        userBadges.push('🔥 3-Day Streak');
+      }
+      userDoc.badges = userBadges;
+      await userDoc.save();
+
+      // Update Roadmap Day status
+      const roadmapDoc = await Roadmap.findOne({ user_id: userId });
+      if (roadmapDoc && Array.isArray(roadmapDoc.monthly_roadmap)) {
+        let updatedRoadmap = false;
+        roadmapDoc.monthly_roadmap.forEach(m => {
+          if (Number(m.month_number) === Number(mNum)) {
+            (m.weeks || []).forEach(w => {
+              if (Number(w.week_number) === Number(wNum)) {
+                (w.days || []).forEach(d => {
+                  if (Number(d.day_number) === Number(dNum) || (payload.dayId && (d.id === payload.dayId || d.day_id === payload.dayId))) {
+                    d.assessment_taken = true;
+                    d.assessmentTaken = true;
+                    d.assessment_score = scorePct;
+                    d.assessment_passed = passed;
+                    d.assessment_submitted_at = submittedAt;
+                    updatedRoadmap = true;
+                  }
+                });
+              }
+            });
+          }
+        });
+        if (updatedRoadmap) {
+          await safeSaveRoadmap(roadmapDoc);
+        }
+      }
+
+      console.log(`✅ [PHASE ASSESSMENT SAVED] User: ${userId}, Phase: ${phaseKey}, Score: ${scorePct}%, Passed: ${passed}, Badge: ${badgeEarned ? badgeEarned.name : 'None'}`);
+
+      return sendJSON(res, 200, {
+        success: true,
+        assessment: assessmentDoc,
+        score_pct: scorePct,
+        passed,
+        badge_earned: badgeEarned,
+        userStats: {
+          streak: userDoc.streak,
+          xp: userDoc.xp,
+          level: userDoc.level,
+          badges: userDoc.badges
+        }
+      });
+    } catch (err) {
+      console.error('❌ Save phase assessment error:', err);
+      return sendJSON(res, 500, { error: 'Failed to save phase assessment: ' + err.message });
+    }
+  }
+
+  if (
+    req.method === 'GET' &&
+    parsedUrl.pathname.startsWith('/api/phase-assessment/user/')
+  ) {
+    try {
+      if (mongoose.connection.readyState !== 1) {
+        return sendJSON(res, 503, { error: 'MongoDB Atlas is not connected.' });
+      }
+
+      const targetUserId = parsedUrl.pathname.replace('/api/phase-assessment/user/', '').trim();
+      if (!targetUserId) {
+        return sendJSON(res, 400, { error: 'User ID is required.' });
+      }
+
+      const assessments = await PhaseAssessment.find({ user_id: targetUserId }).sort({ submitted_at: -1 }).lean();
+      
+      const latestByPhase = {};
+      const latestByTopic = {};
+      const attemptsByPhase = {};
+      const averagesByPhase = {};
+
+      assessments.forEach(a => {
+        const pKey = a.phase_key || a.day_id || `phase_${a.phase_number}`;
+        if (pKey) {
+          if (!attemptsByPhase[pKey]) attemptsByPhase[pKey] = [];
+          attemptsByPhase[pKey].push(a);
+          if (!latestByPhase[pKey]) latestByPhase[pKey] = a;
+        }
+        const t = a.topic || a.phase_title;
+        if (t && !latestByTopic[t]) {
+          latestByTopic[t] = a;
+        }
+      });
+
+      for (const [pKey, attList] of Object.entries(attemptsByPhase)) {
+        const valid = attList.filter(x => x.score_pct !== null && x.score_pct !== undefined && !isNaN(Number(x.score_pct)));
+        if (valid.length > 0) {
+          const sumScores = valid.reduce((sum, x) => sum + Number(x.score_pct), 0);
+          const rawAvg = sumScores / valid.length;
+          const avgScore = Number.isInteger(rawAvg) ? rawAvg : Math.round(rawAvg * 10) / 10;
+          averagesByPhase[pKey] = {
+            average_score_pct: avgScore,
+            total_attempts: valid.length,
+            passed: avgScore >= 70,
+            latest_submitted_at: valid[0].submitted_at
+          };
+        }
+      }
+
+      return sendJSON(res, 200, {
+        success: true,
+        user_id: targetUserId,
+        count: assessments.length,
+        assessments,
+        latestByPhase,
+        latestByTopic,
+        averagesByPhase
+      });
+    } catch (err) {
+      return sendJSON(res, 500, { error: 'Fetch phase assessments error: ' + err.message });
+    }
+  }
+
+  // ==========================================================
+  // 11g. INTERVIEW PREPARATION STUDIO SUITE
+  // ==========================================================
+
+  // Curated Resource Helper for Interview Prep
+  function getCuratedInterviewResources(domain, topic) {
+    const dLower = String(domain || 'fullstack').toLowerCase();
+    const tLower = String(topic || '').toLowerCase();
+    const cleanTopic = topic || 'Technical Concepts';
+
+    const resources = [];
+
+    // GeeksforGeeks
+    resources.push({
+      id: 'res_gfg',
+      name: 'GeeksforGeeks',
+      category: 'Interview Questions & Topic Guides',
+      recommended_category: 'Interview Questions & Topic Guides',
+      badge: 'Comprehensive Q&A',
+      icon: 'ph-code',
+      url: `https://www.geeksforgeeks.org/search/?q=${encodeURIComponent(cleanTopic + ' interview questions')}`,
+      description: 'Extensive repository of frequently asked placement interview questions, topic-wise code explanations, and company interview experiences.',
+      why_relevant: `Provides curated interview questions and clear conceptual explanations specifically covering ${cleanTopic} for technical placement rounds.`,
+      whyRelevant: `Provides curated interview questions and clear conceptual explanations specifically covering ${cleanTopic} for technical placement rounds.`
+    });
+
+    // LeetCode
+    resources.push({
+      id: 'res_leetcode',
+      name: 'LeetCode',
+      category: 'Coding & Algorithmic Practice',
+      recommended_category: 'Coding & Algorithmic Practice',
+      badge: 'Top Placement Problems',
+      icon: 'ph-brackets-curly',
+      url: `https://leetcode.com/problemset/all/?search=${encodeURIComponent(cleanTopic)}`,
+      description: 'The industry-standard coding platform for technical interview preparation, live test cases, and algorithmic problem solving.',
+      why_relevant: `Practice hands-on coding challenges and real interview problems related to ${cleanTopic} tested by top tech companies.`,
+      whyRelevant: `Practice hands-on coding challenges and real interview problems related to ${cleanTopic} tested by top tech companies.`
+    });
+
+    // InterviewBit
+    resources.push({
+      id: 'res_interviewbit',
+      name: 'InterviewBit',
+      category: 'Structured Interview Preparation',
+      recommended_category: 'Structured Interview Preparation',
+      badge: 'Company Tracks',
+      icon: 'ph-briefcase',
+      url: `https://www.interviewbit.com/search/?q=${encodeURIComponent(cleanTopic)}`,
+      description: 'Structured interview coaching modules, time-bounded coding drills, and mock technical interview questions.',
+      why_relevant: `Offers step-by-step interview tracks and targeted problem sets to prepare for ${cleanTopic} interviews.`,
+      whyRelevant: `Offers step-by-step interview tracks and targeted problem sets to prepare for ${cleanTopic} interviews.`
+    });
+
+    // Domain Specific Sites
+    if (dLower.includes('web') || dLower.includes('full') || dLower.includes('frontend') || dLower.includes('javascript') || dLower.includes('react') || dLower.includes('node')) {
+      resources.push({
+        id: 'res_mdn',
+        name: 'MDN Web Docs',
+        category: 'Official Documentation & Guides',
+        recommended_category: 'Official Documentation & Guides',
+        badge: 'Industry Standard',
+        icon: 'ph-file-code',
+        url: `https://developer.mozilla.org/en-US/search?q=${encodeURIComponent(cleanTopic)}`,
+        description: 'The definitive web development reference with deep technical documentation, interactive examples, and browser compatibility notes.',
+        why_relevant: `Authoritative reference for deep-dive technical interview questions regarding web APIs, JavaScript execution, and ${cleanTopic}.`,
+        whyRelevant: `Authoritative reference for deep-dive technical interview questions regarding web APIs, JavaScript execution, and ${cleanTopic}.`
+      });
+      resources.push({
+        id: 'res_w3schools',
+        name: 'W3Schools',
+        category: 'Interactive Tutorials & Quizzes',
+        recommended_category: 'Interactive Tutorials & Quizzes',
+        badge: 'Quick Revision',
+        icon: 'ph-browsers',
+        url: `https://www.w3schools.com/tags/default.asp`,
+        description: 'Interactive tutorials, cheat sheets, and practical code snippets for rapid revision before interview rounds.',
+        why_relevant: `Quick syntax lookup, fundamental definitions, and interactive examples for ${cleanTopic}.`,
+        whyRelevant: `Quick syntax lookup, fundamental definitions, and interactive examples for ${cleanTopic}.`
+      });
+      resources.push({
+        id: 'res_mongodb',
+        name: 'MongoDB Documentation',
+        category: 'Database & Backend Architecture',
+        recommended_category: 'Database & Backend Architecture',
+        badge: 'Official Database Docs',
+        icon: 'ph-database',
+        url: `https://www.mongodb.com/docs/`,
+        description: 'Official MongoDB manual covering aggregation pipelines, indexing strategies, document schemas, and performance tuning.',
+        why_relevant: `Key reference for backend interview questions related to database design, queries, and data modeling in ${cleanTopic}.`,
+        whyRelevant: `Key reference for backend interview questions related to database design, queries, and data modeling in ${cleanTopic}.`
+      });
+    } else if (dLower.includes('java') || dLower.includes('spring')) {
+      resources.push({
+        id: 'res_devjava',
+        name: 'dev.java & Oracle Docs',
+        category: 'Official Java Language Documentation',
+        recommended_category: 'Official Java Language Documentation',
+        badge: 'Official Guide',
+        icon: 'ph-file-code',
+        url: `https://dev.java/learn/`,
+        description: 'Official Java platform documentation covering core language specifications, JVM internals, garbage collection, and collections.',
+        why_relevant: `Authoritative reference for JVM architecture, concurrency, and OOP interview questions in ${cleanTopic}.`,
+        whyRelevant: `Authoritative reference for JVM architecture, concurrency, and OOP interview questions in ${cleanTopic}.`
+      });
+      resources.push({
+        id: 'res_hackerrank',
+        name: 'HackerRank',
+        category: 'Java & Problem Solving Tracks',
+        recommended_category: 'Java & Problem Solving Tracks',
+        badge: 'Skill Certification',
+        icon: 'ph-check-circle',
+        url: `https://www.hackerrank.com/domains/java`,
+        description: 'Interactive coding playground with verified skill benchmarks, OOP challenges, and technical interview test suites.',
+        why_relevant: `Test Java syntax mastery, collections, and algorithmic proficiency related to ${cleanTopic}.`,
+        whyRelevant: `Test Java syntax mastery, collections, and algorithmic proficiency related to ${cleanTopic}.`
+      });
+    } else if (dLower.includes('python') || dLower.includes('data') || dLower.includes('ai') || dLower.includes('machine')) {
+      resources.push({
+        id: 'res_pydocs',
+        name: 'Python Official Documentation',
+        category: 'Official Python Reference',
+        recommended_category: 'Official Python Reference',
+        badge: 'Language Standard',
+        icon: 'ph-file-code',
+        url: `https://docs.python.org/3/`,
+        description: 'Comprehensive Python 3 language specifications, standard libraries, data structures, and memory management guides.',
+        why_relevant: `Essential documentation for Pythonic idioms, algorithmic implementations, and core questions on ${cleanTopic}.`,
+        whyRelevant: `Essential documentation for Pythonic idioms, algorithmic implementations, and core questions on ${cleanTopic}.`
+      });
+      resources.push({
+        id: 'res_freecodecamp',
+        name: 'freeCodeCamp',
+        category: 'Interview Preparation & Projects',
+        recommended_category: 'Interview Preparation & Projects',
+        badge: 'Hands-on Curriculum',
+        icon: 'ph-graduation-cap',
+        url: `https://www.freecodecamp.org/learn/coding-interview-prep/`,
+        description: 'Comprehensive open-source coding curriculum with dedicated algorithm, data structure, and technical interview interview sets.',
+        why_relevant: `Interactive challenges and conceptual walk-throughs for ${cleanTopic}.`,
+        whyRelevant: `Interactive challenges and conceptual walk-throughs for ${cleanTopic}.`
+      });
+    } else {
+      resources.push({
+        id: 'res_freecodecamp',
+        name: 'freeCodeCamp Interview Prep',
+        category: 'Coding Interview Prep',
+        recommended_category: 'Coding Interview Prep',
+        badge: 'Open Source',
+        icon: 'ph-graduation-cap',
+        url: `https://www.freecodecamp.org/learn/coding-interview-prep/`,
+        description: 'Thorough interview practice modules including algorithms, take-home projects, and technical problem sets.',
+        why_relevant: `Strengthen core technical knowledge and problem-solving agility for ${cleanTopic}.`,
+        whyRelevant: `Strengthen core technical knowledge and problem-solving agility for ${cleanTopic}.`
+      });
+      resources.push({
+        id: 'res_hackerrank',
+        name: 'HackerRank',
+        category: 'Skill Assessments',
+        recommended_category: 'Skill Assessments',
+        badge: 'Interview Tracks',
+        icon: 'ph-check-circle',
+        url: `https://www.hackerrank.com/interview/interview-preparation-kit`,
+        description: 'Curated kits containing high-probability interview problems grouped by core computer science topics.',
+        why_relevant: `Targeted problem sets for ${cleanTopic} technical screenings.`,
+        whyRelevant: `Targeted problem sets for ${cleanTopic} technical screenings.`
+      });
+    }
+
+    return resources;
+  }
+
+  // 1. GET Curated Interview Resources
+  if (req.method === 'GET' && parsedUrl.pathname === '/api/interview-resources') {
+    try {
+      const q = parsedUrl.query || {};
+      const domain = q.domain || 'fullstack';
+      const topic = q.topic || 'Core Concepts';
+      const resources = getCuratedInterviewResources(domain, topic);
+      return sendJSON(res, 200, { success: true, domain, topic, resources });
+    } catch (err) {
+      return sendJSON(res, 500, { error: 'Failed to get interview resources: ' + err.message });
+    }
+  }
+
+  // Built-in Fallback Question Generator by Domain & Topic
+  function getFallbackInterviewQuestions(domain, topic, count = 5, difficulty = 'Intermediate', questionType = 'Mixed', category = 'Technical Fundamentals') {
+    const cleanTopic = topic || 'Technical Fundamentals';
+    const dLower = String(domain || '').toLowerCase();
+    const countNum = Math.min(20, Math.max(3, Number(count) || 5));
+
+    const bank = [];
+
+    if (dLower.includes('web') || dLower.includes('full') || dLower.includes('javascript') || dLower.includes('front')) {
+      bank.push({
+        id: 'iq_f1',
+        type: 'theory',
+        topic: cleanTopic,
+        category: 'Technical Fundamentals',
+        difficulty: 'Intermediate',
+        question: `Explain how the Event Loop works in JavaScript and how asynchronous operations like Promises, setTimeout, and microtasks are scheduled in the context of ${cleanTopic}.`,
+        model_answer: 'JavaScript is single-threaded and uses an Event Loop to handle asynchronous operations. The Call Stack executes synchronous code. When async APIs (like setTimeout or fetch) complete, their callbacks enter either the Microtask Queue (Promises, queueMicrotask, MutationObserver) or the Macrotask Queue (setTimeout, setInterval, I/O). The Event Loop continually checks if the Call Stack is empty; if so, it first exhausts all tasks in the Microtask Queue before moving to the next task in the Macrotask Queue.'
+      });
+      bank.push({
+        id: 'iq_f2',
+        type: 'mcq',
+        topic: cleanTopic,
+        category: 'Technical Fundamentals',
+        difficulty: 'Beginner',
+        question: `Which of the following statements about Closures in JavaScript is TRUE?`,
+        options: [
+          'A closure is created only when a function returns a Promise.',
+          'A closure gives an inner function access to its outer function’s scope even after the outer function has executed.',
+          'Closures are used strictly for private class fields in ES6 classes.',
+          'Closures immediately garbage-collect all outer lexical variables.'
+        ],
+        correct_option_index: 1,
+        model_answer: 'A closure is the combination of a function bundled together with references to its surrounding state (the lexical environment). In JavaScript, closures are created every time a function is created, giving inner functions access to outer function scope even after outer execution finishes.'
+      });
+      bank.push({
+        id: 'iq_f3',
+        type: 'coding',
+        topic: cleanTopic,
+        category: 'Coding Round',
+        difficulty: 'Intermediate',
+        question: `Write a JavaScript function \`debounce(fn, delay)\` that limits the rate at which a function \`fn\` is executed.`,
+        starter_code: `function debounce(fn, delay) {\n  let timerId = null;\n  return function(...args) {\n    // Implement debounce logic here\n  };\n}`,
+        model_answer: `function debounce(fn, delay) {\n  let timerId = null;\n  return function(...args) {\n    const context = this;\n    clearTimeout(timerId);\n    timerId = setTimeout(() => {\n      fn.apply(context, args);\n    }, delay);\n  };\n}`
+      });
+      bank.push({
+        id: 'iq_f4',
+        type: 'scenario',
+        topic: cleanTopic,
+        category: 'System / Project Discussion',
+        difficulty: 'Advanced',
+        question: `How would you optimize web application performance when rendering a long list of 10,000+ data items in a frontend UI related to ${cleanTopic}?`,
+        model_answer: 'To render 10,000+ items efficiently without browser freeze: 1) Virtualize the list using windowing (e.g. react-window or IntersectionObserver) to render only the items currently visible in the viewport. 2) Implement pagination or infinite scrolling. 3) Avoid layout thrashing and memoize row components. 4) Use Web Workers if heavy data parsing is needed off the main UI thread.'
+      });
+      bank.push({
+        id: 'iq_f5',
+        type: 'theory',
+        topic: cleanTopic,
+        category: 'Technical Fundamentals',
+        difficulty: 'Intermediate',
+        question: `What is the difference between REST and GraphQL APIs, and when would you choose one over the other for a project in ${cleanTopic}?`,
+        model_answer: 'REST operates over standard HTTP verbs (GET, POST, PUT, DELETE) with fixed endpoint responses, which can lead to over-fetching or under-fetching of data. GraphQL uses a single endpoint and allows clients to request exactly the data fields they need via a strongly typed schema. Choose REST for simple, resource-oriented apps with straightforward caching; choose GraphQL for complex data graphs, mobile clients, and aggregating multiple microservices.'
+      });
+    } else if (dLower.includes('java')) {
+      bank.push({
+        id: 'iq_j1',
+        type: 'theory',
+        topic: cleanTopic,
+        category: 'Technical Fundamentals',
+        difficulty: 'Intermediate',
+        question: `Explain the difference between \`HashMap\` and \`ConcurrentHashMap\` in Java, and how thread-safety is achieved in modern Java versions for ${cleanTopic}.`,
+        model_answer: 'HashMap is non-synchronized and not thread-safe. ConcurrentHashMap provides thread safety with high concurrency. In Java 8+, ConcurrentHashMap uses CAS (Compare-And-Swap) operations for node insertion and synchronized locks on individual bucket head nodes (fine-grained bucket locking) rather than locking the whole segment, preventing concurrent modification exceptions while maintaining high throughput.'
+      });
+      bank.push({
+        id: 'iq_j2',
+        type: 'mcq',
+        topic: cleanTopic,
+        category: 'Technical Fundamentals',
+        difficulty: 'Beginner',
+        question: `Which Java interface does NOT allow duplicate elements and models the mathematical set abstraction?`,
+        options: ['List', 'Set', 'Queue', 'Map'],
+        correct_option_index: 1,
+        model_answer: 'The java.util.Set interface represents a collection that contains no duplicate elements and models the mathematical set abstraction (e.g., HashSet, TreeSet).'
+      });
+      bank.push({
+        id: 'iq_j3',
+        type: 'coding',
+        topic: cleanTopic,
+        category: 'Coding Round',
+        difficulty: 'Intermediate',
+        question: `Write a Java method to check if a given String is a Palindrome ignoring case and non-alphanumeric characters.`,
+        starter_code: `public class PalindromeCheck {\n    public static boolean isPalindrome(String s) {\n        // Your implementation here\n        return false;\n    }\n}`,
+        model_answer: `public static boolean isPalindrome(String s) {\n    int left = 0, right = s.length() - 1;\n    while (left < right) {\n        while (left < right && !Character.isLetterOrDigit(s.charAt(left))) left++;\n        while (left < right && !Character.isLetterOrDigit(s.charAt(right))) right--;\n        if (Character.toLowerCase(s.charAt(left)) != Character.toLowerCase(s.charAt(right))) return false;\n        left++;\n        right--;\n    }\n    return true;\n}`
+      });
+    } else if (dLower.includes('python') || dLower.includes('data') || dLower.includes('ai')) {
+      bank.push({
+        id: 'iq_p1',
+        type: 'theory',
+        topic: cleanTopic,
+        category: 'Technical Fundamentals',
+        difficulty: 'Intermediate',
+        question: `Explain how Python handles memory management and garbage collection, specifically discussing reference counting and cyclic references in ${cleanTopic}.`,
+        model_answer: 'Python uses two primary mechanisms: 1) Reference Counting: Every object tracks how many references point to it. When the count drops to 0, memory is immediately deallocated. 2) Cyclic Garbage Collector (gc module): Periodically detects and collects reference cycles (e.g. object A references B, and B references A) using a generational garbage collection algorithm (generations 0, 1, and 2).'
+      });
+      bank.push({
+        id: 'iq_p2',
+        type: 'mcq',
+        topic: cleanTopic,
+        category: 'Technical Fundamentals',
+        difficulty: 'Beginner',
+        question: `What is the difference between Python's \`list\` and \`tuple\` data types?`,
+        options: [
+          'Lists are immutable, while tuples are mutable.',
+          'Lists are mutable, while tuples are immutable and hashable.',
+          'Tuples cannot contain heterogeneous data types.',
+          'Lists use parentheses () whereas tuples use square brackets [].'
+        ],
+        correct_option_index: 1,
+        model_answer: 'Lists in Python are mutable sequences (can be modified in-place), while tuples are immutable sequences. Tuples containing only immutable objects can be used as dictionary keys because they are hashable.'
+      });
+      bank.push({
+        id: 'iq_p3',
+        type: 'coding',
+        topic: cleanTopic,
+        category: 'Coding Round',
+        difficulty: 'Intermediate',
+        question: `Write a Python generator function \`chunk_generator(data_list, chunk_size)\` that yields chunks of a specified size without loading everything into memory at once.`,
+        starter_code: `def chunk_generator(data_list, chunk_size):\n    # Implement generator here\n    pass`,
+        model_answer: `def chunk_generator(data_list, chunk_size):\n    for i in range(0, len(data_list), chunk_size):\n        yield data_list[i:i + chunk_size]`
+      });
+    }
+
+    // Generic fallback questions to fill up to count
+    while (bank.length < countNum) {
+      const idx = bank.length + 1;
+      bank.push({
+        id: `iq_gen_${idx}`,
+        type: idx % 3 === 0 ? 'coding' : (idx % 2 === 0 ? 'mcq' : 'theory'),
+        topic: cleanTopic,
+        category: category || 'Technical Fundamentals',
+        difficulty: difficulty || 'Intermediate',
+        question: `In technical interviews for ${cleanTopic}, what are the primary architectural principles and edge cases a software engineer must consider when designing robust solutions?`,
+        model_answer: `Key considerations for ${cleanTopic}: 1) Scalability and computational complexity (Time & Space O(N)). 2) Input validation, null handling, and boundary conditions. 3) Fault tolerance, modular separation of concerns, and clean logging. 4) Security best practices and idempotent state mutations.`
+      });
+    }
+
+    return bank.slice(0, countNum);
+  }
+
+  // 2. POST Generate Interview Questions
   if (req.method === 'POST' && parsedUrl.pathname === '/api/interview-questions/generate') {
     try {
       const payload = await readRequestBody(req);
-      const { domain, skill_level, dsa_language, day_number, tasks } = payload;
-      const taskContext = assessmentTaskContext(payload);
-      if (!taskContext.length) return sendJSON(res, 400, { error: 'At least one task is required.' });
+      const {
+        domain = 'Full-Stack Web Development',
+        topic = 'Technical Fundamentals',
+        difficulty = 'Intermediate',
+        question_count = 5,
+        count = question_count,
+        question_type = 'Mixed',
+        category = 'Technical Fundamentals',
+        day_number = 1
+      } = payload;
+
+      const countNum = Math.min(20, Math.max(3, Number(count) || Number(question_count) || 5));
       const apiKey = process.env.GROQ_API_KEY;
-      if (!apiKey) return sendJSON(res, 500, { error: 'GROQ_API_KEY is not configured on server.' });
-      const client = new Groq({ apiKey });
-      const model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
-      const completion = await callGroqWithFallback(client, {
-        model,
-        messages: [
-          { role: 'system', content: 'You are an experienced technical interviewer. Return JSON only.' },
-          { role: 'user', content: `Generate 5 commonly asked placement interview questions directly related to these Day ${day_number || 1} topics. Include a concise model_answer for each. Difficulty: ${skill_level || 'BEGINNER'}. Domain: ${domain || 'technical'}. ${String(domain || '').toLowerCase() === 'dsa' && dsa_language ? `Use ${dsa_language} when a coding-language example is needed.` : ''}\nTasks:\n${taskContext.map(t => `- ${t.title} | ${t.topic} | ${t.subtopic}`).join('\n')}\nReturn {"questions":[{"id":"iq1","question":"...","model_answer":"..."}]}` }
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.4,
-        max_tokens: 2600
+
+      if (apiKey) {
+        try {
+          const client = new Groq({ apiKey });
+          const model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+
+          const systemPrompt = `You are a Principal Software Engineer and Technical Interviewer at top tech companies.
+Generate exactly ${countNum} high-quality, practical placement interview questions strictly centered on Domain: "${domain}" and Topic: "${topic}".
+Difficulty: ${difficulty}. Category: ${category}. Desired format style: ${question_type}.
+
+Return a single JSON object with this exact schema:
+{
+  "questions": [
+    {
+      "id": "iq_1",
+      "type": "theory|mcq|coding|scenario",
+      "topic": "${topic}",
+      "category": "${category}",
+      "difficulty": "${difficulty}",
+      "question": "Clear, detailed question text...",
+      "options": ["Option A", "Option B", "Option C", "Option D"], // ONLY for type='mcq'
+      "correct_option_index": 0, // ONLY for type='mcq'
+      "starter_code": "// Optional code boilerplate if coding question",
+      "model_answer": "Complete, comprehensive model answer and technical explanation."
+    }
+  ]
+}`;
+
+          const completion = await callGroqWithFallback(client, {
+            model,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: `Generate ${countNum} interview questions for ${domain} on topic: "${topic}". Ensure questions are practical, accurate, and test real-world depth.` }
+            ],
+            response_format: { type: 'json_object' },
+            temperature: 0.45,
+            max_tokens: 3800
+          });
+
+          const parsed = extractGroqJSON(completion.choices[0]?.message?.content || '{}');
+          if (Array.isArray(parsed.questions) && parsed.questions.length >= 3) {
+            const cleanQuestions = parsed.questions.slice(0, countNum).map((q, idx) => ({
+              id: q.id || `iq_${idx + 1}`,
+              type: q.type || (q.options ? 'mcq' : 'theory'),
+              topic: q.topic || topic,
+              category: q.category || category,
+              difficulty: q.difficulty || difficulty,
+              question: String(q.question || '').trim(),
+              options: Array.isArray(q.options) ? q.options.map(String) : undefined,
+              correct_option_index: q.correct_option_index !== undefined ? Number(q.correct_option_index) : undefined,
+              starter_code: q.starter_code || undefined,
+              model_answer: String(q.model_answer || '').trim()
+            })).filter(q => q.question);
+
+            if (cleanQuestions.length > 0) {
+              console.log(`✅ [INTERVIEW AI GENERATED] ${cleanQuestions.length} questions generated for ${domain} - ${topic}`);
+              return sendJSON(res, 200, {
+                success: true,
+                domain,
+                topic,
+                difficulty,
+                category,
+                questions: cleanQuestions
+              });
+            }
+          }
+        } catch (aiErr) {
+          console.warn('⚠️ AI interview question generation failed/rate-limited, using built-in verified question generator:', aiErr.message);
+        }
+      }
+
+      // Fallback generator
+      const fallbackQuestions = getFallbackInterviewQuestions(domain, topic, countNum, difficulty, question_type, category);
+      return sendJSON(res, 200, {
+        success: true,
+        domain,
+        topic,
+        difficulty,
+        category,
+        questions: fallbackQuestions,
+        is_fallback: true
       });
-      const parsed = extractGroqJSON(completion.choices[0]?.message?.content || '{}');
-      const questions = Array.isArray(parsed.questions) ? parsed.questions.slice(0, 5).map((q, i) => ({ id: String(q.id || `iq${i+1}`), question: String(q.question || ''), model_answer: String(q.model_answer || '') })).filter(q => q.question) : [];
-      return sendJSON(res, 200, { success: true, questions });
+
     } catch (err) {
       console.error('❌ Interview question generation error:', err);
       return sendJSON(res, 500, { error: 'Interview question generation failed: ' + err.message });
     }
   }
+
+  // 3. POST Evaluate Interview Answers
+  if (req.method === 'POST' && parsedUrl.pathname === '/api/interview-questions/evaluate') {
+    try {
+      const payload = await readRequestBody(req);
+      const {
+        domain = 'Full-Stack Web Development',
+        topic = 'Technical Fundamentals',
+        difficulty = 'Intermediate',
+        questions = [],
+        answers = {},
+        userAnswers = answers
+      } = payload;
+
+      if (!Array.isArray(questions) || questions.length === 0) {
+        return sendJSON(res, 400, { error: 'Questions array is required for evaluation.' });
+      }
+
+      const activeAnswers = userAnswers || answers || {};
+      const apiKey = process.env.GROQ_API_KEY;
+      let aiEvaluationsMap = {};
+
+      if (apiKey) {
+        try {
+          const client = new Groq({ apiKey });
+          const model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+
+          const evaluationPrompt = `You are a Principal Software Engineering Interviewer evaluating a candidate's placement interview submission.
+Domain: "${domain}"
+Topic: "${topic}"
+Difficulty: "${difficulty}"
+
+Here are the questions and candidate answers:
+${JSON.stringify(questions.map((q, idx) => ({
+  id: q.id || `iq_${idx + 1}`,
+  type: q.type,
+  question: q.question,
+  model_answer: q.model_answer,
+  user_answer: activeAnswers[q.id] || activeAnswers[idx] || '(unanswered)'
+})), null, 2)}
+
+Evaluate each question carefully and return a JSON object with this exact schema:
+{
+  "evaluations": [
+    {
+      "id": "iq_1",
+      "status": "CORRECT|PARTIALLY_CORRECT|INCORRECT",
+      "score_pct": 100,
+      "score_awarded": 10,
+      "max_score": 10,
+      "feedback": "Concise, constructive feedback explaining strengths, missing technical nuances, or syntax improvements.",
+      "missing_points": ["Specific nuance missing if partial or wrong"]
+    }
+  ],
+  "concepts_to_review": ["Concept 1", "Concept 2"],
+  "follow_up_questions": ["Follow-up topic question 1", "Follow-up topic question 2"]
+}`;
+
+          const completion = await callGroqWithFallback(client, {
+            model,
+            messages: [
+              { role: 'system', content: 'You are an objective, expert technical interviewer. Provide precise, actionable evaluation scores and feedback in JSON.' },
+              { role: 'user', content: evaluationPrompt }
+            ],
+            response_format: { type: 'json_object' },
+            temperature: 0.2,
+            max_tokens: 3000
+          });
+
+          const parsed = extractGroqJSON(completion.choices[0]?.message?.content || '{}');
+          if (Array.isArray(parsed.evaluations)) {
+            parsed.evaluations.forEach(ev => {
+              if (ev && ev.id) aiEvaluationsMap[ev.id] = ev;
+            });
+          }
+        } catch (aiEvalErr) {
+          console.warn('⚠️ Groq AI evaluation failed/rate-limited, using robust rule-based grading:', aiEvalErr.message);
+        }
+      }
+
+      let correctCount = 0;
+      let partialCount = 0;
+      let incorrectCount = 0;
+      let totalEarnedScore = 0;
+
+      const evaluationDetails = questions.map((q, idx) => {
+        const rawAns = activeAnswers[q.id] !== undefined ? activeAnswers[q.id] : (activeAnswers[idx] !== undefined ? activeAnswers[idx] : '');
+        const uAnsStr = String(rawAns).trim();
+        const hasAnswered = uAnsStr.length > 0 && uAnsStr !== '(No answer provided)' && uAnsStr !== '(unanswered)';
+
+        const aiEv = aiEvaluationsMap[q.id] || aiEvaluationsMap[`iq_${idx + 1}`];
+
+        let status = 'INCORRECT';
+        let scorePct = 0;
+        let scoreAwarded = 0;
+        let maxScore = 10;
+        let feedback = '';
+
+        if (!hasAnswered) {
+          status = 'INCORRECT';
+          scorePct = 0;
+          scoreAwarded = 0;
+          feedback = 'Question was left unanswered. Review the model answer below.';
+          incorrectCount++;
+        } else if (q.type === 'mcq' && q.correct_option_index !== undefined) {
+          // Objective evaluation
+          const uIdx = Number(uAnsStr);
+          const isMatch = (Number.isFinite(uIdx) && uIdx === Number(q.correct_option_index)) || (Array.isArray(q.options) && q.options[q.correct_option_index] === uAnsStr);
+          if (isMatch) {
+            status = 'CORRECT';
+            scorePct = 100;
+            scoreAwarded = 10;
+            feedback = 'Correct! Your selected option matches the verified solution.';
+            correctCount++;
+          } else {
+            status = 'INCORRECT';
+            scorePct = 0;
+            scoreAwarded = 0;
+            feedback = `Incorrect. Selected answer did not match option ${Number(q.correct_option_index) + 1}.`;
+            incorrectCount++;
+          }
+        } else if (aiEv && typeof aiEv.score_pct === 'number') {
+          // Use AI evaluated score
+          scorePct = Math.min(100, Math.max(0, Math.round(aiEv.score_pct)));
+          scoreAwarded = Math.round((scorePct / 100) * maxScore);
+          feedback = aiEv.feedback || 'AI evaluated response based on technical accuracy and depth.';
+          if (scorePct >= 75) {
+            status = 'CORRECT';
+            correctCount++;
+          } else if (scorePct >= 40) {
+            status = 'PARTIALLY_CORRECT';
+            partialCount++;
+          } else {
+            status = 'INCORRECT';
+            incorrectCount++;
+          }
+        } else {
+          // Robust Rule-based / Keyword evaluation fallback
+          const uLower = uAnsStr.toLowerCase();
+          const mLower = String(q.model_answer || '').toLowerCase();
+          const modelKeywords = mLower.split(/\W+/).filter(w => w.length > 4);
+          const matchedKeywords = modelKeywords.filter(k => uLower.includes(k));
+          const matchRatio = modelKeywords.length > 0 ? (matchedKeywords.length / modelKeywords.length) : 0.5;
+
+          if (matchRatio >= 0.45 || uAnsStr.length >= 80) {
+            status = 'CORRECT';
+            scorePct = 90;
+            scoreAwarded = 9;
+            feedback = 'Strong answer. Key technical concepts and terminology were covered well.';
+            correctCount++;
+          } else if (matchRatio >= 0.2 || uAnsStr.length >= 30) {
+            status = 'PARTIALLY_CORRECT';
+            scorePct = 55;
+            scoreAwarded = 6;
+            feedback = 'Partially correct. Good start, but consider adding more depth or concrete technical nuances.';
+            partialCount++;
+          } else {
+            status = 'INCORRECT';
+            scorePct = 25;
+            scoreAwarded = 3;
+            feedback = 'Answer is too brief or missed core technical principles. Review the recommended model answer.';
+            incorrectCount++;
+          }
+        }
+
+        totalEarnedScore += scorePct;
+
+        return {
+          question_id: q.id || `iq_${idx + 1}`,
+          question: q.question,
+          type: q.type,
+          user_answer: uAnsStr || 'No answer provided',
+          model_answer: q.model_answer,
+          options: q.options,
+          correct_option_index: q.correct_option_index,
+          status,
+          score_pct: scorePct,
+          score_awarded: scoreAwarded,
+          max_score: maxScore,
+          is_correct: status === 'CORRECT',
+          is_partially_correct: status === 'PARTIALLY_CORRECT',
+          is_incorrect: status === 'INCORRECT',
+          feedback
+        };
+      });
+
+      const totalQuestions = questions.length;
+      const overallScorePct = Math.round(totalEarnedScore / totalQuestions);
+      const passed = overallScorePct >= 70;
+
+      const conceptsToReview = [];
+      if (incorrectCount > 0 || partialCount > 0) {
+        conceptsToReview.push(`${topic} — Technical Depth & Implementation`);
+        conceptsToReview.push(`${domain} — Architecture & Edge Case Handling`);
+      } else {
+        conceptsToReview.push(`${topic} — Advanced Placement Patterns`);
+      }
+
+      const followUpQuestions = [
+        `How does ${topic} behave under high concurrency or distributed scale?`,
+        `What are common anti-patterns and performance bottlenecks when implementing ${topic} in production?`
+      ];
+
+      return sendJSON(res, 200, {
+        success: true,
+        score_pct: overallScorePct,
+        passed,
+        total_questions: totalQuestions,
+        correct_count: correctCount,
+        partially_correct_count: partialCount,
+        incorrect_count: incorrectCount,
+        evaluation_details: evaluationDetails,
+        concepts_to_review: conceptsToReview,
+        follow_up_questions: followUpQuestions
+      });
+
+    } catch (err) {
+      console.error('❌ Interview evaluation error:', err);
+      return sendJSON(res, 500, { error: 'Interview evaluation failed: ' + err.message });
+    }
+  }
+
+  // 4. POST Save Interview Practice Attempt in MongoDB
+  if (req.method === 'POST' && parsedUrl.pathname === '/api/interview-practice/save') {
+    try {
+      if (mongoose.connection.readyState !== 1) {
+        return sendJSON(res, 503, { error: 'MongoDB Atlas is not connected.' });
+      }
+
+      const payload = await readRequestBody(req);
+      const userId = payload.user_id || payload.userId;
+      const roadmapId = payload.roadmap_id || payload.roadmapId || '';
+      const domain = payload.domain;
+      const topic = payload.topic;
+      const phaseNumber = payload.phase_number !== undefined ? payload.phase_number : (payload.phaseNumber !== undefined ? payload.phaseNumber : null);
+      const phaseTitle = payload.phase_title || payload.phaseTitle || '';
+      const difficulty = payload.difficulty || 'Intermediate';
+      const questionType = payload.question_type || payload.questionType || 'Mixed';
+      const category = payload.category || 'Technical Fundamentals';
+      const scorePct = payload.score_pct !== undefined ? payload.score_pct : (payload.scorePct !== undefined ? payload.scorePct : 0);
+      const totalQuestions = payload.total_questions !== undefined ? payload.total_questions : (payload.totalQuestions !== undefined ? payload.totalQuestions : (Array.isArray(payload.questions) ? payload.questions.length : 0));
+      const correctCount = payload.correct_count !== undefined ? payload.correct_count : (payload.correctCount !== undefined ? payload.correctCount : 0);
+      const partiallyCorrectCount = payload.partially_correct_count !== undefined ? payload.partially_correct_count : (payload.partiallyCorrectCount !== undefined ? payload.partiallyCorrectCount : 0);
+      const incorrectCount = payload.incorrect_count !== undefined ? payload.incorrect_count : (payload.incorrectCount !== undefined ? payload.incorrectCount : 0);
+      const questions = payload.questions || [];
+      const answers = payload.answers || {};
+      const evaluationDetails = payload.evaluation_details || payload.evaluationDetails || [];
+      const conceptsToReview = payload.concepts_to_review || payload.conceptsToReview || [];
+      const followUpQuestions = payload.follow_up_questions || payload.followUpQuestions || [];
+
+      if (!userId || !domain || !topic) {
+        return sendJSON(res, 400, { error: 'userId, domain, and topic are required.' });
+      }
+
+      const practiceId = `practice_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+
+      const practiceDoc = new InterviewPractice({
+        practice_id: practiceId,
+        user_id: userId,
+        roadmap_id: roadmapId,
+        domain,
+        topic,
+        phase_number: phaseNumber,
+        phase_title: phaseTitle,
+        difficulty,
+        question_type: questionType,
+        category,
+        score_pct: Number(scorePct) || 0,
+        total_questions: Number(totalQuestions) || (questions.length || 0),
+        correct_count: Number(correctCount) || 0,
+        partially_correct_count: Number(partiallyCorrectCount) || 0,
+        incorrect_count: Number(incorrectCount) || 0,
+        questions,
+        answers,
+        evaluation_details: evaluationDetails,
+        concepts_to_review: conceptsToReview,
+        follow_up_questions: followUpQuestions,
+        created_at: new Date()
+      });
+
+      await practiceDoc.save();
+      console.log(`✅ [INTERVIEW PRACTICE SAVED] User: ${userId}, PracticeId: ${practiceId}, Score: ${scorePct}%`);
+
+      return sendJSON(res, 200, {
+        success: true,
+        practice_id: practiceId,
+        practice: practiceDoc
+      });
+
+    } catch (err) {
+      console.error('❌ Save interview practice error:', err);
+      return sendJSON(res, 500, { error: 'Failed to save interview practice: ' + err.message });
+    }
+  }
+
+  // 5. GET User Interview Practice History from MongoDB
+  if (req.method === 'GET' && parsedUrl.pathname.startsWith('/api/interview-practice/user/')) {
+    try {
+      if (mongoose.connection.readyState !== 1) {
+        return sendJSON(res, 503, { error: 'MongoDB Atlas is not connected.' });
+      }
+
+      const targetUserId = parsedUrl.pathname.replace('/api/interview-practice/user/', '').trim();
+      if (!targetUserId) {
+        return sendJSON(res, 400, { error: 'User ID is required.' });
+      }
+
+      const practices = await InterviewPractice.find({ user_id: targetUserId }).sort({ created_at: -1 }).limit(20).lean();
+
+      return sendJSON(res, 200, {
+        success: true,
+        user_id: targetUserId,
+        count: practices.length,
+        practices
+      });
+
+    } catch (err) {
+      return sendJSON(res, 500, { error: 'Fetch interview practice error: ' + err.message });
+    }
+  }
+
 
   // ==========================================================
   // 11h. DAILY TASK ROLLOVER

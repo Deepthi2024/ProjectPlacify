@@ -616,7 +616,240 @@ window.PLACIFY_DATA = {
     }
 
     return this.domains[0];
+  },
+
+  getSyllabus(domainId, level) {
+    const cleanLevel = String(level || 'BEGINNER').toUpperCase();
+    const cleanDomain = String(domainId || 'fullstack').toLowerCase().trim();
+
+    const syllabusMap = {
+      fullstack: {
+        BEGINNER: [
+          'Programming fundamentals and problem-solving',
+          'HTML and CSS fundamentals',
+          'JavaScript fundamentals',
+          'Git and GitHub basics',
+          'Responsive web design',
+          'React fundamentals and components',
+          'Backend fundamentals and REST APIs',
+          'Database fundamentals and CRUD operations',
+          'Full-stack application integration',
+          'Basic deployment and project development'
+        ],
+        INTERMEDIATE: [
+          'Advanced JavaScript and asynchronous programming',
+          'React hooks, state management, and component architecture',
+          'API integration and REST API development',
+          'Backend development and middleware',
+          'Authentication and authorization',
+          'Database design, queries, and optimization fundamentals',
+          'Full-stack application architecture',
+          'Testing and debugging',
+          'Deployment and environment configuration',
+          'Practical full-stack project development'
+        ],
+        ADVANCED: [
+          'Advanced frontend architecture and performance optimization',
+          'Advanced React patterns and state management',
+          'Scalable backend architecture and API design',
+          'Database optimization and data modeling',
+          'Security best practices',
+          'Automated testing and CI/CD',
+          'Cloud deployment and scalability',
+          'System design and architectural patterns',
+          'Monitoring, reliability, and performance',
+          'Production-grade full-stack project development'
+        ]
+      },
+      dsa: {
+        BEGINNER: [
+          'Programming basics and problem-solving foundations',
+          'Conditionals, loops and basic algorithmic problems',
+          'Functions, arrays and string manipulation',
+          'Big-O time and space complexity analysis',
+          'Recursion fundamentals and call stack tracing',
+          'Array mutation and hash map O(1) lookups',
+          'Two pointers technique and in-place mutation',
+          'Sliding window (fixed and dynamic patterns)'
+        ],
+        INTERMEDIATE: [
+          'Fast and slow pointers (cycle detection)',
+          'Stack LIFO operations and valid parentheses',
+          'Monotonic stack pattern and range queries',
+          'Binary search and rotated sorted array search',
+          'Binary search tree search and in-order traversal',
+          'Min/max heap and priority queue operations',
+          'Linked list reversal and multi-pointer traversal'
+        ],
+        ADVANCED: [
+          'Breadth-first and depth-first graph search (BFS/DFS)',
+          'Dijkstra shortest path and topological sorting',
+          'Dynamic programming: memoization vs tabulation',
+          '0/1 Knapsack and longest common subsequence (LCS)',
+          'Advanced graph algorithms and minimum spanning trees',
+          'Hard dynamic programming optimization and state compression'
+        ]
+      },
+      datascience: {
+        BEGINNER: [
+          'Python syntax, variables and primitive data types',
+          'Control flow, loops and functional decomposition',
+          'Python data structures (lists, dicts, sets, tuples)',
+          'NumPy arrays, vector operations and linear math',
+          'Exploratory data analysis (EDA) and data visualization'
+        ],
+        INTERMEDIATE: [
+          'Pandas DataFrames, data cleaning and feature engineering',
+          'Descriptive and inferential statistics',
+          'Hypothesis testing, confidence intervals and p-values',
+          'Linear and logistic regression modeling',
+          'Decision trees, random forests and ensemble methods',
+          'Model evaluation metrics and cross-validation'
+        ],
+        ADVANCED: [
+          'Gradient boosting (XGBoost, LightGBM and CatBoost)',
+          'Hyperparameter optimization and stratified cross-validation',
+          'Deep neural networks and backpropagation',
+          'Convolutional neural networks (CNNs) for computer vision',
+          'Transformer architectures and LLM fine-tuning',
+          'MLOps, model serving and FastAPI production deployment'
+        ]
+      },
+      devops: {
+        BEGINNER: [
+          'Operating system architecture and networking protocols (TCP/IP, DNS)',
+          'Linux file system hierarchy and permission management',
+          'Systemd service configuration and process management',
+          'Bash shell scripting and automation basics',
+          'Git version control and collaborative workflows'
+        ],
+        INTERMEDIATE: [
+          'Dockerfile optimization and multi-stage builds',
+          'Docker Compose and multi-container networking',
+          'Git branching strategies and release management',
+          'GitHub Actions CI/CD pipeline automation',
+          'Container registry management and security scanning'
+        ],
+        ADVANCED: [
+          'Kubernetes pods, deployments and service routing',
+          'Kubernetes ingress controllers and Helm chart packaging',
+          'Terraform declarative syntax and cloud infrastructure provisioning',
+          'Ansible configuration automation and playbooks',
+          'Prometheus metrics, alerting and Grafana dashboards',
+          'Cloud disaster recovery, high availability and site reliability'
+        ]
+      },
+      cybersecurity: {
+        BEGINNER: [
+          'Linux command line and system administration basics',
+          'Windows CLI, PowerShell and access control privileges',
+          'Computer networking fundamentals and TCP/IP protocol analysis',
+          'Wireshark packet capture and traffic inspection',
+          'Cyber threat landscape and common attack vectors'
+        ],
+        INTERMEDIATE: [
+          'Firewalls, IDS/IPS architecture and rule configuration',
+          'Nmap network scanning and VPN tunneling protocols',
+          'Cross-Site Scripting (XSS) analysis and defenses',
+          'SQL Injection, CSRF attacks and remediation',
+          'Symmetric and asymmetric cryptography principles'
+        ],
+        ADVANCED: [
+          'PKI digital certificates and TLS handshake security',
+          'Linux and Windows OS security hardening and baselines',
+          'Active Directory security and privilege escalation defenses',
+          'SIEM log aggregation, threat hunting and Splunk queries',
+          'Memory forensics, malware triage and incident response'
+        ]
+      },
+      mobile: {
+        BEGINNER: [
+          'JavaScript/Dart mobile fundamentals and syntax',
+          'Asynchronous programming and event handling in mobile apps',
+          'Mobile layout systems, Flexbox and safe area constraints',
+          'Reusable custom mobile UI components and design tokens',
+          'Mobile debugging, developer tools and emulator setup'
+        ],
+        INTERMEDIATE: [
+          'Global state management (Redux / Provider / Context API)',
+          'Stack, tab and deep-link navigation architecture',
+          'Native device APIs (camera, geolocation, local storage)',
+          'Push notifications with Firebase Cloud Messaging (FCM)',
+          'Local offline databases (SQLite / AsyncStorage)'
+        ],
+        ADVANCED: [
+          'Performance profiling, frame rate optimization and memory leaks',
+          'OAuth 2.0 PKCE and secure keychain/keystore encryption',
+          'Biometric authentication and SSL certificate pinning',
+          'Fastlane automated builds and code signing pipelines',
+          'App Store and Google Play Store production release'
+        ]
+      },
+      ai_llm: {
+        BEGINNER: [
+          'Linear algebra, vector spaces and matrix operations',
+          'Python LLM SDKs, REST APIs and prompt structure',
+          'System prompts, temperature tuning and context window management',
+          'Structured JSON schema validation and parsing'
+        ],
+        INTERMEDIATE: [
+          'Dense vector embeddings and similarity metrics',
+          'Vector database indexing (Pinecone, ChromaDB, HNSW)',
+          'Document chunking, metadata strategies and ingestion',
+          'RAG (Retrieval-Augmented Generation) pipeline architecture'
+        ],
+        ADVANCED: [
+          'Hybrid search, dense-sparse retrieval and cross-encoder re-ranking',
+          'Parameter-efficient fine-tuning (LoRA and QLoRA)',
+          'Model quantization (GGUF/AWQ) and local Ollama inference',
+          'ReAct agent execution loops and autonomous tool use',
+          'Function calling and schema-bound tool integration',
+          'Guardrails, safety alignment and hallucination mitigation',
+          'Production-grade multi-agent LLM systems'
+        ]
+      },
+      system_design: {
+        BEGINNER: [
+          'Client-server architecture and HTTP/HTTPS protocol mechanics',
+          'Web servers, reverse proxies and WebSockets',
+          'Layer 4 vs Layer 7 load balancing and traffic routing',
+          'Monolith vs microservices architectural trade-offs'
+        ],
+        INTERMEDIATE: [
+          'Consistent hashing and stateless application architecture',
+          'In-memory caching strategies with Redis / Memcached',
+          'Content delivery networks (CDNs) and edge caching',
+          'Master-slave replication and replication lag management',
+          'Database horizontal sharding and CAP theorem trade-offs',
+          'Asynchronous message queues (RabbitMQ / BullMQ)'
+        ],
+        ADVANCED: [
+          'High-throughput event streaming with Apache Kafka',
+          'Distributed consensus protocols (Raft, Paxos)',
+          'Distributed locking, idempotency and Saga pattern transactions',
+          'Microservices service mesh (Istio) and circuit breakers',
+          'API gateway architecture, rate limiting and scalable infrastructure'
+        ]
+      }
+    };
+
+    let domainKey = 'fullstack';
+    if (cleanDomain.includes('dsa') || cleanDomain.includes('algorithm') || cleanDomain.includes('data structure')) domainKey = 'dsa';
+    else if (cleanDomain.includes('datascience') || cleanDomain.includes('data science') || cleanDomain.includes('machine learning')) domainKey = 'datascience';
+    else if (cleanDomain.includes('devops') || cleanDomain.includes('cloud')) domainKey = 'devops';
+    else if (cleanDomain.includes('cyber') || cleanDomain.includes('security')) domainKey = 'cybersecurity';
+    else if (cleanDomain.includes('mobile') || cleanDomain.includes('flutter') || cleanDomain.includes('react native')) domainKey = 'mobile';
+    else if (cleanDomain.includes('ai') || cleanDomain.includes('llm') || cleanDomain.includes('rag')) domainKey = 'ai_llm';
+    else if (cleanDomain.includes('system') || cleanDomain.includes('architecture')) domainKey = 'system_design';
+    else if (syllabusMap[cleanDomain]) domainKey = cleanDomain;
+
+    const domainSyllabus = syllabusMap[domainKey] || syllabusMap.fullstack;
+    return domainSyllabus[cleanLevel] || domainSyllabus.BEGINNER;
   }
+};
+
+window.getDomainSyllabus = function(domainId, level) {
+  return window.PLACIFY_DATA.getSyllabus(domainId, level);
 };
 
 window.normalizeDailyTask = function(rawTask, context = {}) {
