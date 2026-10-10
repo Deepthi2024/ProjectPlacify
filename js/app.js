@@ -279,14 +279,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const badge = document.getElementById('header-user-badge');
     const nameEl = document.getElementById('user-display-name');
     const domainEl = document.getElementById('user-display-domain');
+    const authGroup = document.getElementById('header-auth-group');
+    const streakPill = document.getElementById('header-streak-pill');
 
     if (profile) {
       const domainObj = window.PLACIFY_DATA.findDomain(profile.chosen_domain || profile.domainId || profile);
-      badge.style.display = 'flex';
-      nameEl.textContent = profile.name || 'User';
-      domainEl.textContent = domainObj ? domainObj.name : 'Full-Stack Web Development';
+      if (badge) badge.style.display = 'flex';
+      if (nameEl) nameEl.textContent = profile.name || 'User';
+      if (domainEl) domainEl.textContent = domainObj ? domainObj.name : 'Full-Stack Web Development';
+      if (authGroup) authGroup.style.display = 'none';
+      if (streakPill) streakPill.style.display = 'flex';
     } else {
-      badge.style.display = 'none';
+      if (badge) badge.style.display = 'none';
+      if (authGroup) authGroup.style.display = 'flex';
+      if (streakPill) streakPill.style.display = 'none';
     }
   }
 
@@ -704,8 +710,7 @@ document.addEventListener('DOMContentLoaded', () => {
       window.history.replaceState(null, '', '/login');
     }
     switchView('onboarding');
-    const tabLoginBtn = document.getElementById('tab-login-btn');
-    if (tabLoginBtn) tabLoginBtn.click();
+    showAuthChoiceScreen();
   });
 
   // Listen for browser navigation (back/forward popstate)
@@ -722,31 +727,69 @@ document.addEventListener('DOMContentLoaded', () => {
   // VIEW 1: AUTH & ONBOARDING SPECIALIST
   // =========================================================================
   
-  // Auth Tab Switchers
-  const tabRegBtn = document.getElementById('tab-register-btn');
-  const tabLoginBtn = document.getElementById('tab-login-btn');
+  // Auth Choice Screen & Panels Control
+  const choiceScreen = document.getElementById('auth-choice-screen');
   const panelReg = document.getElementById('auth-register-panel');
   const panelLogin = document.getElementById('auth-login-panel');
 
-  tabRegBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    tabRegBtn.classList.add('active');
-    tabLoginBtn.classList.remove('active');
-    panelReg.style.display = 'block';
-    panelReg.classList.add('active');
-    panelLogin.style.display = 'none';
-    panelLogin.classList.remove('active');
-  });
+  function showAuthChoiceScreen() {
+    if (choiceScreen) choiceScreen.style.display = 'block';
+    if (panelReg) { panelReg.style.display = 'none'; panelReg.classList.remove('active'); }
+    if (panelLogin) { panelLogin.style.display = 'none'; panelLogin.classList.remove('active'); }
+  }
 
-  tabLoginBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    tabLoginBtn.classList.add('active');
-    tabRegBtn.classList.remove('active');
-    panelLogin.style.display = 'block';
-    panelLogin.classList.add('active');
-    panelReg.style.display = 'none';
-    panelReg.classList.remove('active');
-  });
+  function showLoginPanel() {
+    if (choiceScreen) choiceScreen.style.display = 'none';
+    if (panelReg) { panelReg.style.display = 'none'; panelReg.classList.remove('active'); }
+    if (panelLogin) { panelLogin.style.display = 'block'; panelLogin.classList.add('active'); }
+  }
+
+  function showRegisterPanel() {
+    if (choiceScreen) choiceScreen.style.display = 'none';
+    if (panelLogin) { panelLogin.style.display = 'none'; panelLogin.classList.remove('active'); }
+    if (panelReg) { panelReg.style.display = 'block'; panelReg.classList.add('active'); }
+  }
+
+  const choiceSigninBtn = document.getElementById('choice-signin-btn');
+  const choiceSignupBtn = document.getElementById('choice-signup-btn');
+  const regBackBtn = document.getElementById('reg-back-btn');
+  const loginBackBtn = document.getElementById('login-back-btn');
+  const switchToLoginLink = document.getElementById('switch-to-login-link');
+  const switchToRegisterLink = document.getElementById('switch-to-register-link');
+
+  const headerLoginBtn = document.getElementById('header-login-btn');
+  const headerSignupBtn = document.getElementById('header-signup-btn');
+  const closeAnnouncementBtn = document.getElementById('close-announcement-banner-btn');
+  const announcementBanner = document.getElementById('top-announcement-banner');
+  const announcementBannerLink = document.getElementById('announcement-banner-link');
+
+  if (choiceSigninBtn) choiceSigninBtn.addEventListener('click', showLoginPanel);
+  if (choiceSignupBtn) choiceSignupBtn.addEventListener('click', showRegisterPanel);
+  if (regBackBtn) regBackBtn.addEventListener('click', showAuthChoiceScreen);
+  if (loginBackBtn) loginBackBtn.addEventListener('click', showAuthChoiceScreen);
+  if (switchToLoginLink) switchToLoginLink.addEventListener('click', (e) => { e.preventDefault(); showLoginPanel(); });
+  if (switchToRegisterLink) switchToRegisterLink.addEventListener('click', (e) => { e.preventDefault(); showRegisterPanel(); });
+
+  if (headerLoginBtn) headerLoginBtn.addEventListener('click', () => { switchView('onboarding'); showLoginPanel(); });
+  if (headerSignupBtn) headerSignupBtn.addEventListener('click', () => { switchView('onboarding'); showRegisterPanel(); });
+
+  if (closeAnnouncementBtn && announcementBanner) {
+    closeAnnouncementBtn.addEventListener('click', () => {
+      announcementBanner.style.display = 'none';
+    });
+  }
+
+  if (announcementBannerLink) {
+    announcementBannerLink.addEventListener('click', () => {
+      const activeSession = supervisor.authAgent ? supervisor.authAgent.getActiveSession() : null;
+      if (activeSession) {
+        switchView('interviewQuestions');
+      } else {
+        switchView('onboarding');
+        showRegisterPanel();
+      }
+    });
+  }
 
   // Registration Form Handler
   const registrationForm = document.getElementById('registration-form');
@@ -784,33 +827,43 @@ document.addEventListener('DOMContentLoaded', () => {
         daily_hours
       });
 
-      // Clear session so user must log in explicitly with password
-      supervisor.authAgent.clearSession();
-      updateHeaderUserPill(null);
-
-      // Pre-fill registered email on login tab
-      const loginEmailInput = document.getElementById('login-email');
-      if (loginEmailInput) loginEmailInput.value = email;
-
-      const loginAlert = document.getElementById('login-error-alert');
-      if (loginAlert) {
-        loginAlert.innerHTML = `
-          <i class="ph ph-check-circle" style="font-size: 1.4rem; color: #10b981;"></i>
-          <div>
-            <strong style="color: #10b981;">Registration Successful!</strong><br>
-            <span style="font-size: 0.85rem; color: var(--text-main);">Your account has been created in MongoDB Atlas. Please enter your password below to sign in.</span>
-          </div>
-        `;
-        loginAlert.style.display = 'flex';
-        loginAlert.style.borderColor = 'rgba(16, 185, 129, 0.4)';
-        loginAlert.style.background = 'rgba(16, 185, 129, 0.1)';
+      // 2. Establish active session and sync user state
+      supervisor.authAgent.setActiveSession(profile);
+      if (supervisor.progressTracker && profile.user_id) {
+        supervisor.progressTracker.setActiveUser(profile.user_id);
+        try {
+          await supervisor.progressTracker.syncWithBackend(profile.user_id);
+        } catch (syncErr) {
+          console.warn('Backend sync warning on registration:', syncErr);
+        }
       }
 
-      // Switch to Sign In tab
-      tabLoginBtn.click();
+      updateHeaderUserPill(profile);
+      updateHeaderStats({
+        streak: profile.streak || 0,
+        xp: profile.xp || 0,
+        level: profile.level || 1,
+        badges: profile.badges || [],
+        masteryPct: profile.mastery_pct || 0
+      });
 
-      const loginPassInput = document.getElementById('login-password');
-      if (loginPassInput) loginPassInput.focus();
+      // Save active draft profile for Supervisor
+      window.currentDraftProfile = {
+        user_id: profile.user_id,
+        name: profile.name,
+        domainId: profile.chosen_domain || null,
+        chosen_domain: profile.chosen_domain || null,
+        dsaLanguage: profile.dsa_language || null,
+        timelineMonths: profile.timeline_months,
+        dailyHours: profile.daily_hours
+      };
+
+      registrationForm.reset();
+      regAlert.style.display = 'none';
+
+      // 3. Navigate directly to domain selection screen
+      renderDomainSelectionScreen(profile.name);
+      switchView('domainSelection');
 
     } catch (err) {
       if (err.status === 409 || (err.message && err.message.toLowerCase().includes('already exists'))) {
@@ -818,15 +871,15 @@ document.addEventListener('DOMContentLoaded', () => {
           <i class="ph ph-warning" style="font-size: 1.2rem; color: #f87171;"></i>
           <div>
             <strong>${err.message || 'An account with this email address already exists.'}</strong><br>
-            <a href="#" id="switch-to-login-link" style="color: var(--accent-cyan); font-weight: 700; text-decoration: underline; font-size: 0.85rem; margin-top: 0.3rem; display: inline-block;">Click here to switch to Existing User Sign In</a>
+            <a href="#" id="conflict-switch-to-login-link" style="color: var(--accent-cyan); font-weight: 700; text-decoration: underline; font-size: 0.85rem; margin-top: 0.3rem; display: inline-block;">Click here to switch to Existing User Sign In</a>
           </div>
         `;
         regAlert.style.display = 'flex';
-        const link = document.getElementById('switch-to-login-link');
+        const link = document.getElementById('conflict-switch-to-login-link');
         if (link) {
           link.addEventListener('click', (ev) => {
             ev.preventDefault();
-            tabLoginBtn.click();
+            showLoginPanel();
           });
         }
       } else {
@@ -1774,7 +1827,17 @@ document.addEventListener('DOMContentLoaded', () => {
       tierLabel.className = `tier-label ${skillTierVal}`;
     }
 
-    if (evaluation.isSelfAssessed || evaluation.is_self_assessed) {
+    const isSelfAssessed = !!(
+      evaluation.isSelfAssessed ||
+      evaluation.is_self_assessed ||
+      evaluation.isSelfDeclared ||
+      evaluation.is_self_declared ||
+      (evaluation.declaredSelfLevel && evaluation.declaredSelfLevel !== '') ||
+      (evaluation.levelDescription && evaluation.levelDescription.toLowerCase().includes('self')) ||
+      (evaluation.level_description && evaluation.level_description.toLowerCase().includes('self'))
+    );
+
+    if (isSelfAssessed) {
       if (scoreDisplay) {
         scoreDisplay.textContent = 'SELF';
         scoreDisplay.style.fontSize = '1.3rem';
@@ -1854,57 +1917,67 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // TOPIC PROFICIENCY TABLE
     const tableContainer = document.getElementById('topic-proficiency-table-container');
-    const topicList = evaluation.topicEvaluations || evaluation.topic_evaluations || [];
-    if (tableContainer && topicList.length > 0) {
-      tableContainer.innerHTML = `
-        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 0.5rem;">
-          <thead>
-            <tr style="background: rgba(255,255,255,0.06); text-align: left; border-bottom: 1px solid rgba(255,255,255,0.12);">
-              <th style="padding: 0.7rem 0.8rem; color: var(--text-muted);">Topic</th>
-              <th style="padding: 0.7rem 0.8rem; color: var(--text-muted);">Questions</th>
-              <th style="padding: 0.7rem 0.8rem; color: var(--text-muted);">Accuracy</th>
-              <th style="padding: 0.7rem 0.8rem; color: var(--text-muted);">Difficulty Breakdown (Beg / Int / Adv)</th>
-              <th style="padding: 0.7rem 0.8rem; color: var(--text-muted);">Proficiency</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${topicList.map(t => {
-              const profLevel = t.proficiencyLevel || t.proficiency_level || 'INTERMEDIATE';
-              let badgeColor = 'var(--accent-rose)';
-              let badgeBg = 'rgba(239, 68, 68, 0.15)';
-              if (profLevel === 'STRONG') {
-                badgeColor = 'var(--accent-emerald)';
-                badgeBg = 'rgba(16, 185, 129, 0.15)';
-              } else if (profLevel === 'INTERMEDIATE') {
-                badgeColor = '#f59e0b';
-                badgeBg = 'rgba(245, 158, 11, 0.15)';
-              }
-              const totalQ = t.totalQuestions !== undefined ? t.totalQuestions : (t.total_questions !== undefined ? t.total_questions : 1);
-              const correctQ = t.correctAnswers !== undefined ? t.correctAnswers : (t.correct_count !== undefined ? t.correct_count : 0);
-              const accuracy = t.accuracy !== undefined ? t.accuracy : (t.score_pct !== undefined ? t.score_pct : 0);
-              const begAcc = t.beginnerAccuracy !== undefined ? t.beginnerAccuracy : (t.beginner_accuracy !== undefined ? t.beginner_accuracy : 100);
-              const intAcc = t.intermediateAccuracy !== undefined ? t.intermediateAccuracy : (t.intermediate_accuracy !== undefined ? t.intermediate_accuracy : 100);
-              const advAcc = t.advancedAccuracy !== undefined ? t.advancedAccuracy : (t.advanced_accuracy !== undefined ? t.advanced_accuracy : 0);
+    const breakdownSection = document.getElementById('topic-proficiency-breakdown-section') || (tableContainer ? tableContainer.closest('div[style*="margin-top: 2rem"]') || tableContainer.parentElement : null);
 
-              return `
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                  <td style="padding: 0.7rem 0.8rem; font-weight: 600;">${t.topic}</td>
-                  <td style="padding: 0.7rem 0.8rem;">${correctQ}/${totalQ}</td>
-                  <td style="padding: 0.7rem 0.8rem; font-weight: 700;">${accuracy}%</td>
-                  <td style="padding: 0.7rem 0.8rem; font-size: 0.8rem; color: var(--text-muted);">
-                    Beg: <span style="color: #fff;">${begAcc}%</span> | 
-                    Int: <span style="color: #fff;">${intAcc}%</span> | 
-                    Adv: <span style="color: #fff;">${advAcc}%</span>
-                  </td>
-                  <td style="padding: 0.7rem 0.8rem;">
-                    <span style="background: ${badgeBg}; color: ${badgeColor}; padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: 700; font-size: 0.75rem;">${profLevel}</span>
-                  </td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
-      `;
+    if (isSelfAssessed) {
+      if (breakdownSection) breakdownSection.style.display = 'none';
+      if (tableContainer) tableContainer.innerHTML = '';
+    } else {
+      if (breakdownSection) breakdownSection.style.display = 'block';
+      const topicList = evaluation.topicEvaluations || evaluation.topic_evaluations || [];
+      if (tableContainer && topicList.length > 0) {
+        tableContainer.innerHTML = `
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 0.5rem;">
+            <thead>
+              <tr style="background: rgba(255,255,255,0.06); text-align: left; border-bottom: 1px solid rgba(255,255,255,0.12);">
+                <th style="padding: 0.7rem 0.8rem; color: var(--text-muted);">Topic</th>
+                <th style="padding: 0.7rem 0.8rem; color: var(--text-muted);">Questions</th>
+                <th style="padding: 0.7rem 0.8rem; color: var(--text-muted);">Accuracy</th>
+                <th style="padding: 0.7rem 0.8rem; color: var(--text-muted);">Difficulty Breakdown (Beg / Int / Adv)</th>
+                <th style="padding: 0.7rem 0.8rem; color: var(--text-muted);">Proficiency</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${topicList.map(t => {
+                const profLevel = t.proficiencyLevel || t.proficiency_level || 'INTERMEDIATE';
+                let badgeColor = 'var(--accent-rose)';
+                let badgeBg = 'rgba(239, 68, 68, 0.15)';
+                if (profLevel === 'STRONG') {
+                  badgeColor = 'var(--accent-emerald)';
+                  badgeBg = 'rgba(16, 185, 129, 0.15)';
+                } else if (profLevel === 'INTERMEDIATE') {
+                  badgeColor = '#f59e0b';
+                  badgeBg = 'rgba(245, 158, 11, 0.15)';
+                }
+                const totalQ = t.totalQuestions !== undefined ? t.totalQuestions : (t.total_questions !== undefined ? t.total_questions : 1);
+                const correctQ = t.correctAnswers !== undefined ? t.correctAnswers : (t.correct_count !== undefined ? t.correct_count : 0);
+                const accuracy = t.accuracy !== undefined ? t.accuracy : (t.score_pct !== undefined ? t.score_pct : 0);
+                const begAcc = t.beginnerAccuracy !== undefined ? t.beginnerAccuracy : (t.beginner_accuracy !== undefined ? t.beginner_accuracy : 100);
+                const intAcc = t.intermediateAccuracy !== undefined ? t.intermediateAccuracy : (t.intermediate_accuracy !== undefined ? t.intermediate_accuracy : 100);
+                const advAcc = t.advancedAccuracy !== undefined ? t.advancedAccuracy : (t.advanced_accuracy !== undefined ? t.advanced_accuracy : 0);
+
+                return `
+                  <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <td style="padding: 0.7rem 0.8rem; font-weight: 600;">${t.topic}</td>
+                    <td style="padding: 0.7rem 0.8rem;">${correctQ}/${totalQ}</td>
+                    <td style="padding: 0.7rem 0.8rem; font-weight: 700;">${accuracy}%</td>
+                    <td style="padding: 0.7rem 0.8rem; font-size: 0.8rem; color: var(--text-muted);">
+                      Beg: <span style="color: #fff;">${begAcc}%</span> | 
+                      Int: <span style="color: #fff;">${intAcc}%</span> | 
+                      Adv: <span style="color: #fff;">${advAcc}%</span>
+                    </td>
+                    <td style="padding: 0.7rem 0.8rem;">
+                      <span style="background: ${badgeBg}; color: ${badgeColor}; padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: 700; font-size: 0.75rem;">${profLevel}</span>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        `;
+      } else if (tableContainer) {
+        tableContainer.innerHTML = '';
+      }
     }
   }
 
@@ -3457,63 +3530,141 @@ document.addEventListener('DOMContentLoaded', () => {
           );
 
           if (taskResources && taskResources.length > 0) {
-            const taskBudgetMins = taskItem.durationMinutes || taskItem.estimated_minutes || 45;
-            const totalRecMins = taskResources.reduce((sum, r) => sum + (Number(r.duration_minutes || r.estimated_minutes || 0)), 0);
+        const taskBudgetMins = taskItem.durationMinutes || taskItem.estimated_minutes || 45;
 
-            containerEl.innerHTML = `
-              <div style="display: flex; flex-direction: column; gap: 0.8rem;">
-                ${taskResources.map((r, idx) => `
-                  <div class="resource-card" style="border-left: 4px solid ${idx === 0 ? 'var(--accent-emerald)' : (idx === 1 ? 'var(--accent-cyan)' : 'var(--accent-amber)')}; padding: 0.9rem; background: rgba(0,0,0,0.25); border-radius: 8px;">
+        const renderResourceCardsHtml = (resources, budgetMins) => {
+          const totalRecMins = resources.reduce((sum, r) => sum + (Number(r.duration_minutes || r.estimated_minutes || 0)), 0);
+
+          const getTypeBadge = (r) => {
+            const type = String(r.resource_type || (r.url && r.url.includes('youtube') ? 'video' : 'article')).toLowerCase();
+            if (r.is_chapter || (r.startTimestamp && r.endTimestamp)) {
+              return `<span style="font-size: 0.72rem; color: #34d399; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem;"><i class="ph ph-film-strip"></i> Video Chapter</span>`;
+            }
+            if (type === 'video') {
+              return `<span style="font-size: 0.72rem; color: #fb7185; background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.3); padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem;"><i class="ph ph-video-camera"></i> Video Tutorial</span>`;
+            }
+            if (type === 'documentation' || r.is_official) {
+              return `<span style="font-size: 0.72rem; color: #22d3ee; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem;"><i class="ph ph-books"></i> Official Docs</span>`;
+            }
+            if (type === 'tutorial') {
+              return `<span style="font-size: 0.72rem; color: #c084fc; background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.3); padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem;"><i class="ph ph-code"></i> Tutorial</span>`;
+            }
+            return `<span style="font-size: 0.72rem; color: #38bdf8; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem;"><i class="ph ph-article"></i> Technical Article</span>`;
+          };
+
+          const getProvenanceBadge = (r) => {
+            if (r.verificationStatus === 'VERIFIED_CHAPTER' || r.is_chapter) {
+              return `<span style="font-size: 0.7rem; color: #10b981; font-weight: 600;">✓ Verified Chapter</span>`;
+            }
+            if (r.verificationStatus === 'OFFICIAL_DOCS' || r.is_official) {
+              return `<span style="font-size: 0.7rem; color: #06b6d4; font-weight: 600;">✓ Authoritative Source</span>`;
+            }
+            if (r.fallback_level === 2 || r.verificationStatus === 'TAVILY_SEARCH') {
+              return `<span style="font-size: 0.7rem; color: #a855f7; font-weight: 600;">🔍 Targeted Web Discovery</span>`;
+            }
+            if (r.isFallback || r.fallback_level === 4) {
+              return `<span style="font-size: 0.7rem; color: #f59e0b; font-weight: 600;">📚 Curated Reference</span>`;
+            }
+            return `<span style="font-size: 0.7rem; color: #10b981; font-weight: 600;">✓ Verified Learning Resource</span>`;
+          };
+
+          return `
+            <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+              ${resources.map((r, idx) => {
+                const isPrimary = idx === 0;
+                const borderAccent = isPrimary ? 'var(--accent-emerald)' : (idx === 1 ? 'var(--accent-cyan)' : 'var(--accent-amber)');
+                const categoryPill = r.category_label || (isPrimary ? 'PRIMARY' : (idx === 1 ? 'ALTERNATIVE' : 'PRACTICE'));
+                const durationMins = r.duration_minutes || r.estimated_minutes || 20;
+
+                return `
+                  <div class="resource-card" style="border-left: 4px solid ${borderAccent}; padding: 0.9rem; background: rgba(0,0,0,0.25); border-radius: 8px; transition: transform 0.15s ease, background 0.15s ease;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; flex-wrap: wrap; gap: 0.4rem;">
-                      <span class="node-tag ${r.category_label || (idx === 0 ? 'STANDARD' : 'REMEDIAL')}" style="font-size: 0.72rem; font-weight: 800;">
-                        ⭐ ${r.category_label || (idx === 0 ? 'PRIMARY' : (idx === 1 ? 'ALTERNATIVE' : 'PRACTICE'))}
-                      </span>
-                      <div style="display: flex; align-items: center; gap: 0.5rem;">
+                      <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                        <span class="node-tag ${categoryPill}" style="font-size: 0.72rem; font-weight: 800; letter-spacing: 0.03em;">
+                          ⭐ ${categoryPill}
+                        </span>
+                        ${getTypeBadge(r)}
+                      </div>
+                      <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                         <span style="font-size: 0.75rem; color: var(--accent-amber); font-weight: 700; background: rgba(245, 158, 11, 0.12); padding: 0.15rem 0.45rem; border-radius: 4px;">
-                          ⏱️ ${r.duration_minutes || r.estimated_minutes || 20} min
+                          ⏱️ ${durationMins} min
                         </span>
-                        <span style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: 600;">
-                          ${r.is_official ? '🏛️ Official Docs' : `Platform: ${r.platform}`}
-                        </span>
+                        ${getProvenanceBadge(r)}
                       </div>
                     </div>
-                    <h5 style="font-size: 0.98rem; font-weight: 700; color: #fff; margin: 0.35rem 0 0.5rem 0;">${r.title}</h5>
-                    
-                    <div style="font-size: 0.76rem; color: var(--accent-cyan); background: rgba(6, 182, 212, 0.08); padding: 0.35rem 0.6rem; border-radius: 4px; margin-bottom: 0.65rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.3rem;">
+
+                    <h5 style="font-size: 0.98rem; font-weight: 700; color: #fff; margin: 0.35rem 0 0.4rem 0; line-height: 1.35;">${r.title}</h5>
+
+                    ${r.description ? `<p style="font-size: 0.8rem; color: #cbd5e1; margin: 0.2rem 0 0.5rem 0; line-height: 1.45;">${r.description}</p>` : ''}
+
+                    <div style="font-size: 0.76rem; color: var(--accent-cyan); background: rgba(6, 182, 212, 0.08); padding: 0.4rem 0.65rem; border-radius: 4px; margin-bottom: 0.65rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem;">
                       <span>🎯 <strong>Topic:</strong> ${r.topic || taskTopic} &bull; <strong>Difficulty:</strong> ${r.difficulty || userLevel}</span>
-                      <span>⏳ <strong>Time fit:</strong> ${r.duration_minutes || r.estimated_minutes || 20} / ${taskBudgetMins} min</span>
+                      ${r.startTimestamp ? `
+                        <span style="font-size: 0.73rem; color: #a7f3d0; background: rgba(16, 185, 129, 0.22); border: 1px solid rgba(16, 185, 129, 0.4); padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">
+                          ⏱️ Chapter: ${r.startTimestamp}${r.endTimestamp ? ' – ' + r.endTimestamp : ''}
+                        </span>
+                      ` : `<span>⏳ <strong>Time fit:</strong> ${durationMins} / ${budgetMins} min</span>`}
                     </div>
 
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                      <span style="font-size: 0.75rem; color: var(--text-muted);">${r.platform}</span>
-                      <a href="${r.url}" target="_blank" rel="noopener noreferrer" class="btn btn-emerald" style="font-size: 0.78rem; padding: 0.3rem 0.75rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;">
-                        Open Resource <i class="ph ph-arrow-square-out"></i>
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem;">
+                      <span style="font-size: 0.76rem; color: var(--text-muted); font-weight: 500;">
+                        ${r.platform || 'Educational Reference'}
+                      </span>
+                      <a href="${r.url}" target="_blank" rel="noopener noreferrer" class="btn btn-emerald" style="font-size: 0.78rem; padding: 0.32rem 0.8rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 600;">
+                        ${(r.resource_type === 'video' || r.is_chapter) ? '<i class="ph ph-play-circle"></i> Watch Video' : '<i class="ph ph-arrow-square-out"></i> Open Resource'}
                       </a>
                     </div>
                   </div>
-                `).join('')}
+                `;
+              }).join('')}
 
-                <div style="margin-top: 0.3rem; padding: 0.5rem 0.8rem; background: rgba(255,255,255,0.03); border-radius: 6px; font-size: 0.78rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center;">
-                  <span>📚 <strong>Total Recommended Learning Time:</strong></span>
-                  <span style="color: ${totalRecMins <= taskBudgetMins ? 'var(--accent-emerald)' : 'var(--accent-amber)'}; font-weight: 700;">
-                    ${totalRecMins} / ${taskBudgetMins} mins
-                  </span>
-                </div>
+              <div style="margin-top: 0.3rem; padding: 0.5rem 0.8rem; background: rgba(255,255,255,0.03); border-radius: 6px; font-size: 0.78rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center;">
+                <span>📚 <strong>Total Recommended Learning Time:</strong></span>
+                <span style="color: ${totalRecMins <= budgetMins ? 'var(--accent-emerald)' : 'var(--accent-amber)'}; font-weight: 700;">
+                  ${totalRecMins} / ${budgetMins} mins
+                </span>
               </div>
-            `;
+            </div>
+          `;
+        };
+
+        try {
+          const taskResources = await supervisor.resourceSuggester.suggestResources(
+            taskTopic,
+            taskItem.difficulty || userLevel,
+            taskContext
+          );
+
+          if (taskResources && Array.isArray(taskResources) && taskResources.length > 0) {
+            containerEl.innerHTML = renderResourceCardsHtml(taskResources, taskBudgetMins);
           } else {
+            // Auto fallback ensuring zero empty state
+            const fallbackResources = supervisor.resourceSuggester.getCuratedTopicFallbacks(
+              taskTopic,
+              taskItem.taskTitle || taskItem.title,
+              domainKey,
+              taskItem.taskSubtopic
+            );
             containerEl.innerHTML = `
-              <div style="padding: 0.75rem 1rem; color: var(--text-muted); font-size: 0.82rem; background: rgba(0,0,0,0.15); border-radius: 6px;">
-                No sufficiently relevant resource was found for this specific task. You can still complete today's task workbook.
+              <div style="font-size: 0.75rem; color: var(--accent-amber); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.3rem;">
+                <i class="ph ph-info"></i> Displaying curated placement references for this module.
               </div>
+              ${renderResourceCardsHtml(fallbackResources, taskBudgetMins)}
             `;
           }
         } catch (resErr) {
           console.warn(`[RESOURCE LOAD WARN] Task ${taskId} resource fetch failed:`, resErr.message);
+          const fallbackResources = supervisor.resourceSuggester.getCuratedTopicFallbacks(
+            taskTopic,
+            taskItem.taskTitle || taskItem.title,
+            domainKey,
+            taskItem.taskSubtopic
+          );
           containerEl.innerHTML = `
-            <div style="padding: 0.75rem 1rem; color: var(--text-muted); font-size: 0.82rem; background: rgba(0,0,0,0.15); border-radius: 6px;">
-              Recommended resources are temporarily unavailable.
+            <div style="font-size: 0.75rem; color: var(--accent-amber); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.3rem;">
+              <i class="ph ph-info"></i> Displaying curated placement references for this module.
             </div>
+            ${renderResourceCardsHtml(fallbackResources, taskBudgetMins)}
           `;
         }
       });
@@ -4157,7 +4308,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <i class="ph ph-kanban" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
             <h3 style="color: #fff; margin-bottom: 0.5rem;">No Applications Found</h3>
             <p style="color: var(--text-muted); max-width: 480px; margin: 0 auto 1.5rem auto; font-size: 0.88rem;">
-              ${atsState.filter !== 'All' ? `No applications currently marked as "${atsState.filter}".` : 'You have not saved or tracked any internship applications yet.'}
+              You have not saved or tracked any internship applications yet.
             </p>
             <button onclick="document.querySelector('.main-navbar .nav-item[data-view=internships]').click();" class="btn btn-primary" style="font-size: 0.85rem; padding: 0.5rem 1.2rem;">
               <i class="ph ph-briefcase"></i> Browse Recommended Internships
@@ -4212,104 +4363,41 @@ document.addEventListener('DOMContentLoaded', () => {
     const companySafe = escapeHtml(app.company);
     const locSafe = escapeHtml(app.location || 'India');
     const modeSafe = escapeHtml(app.workMode || 'Hybrid');
-    const status = app.status || 'Applied';
     const appliedDateStr = formatRelativeTime(app.appliedDate || app.createdAt);
-    const updatedDateStr = formatRelativeTime(app.lastUpdated || app.updatedAt);
     const appUrl = escapeHtml(app.applicationUrl || app.externalListingUrl || '#');
-
-    let statusBadgeClass = 'status-badge-applied';
-    let statusIcon = 'ph-clock';
-    if (status === 'Assessment') { statusBadgeClass = 'status-badge-assessment'; statusIcon = 'ph-clipboard-text'; }
-    else if (status === 'Interview') { statusBadgeClass = 'status-badge-interview'; statusIcon = 'ph-chats-circle'; }
-    else if (status === 'Offer') { statusBadgeClass = 'status-badge-offer'; statusIcon = 'ph-check-circle'; }
-    else if (status === 'Rejected') { statusBadgeClass = 'status-badge-rejected'; statusIcon = 'ph-x-circle'; }
-    else if (status === 'Saved') { statusBadgeClass = 'status-badge-saved'; statusIcon = 'ph-bookmark'; }
-    else if (status === 'Withdrawn') { statusBadgeClass = 'status-badge-withdrawn'; statusIcon = 'ph-minus-circle'; }
 
     const skills = Array.isArray(app.skills) ? app.skills.slice(0, 4) : [];
     const skillsHtml = skills.map(s => `<span class="internship-skill-tag">${escapeHtml(s)}</span>`).join('');
 
-    // Reminder alert banner
-    let reminderBannerHtml = '';
-    if (app.needsFollowUp) {
-      reminderBannerHtml = `
-        <div class="reminder-alert-banner">
-          <span><i class="ph ph-bell-ringing"></i> ${escapeHtml(app.reminderMessage || "You haven't updated the application status yet.")}</span>
-          <button class="btn btn-secondary btn-update-app-status" data-id="${app._id}" style="padding:0.2rem 0.6rem; font-size:0.75rem;">Update Status</button>
-        </div>
-      `;
-    }
-
-    // Prep Connection Banner for Assessment or Interview
-    let prepBannerHtml = '';
-    if (status === 'Assessment') {
-      prepBannerHtml = `
-        <div class="prep-connection-banner">
-          <div style="font-size:0.8rem; font-weight:700; color:#e9d5ff; margin-bottom:0.3rem;"><i class="ph ph-sparkle"></i> Assessment Preparation</div>
-          <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:0.5rem;">Practice time-bound technical questions for ${skills[0] || 'your domain'}.</div>
-          <button onclick="document.querySelector('.main-navbar .nav-item[data-view=dailyHub]').click();" class="btn btn-emerald" style="font-size:0.75rem; padding:0.25rem 0.75rem;">
-            Practice Assessment <i class="ph ph-arrow-right"></i>
-          </button>
-        </div>
-      `;
-    } else if (status === 'Interview') {
-      prepBannerHtml = `
-        <div class="prep-connection-banner" style="background:rgba(56,189,248,0.08); border-color:rgba(56,189,248,0.3);">
-          <div style="font-size:0.8rem; font-weight:700; color:#7dd3fc; margin-bottom:0.3rem;"><i class="ph ph-chats-circle"></i> Interview Preparation</div>
-          <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:0.5rem;">Practice 5 common placement interview questions for ${skills[0] || 'your domain'}.</div>
-          <button onclick="document.getElementById('take-interview-btn').click();" class="btn btn-primary" style="font-size:0.75rem; padding:0.25rem 0.75rem;">
-            Practice Interview <i class="ph ph-arrow-right"></i>
-          </button>
-        </div>
-      `;
-    }
-
     return `
-      <div class="application-card">
+      <div class="application-card" style="display:flex; flex-direction:column; justify-content:space-between;">
         <div>
-          <div class="application-card-header">
+          <div class="application-card-header" style="margin-bottom:0.6rem;">
             <div>
               <h3 class="internship-title">${titleSafe}</h3>
               <div class="internship-company"><i class="ph ph-buildings"></i> ${companySafe}</div>
             </div>
-            <span class="application-status-badge ${statusBadgeClass}">
-              <i class="ph ${statusIcon}"></i> ${status}
-            </span>
           </div>
 
-          <div class="internship-meta-row">
+          <div class="internship-meta-row" style="margin-bottom:0.6rem;">
             <span class="meta-pill location-pill"><i class="ph ph-map-pin"></i> ${locSafe}</span>
             <span class="meta-pill location-pill"><i class="ph ph-laptop"></i> ${modeSafe}</span>
           </div>
 
-          ${skillsHtml ? `<div class="internship-skills-container">${skillsHtml}</div>` : ''}
+          ${skillsHtml ? `<div class="internship-skills-container" style="margin-bottom:0.6rem;">${skillsHtml}</div>` : ''}
 
-          ${reminderBannerHtml}
-          ${prepBannerHtml}
-
-          <div style="font-size:0.75rem; color:var(--text-muted); margin:0.6rem 0;">
-            <div>Applied: <strong>${appliedDateStr}</strong></div>
-            <div>Last updated by you: <strong>${updatedDateStr}</strong></div>
+          <div style="font-size:0.8rem; color:var(--text-muted); margin:0.6rem 0;">
+            <i class="ph ph-calendar-check" style="color:var(--accent-cyan);"></i> Applied Date: <strong style="color:#fff;">${appliedDateStr}</strong>
           </div>
-
-          ${app.notes ? `<div style="font-size:0.78rem; color:var(--text-muted); background:rgba(255,255,255,0.02); padding:0.5rem; border-radius:6px; margin-top:0.4rem; border:1px solid var(--border-color);"><strong>Note:</strong> ${escapeHtml(app.notes)}</div>` : ''}
         </div>
 
-        <div style="display:flex; flex-direction:column; gap:0.5rem; margin-top:1rem; border-top:1px solid rgba(255,255,255,0.06); padding-top:0.8rem;">
-          <div style="display:flex; gap:0.4rem;">
-            <button class="btn btn-secondary btn-update-app-status" data-id="${app._id}" style="flex:1; font-size:0.78rem; padding:0.4rem 0.6rem;" title="Update status">
-              <i class="ph ph-pencil-simple"></i> Update Status
-            </button>
-            <button class="btn btn-secondary btn-view-app-timeline" data-id="${app._id}" style="flex:1; font-size:0.78rem; padding:0.4rem 0.6rem;" title="View timeline & prep">
-              <i class="ph ph-clock-counter-clockwise"></i> Timeline
-            </button>
-            <button class="btn btn-secondary btn-delete-app" data-id="${app._id}" style="padding:0.4rem 0.6rem; font-size:0.78rem; color:#fca5a5;" title="Remove tracking">
-              <i class="ph ph-trash"></i>
-            </button>
-          </div>
-          <a href="${appUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-emerald" style="width:100%; text-align:center; font-size:0.8rem; padding:0.4rem;" title="Track directly on original external site">
-            Track on Original Website <i class="ph ph-arrow-square-out"></i>
+        <div style="display:flex; gap:0.5rem; margin-top:1rem; border-top:1px solid rgba(255,255,255,0.06); padding-top:0.8rem;">
+          <a href="${appUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-emerald" style="flex:1; text-align:center; font-size:0.8rem; padding:0.45rem;" title="View Job Details">
+            View Job / Website <i class="ph ph-arrow-square-out"></i>
           </a>
+          <button class="btn btn-secondary btn-delete-app" data-id="${app._id}" style="padding:0.45rem 0.7rem; font-size:0.8rem; color:#fca5a5;" title="Remove tracking">
+            <i class="ph ph-trash"></i>
+          </button>
         </div>
       </div>
     `;
@@ -6861,22 +6949,25 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Reset State Handler (Strictly scoped to current authenticated user)
-  document.getElementById('reset-app-btn').addEventListener('click', async () => {
-    const activeSession = supervisor.authAgent.getActiveSession();
-    if (confirm('Are you sure you want to reset your Placify learning profile and restart onboarding?')) {
-      if (activeSession && activeSession.user_id) {
-        try {
-          await fetch(`http://localhost:5000/api/user/reset/${encodeURIComponent(activeSession.user_id)}`, { method: 'POST' });
-        } catch (e) {
-          console.warn('Could not reset user on server:', e);
+  const resetAppBtn = document.getElementById('reset-app-btn');
+  if (resetAppBtn) {
+    resetAppBtn.addEventListener('click', async () => {
+      const activeSession = supervisor.authAgent.getActiveSession();
+      if (confirm('Are you sure you want to reset your Placify learning profile and restart onboarding?')) {
+        if (activeSession && activeSession.user_id) {
+          try {
+            await fetch(`http://localhost:5000/api/user/reset/${encodeURIComponent(activeSession.user_id)}`, { method: 'POST' });
+          } catch (e) {
+            console.warn('Could not reset user on server:', e);
+          }
+          supervisor.progressTracker.resetState(activeSession.user_id);
         }
-        supervisor.progressTracker.resetState(activeSession.user_id);
+        supervisor.authAgent.clearSession();
+        supervisor.progressTracker.clearActiveUser();
+        window.activePersonalizedRoadmap = null;
+        window.currentDraftProfile = null;
+        location.reload();
       }
-      supervisor.authAgent.clearSession();
-      supervisor.progressTracker.clearActiveUser();
-      window.activePersonalizedRoadmap = null;
-      window.currentDraftProfile = null;
-      location.reload();
-    }
-  });
+    });
+  }
 });

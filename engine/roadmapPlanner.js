@@ -123,18 +123,43 @@ function fallbackProfileFromQuiz(quizEvaluation, skills) {
 function selectPersonalizedSkills(skills, masteryMap, overallLevel, weeksNeeded, quizTaken = false) {
   const selected = [];
   const selectedIds = new Set();
-  const maxWeeks = Math.min(Math.max(1, weeksNeeded), Math.max(1, skills.length));
   const targetRank = LEVEL_RANK[overallLevel] || 1;
+
+  // Strict Level Guard:
+  // A learner is NEVER given skills more than one level below their level:
+  // Advanced (rank 3) never gets Beginner (rank 1) topics.
+  // Beginner (rank 1) never gets Advanced (rank 3) topics.
+  let minRank = 1;
+  let maxRank = 3;
+  if (targetRank === 3) {
+    minRank = 2; // Only INTERMEDIATE and ADVANCED (never BEGINNER)
+    maxRank = 3;
+  } else if (targetRank === 1) {
+    minRank = 1; // Only BEGINNER and INTERMEDIATE (never ADVANCED)
+    maxRank = 2;
+  } else {
+    minRank = 1; // INTERMEDIATE can review BEGINNER prereqs if needed, up to ADVANCED
+    maxRank = 3;
+  }
+
+  const eligibleSkills = skills.filter(skill => {
+    const rank = LEVEL_RANK[skillDifficulty(skill)] || 1;
+    return rank >= minRank && rank <= maxRank;
+  });
+
+  const maxWeeks = Math.min(Math.max(1, weeksNeeded), Math.max(1, eligibleSkills.length));
 
   const prerequisiteSatisfied = (skill, prereqId) => {
     if (selectedIds.has(prereqId)) return true;
     const prereq = skills.find(s => s.skillId === prereqId);
     const mastery = masteryMap.get(prereqId);
 
-    // The declared/assessed overall level is important. A quiz usually covers
-    // only a subset of skills, so an UNASSESSED prerequisite must NOT force an
-    // Advanced/Intermediate learner all the way back to the beginning.
-    // Only an explicitly assessed weak prerequisite should block advancement.
+    // If a prerequisite is below minRank (e.g. a beginner prerequisite for an advanced learner),
+    // consider it satisfied by definition because the advanced learner has already mastered foundational concepts.
+    if (prereq && (LEVEL_RANK[skillDifficulty(prereq)] || 1) < minRank) {
+      return true;
+    }
+
     if (!quizTaken) {
       return prereq && (LEVEL_RANK[skillDifficulty(prereq)] || 1) < targetRank;
     }
@@ -174,25 +199,18 @@ function selectPersonalizedSkills(skills, masteryMap, overallLevel, weeksNeeded,
       if (mastery.assessed) {
         // Weak/partial target-level skills are the highest-priority gaps.
         const gap = 100 - mastery.score;
-        // A directly measured weak/partial skill is a stronger personalization
-        // signal than an unassessed target-level skill. This is what makes two
-        // learners at the same declared level receive different roadmaps.
         if (mastery.score < 60) score += 1400 + gap * 8;
         else score += gap * (isTarget ? 7 : 2.5);
 
         if (mastery.score >= 80) {
-          // Do not waste roadmap weeks reteaching mastered material.
           score -= isTarget ? 850 : 700;
         }
       } else {
-        // Unassessed target-level skills are still relevant, but they should
-        // not outrank a directly measured weak target-level skill.
         score += isTarget ? 120 : 40;
       }
     }
 
-    // Skills that unlock many later skills get a modest dependency bonus.
-    const dependentCount = skills.filter(s =>
+    const dependentCount = eligibleSkills.filter(s =>
       prerequisiteIds(s).includes(skill.skillId)
     ).length;
     score += Math.min(dependentCount, 8) * 15;
@@ -201,7 +219,7 @@ function selectPersonalizedSkills(skills, masteryMap, overallLevel, weeksNeeded,
   };
 
   while (selected.length < maxWeeks) {
-    const candidates = skills.filter(skill =>
+    const candidates = eligibleSkills.filter(skill =>
       skill.skillId && !selectedIds.has(skill.skillId) && prerequisitesSatisfied(skill)
     );
 
@@ -210,18 +228,17 @@ function selectPersonalizedSkills(skills, masteryMap, overallLevel, weeksNeeded,
     candidates.sort((a, b) => {
       const diff = candidateScore(b) - candidateScore(a);
       if (diff !== 0) return diff;
-      return skills.indexOf(a) - skills.indexOf(b);
+      return eligibleSkills.indexOf(a) - eligibleSkills.indexOf(b);
     });
-
 
     const chosen = candidates[0];
     selected.push(chosen);
     selectedIds.add(chosen.skillId);
   }
 
-  // Safety fallback for malformed/disconnected graphs.
+  // Safety fallback for malformed/disconnected graphs (strictly within eligibleSkills)
   if (selected.length < maxWeeks) {
-    for (const skill of skills) {
+    for (const skill of eligibleSkills) {
       if (selected.length >= maxWeeks) break;
       if (!selectedIds.has(skill.skillId)) {
         selected.push(skill);
@@ -233,9 +250,180 @@ function selectPersonalizedSkills(skills, masteryMap, overallLevel, weeksNeeded,
   return selected;
 }
 
+const TECHNICAL_SUBTOPIC_MAP = {
+  'dom selection & event handling': [
+    'Selecting elements using getElementById() and querySelector()',
+    'Selecting multiple elements using querySelectorAll() and NodeLists',
+    'Registering event listeners using addEventListener() and event objects',
+    'Understanding event targets, bubbling, and event delegation patterns',
+    'Dynamic DOM manipulation, element creation, and classList management',
+    'Interactive DOM event project & placement problem solving'
+  ],
+  'html5 semantic elements': [
+    'Semantic document structure with header, nav, main, article, and section',
+    'HTML5 Form elements, input types, and native client validation',
+    'Semantic tables, lists, and content hierarchy',
+    'ARIA attributes, roles, and accessible web standards',
+    'SEO meta tags, OpenGraph, and viewport configuration',
+    'Semantic and accessible web layout mini-project'
+  ],
+  'css box model & flexbox': [
+    'CSS Box Model: content, padding, border, and margin calculations',
+    'Flexbox container properties: flex-direction, justify-content, and align-items',
+    'Flex item properties: flex-grow, flex-shrink, and flex-basis',
+    'Responsive navigation bar layout with Flexbox',
+    'Centering techniques and flexible multi-column cards',
+    'Flexbox layout implementation and alignment drills'
+  ],
+  'css grid & responsive layouts': [
+    'Grid container setup, fr units, repeat(), and minmax() functions',
+    'Grid areas, named lines, and explicit vs implicit grids',
+    'Auto-fit vs auto-fill responsive layouts without media queries',
+    'Mobile-first media queries, breakpoints, and viewport units',
+    'Fluid typography using CSS clamp() and rem units',
+    'Responsive dashboard grid layout implementation'
+  ],
+  'js variables, types & operators': [
+    'Primitive vs reference types, memory allocation, and typeof checks',
+    'Variable declarations: var vs let vs const and Temporal Dead Zone (TDZ)',
+    'Type coercion, strict equality (===), and truthy/falsy values',
+    'Arithmetic, logical, nullish coalescing (??), and optional chaining (?.)',
+    'String manipulation methods and ES6 template literals',
+    'JavaScript syntax quirks and technical interview problems'
+  ],
+  'control flow, loops & conditionals': [
+    'Conditional branching: if/else, switch/case, and ternary expressions',
+    'Iteration fundamentals: for, while, and do-while loops',
+    'Modern iteration: for...of vs for...in and break/continue statements',
+    'Short-circuit evaluation and guard clauses in clean code',
+    'Loop efficiency, nested loop complexity, and termination guarantees',
+    'Algorithmic pattern drills and loop-based coding challenges'
+  ],
+  'js functions, scope & closures': [
+    'Function declarations, expressions, arrow functions, and arguments',
+    'Execution context, call stack, and variable hoisting mechanics',
+    'Lexical scoping and the scope chain resolution process',
+    'Closures, private state encapsulation, and factory functions',
+    'The this keyword, implicit binding, call, apply, and bind()',
+    'Higher-order functions, callbacks, and functional composition'
+  ],
+  'js arrays, objects & es6+ features': [
+    'Array transformation methods: map(), filter(), reduce(), and forEach()',
+    'Object manipulation: Object.keys(), Object.values(), and Object.entries()',
+    'Destructuring assignment for arrays and nested objects with default values',
+    'Rest parameters (...args) and spread operator (...copy) patterns',
+    'Object prototypes, prototypal inheritance, and ES6 classes',
+    'Complex data structure transformations for coding rounds'
+  ],
+  'promises & async/await': [
+    'Asynchronous event loop mechanics, microtasks, and macrotasks',
+    'Promise creation, pending/fulfilled/rejected states, and .then() chaining',
+    'Error handling with .catch(), .finally(), and unhandled rejection prevention',
+    'async/await syntax, error handling with try/catch blocks',
+    'Concurrent execution using Promise.all(), Promise.allSettled(), and Promise.race()',
+    'Asynchronous data pipeline implementation with retry logic'
+  ],
+  'fetch api & ajax integration': [
+    'HTTP fundamentals: methods (GET, POST, PUT, DELETE), headers, and status codes',
+    'Fetch API: making GET requests and parsing JSON responses',
+    'Sending data with POST/PUT requests, headers, and JSON request bodies',
+    'HTTP error handling, response.ok checks, and AbortController timeouts',
+    'Debouncing user input and preventing redundant network requests',
+    'Live REST API data consumption and dynamic UI rendering'
+  ],
+  'react jsx & component hierarchy': [
+    'JSX syntax rules, embedding expressions, and Virtual DOM reconciliation',
+    'Functional components, unidirectional data flow, and props passing',
+    'Conditional rendering techniques and ternary cleanliness',
+    'Rendering dynamic lists and understanding the key prop requirement',
+    'Component composition and children prop architecture',
+    'Building a reusable UI component library'
+  ],
+  'react state & props management': [
+    'Component state with useState, state immutability, and updater functions',
+    'Controlled inputs, two-way data binding, and form state handling',
+    'Lifting state up to common ancestor components',
+    'Managing complex state transitions with the useReducer hook',
+    'Avoiding prop drilling with component composition and React Context',
+    'Interactive multi-step application state implementation'
+  ],
+  'react hooks (usestate & useeffect)': [
+    'Rules of Hooks and functional component execution lifecycle',
+    'useState patterns: primitive vs object/array state management',
+    'useEffect hook: side effects, synchronization, and dependency arrays',
+    'Cleanup functions in useEffect and memory leak prevention',
+    'Building custom React hooks for reusable logic extraction',
+    'Custom data-fetching hook implementation with loading and error states'
+  ],
+  'node.js basics & event loop': [
+    'Node.js runtime architecture, V8 engine, and non-blocking I/O model',
+    'Libuv event loop phases: timers, poll, check, and process.nextTick()',
+    'Module systems: CommonJS (require/module.exports) vs ES Modules (import/export)',
+    'Asynchronous file system operations using fs/promises and path modules',
+    'Node.js EventEmitter class and event-driven architecture patterns',
+    'Command-line utility implementation with Node.js streams and buffers'
+  ],
+  'express middleware & rest apis': [
+    'Express application setup, route definitions, and route parameters (:id)',
+    'Middleware architecture: request-response cycle and next() invocation',
+    'Parsing request bodies with express.json() and URL-encoded middleware',
+    'RESTful API conventions, resource endpoints, and HTTP response status codes',
+    'Centralized error handling middleware and async route wrappers',
+    'Production-ready CRUD REST API implementation'
+  ],
+  'sql database design & queries': [
+    'Relational database concepts: tables, primary keys, foreign keys, and 3NF normalization',
+    'Writing SELECT queries, column filtering, and conditional WHERE clauses',
+    'Aggregate functions: COUNT, SUM, AVG, MIN, MAX with GROUP BY and HAVING',
+    'Relational table JOINs: INNER JOIN, LEFT JOIN, RIGHT JOIN, and FULL JOIN',
+    'Subqueries, correlated subqueries, and Common Table Expressions (CTEs)',
+    'Placement SQL query challenges and indexing optimization'
+  ],
+  'mongodb document schemas & mongoose': [
+    'NoSQL document data modeling, BSON data types, and collection architecture',
+    'Mongoose schema definitions, field validation, and pre/post middleware hooks',
+    'Mongoose CRUD operations: find(), create(), findOneAndUpdate(), deleteOne()',
+    'Schema relationships: referencing with populate() vs embedding subdocuments',
+    'MongoDB Aggregation Framework: $match, $group, $project, and $lookup pipelines',
+    'Production MongoDB schema implementation with indexing strategies'
+  ]
+};
+
+function resolveTechnicalSubtopic(skillName, rawSubskillName, dayNumber = 1) {
+  const sNameClean = String(skillName || '').trim().toLowerCase();
+  const rawClean = String(rawSubskillName || '').trim();
+  const rawLower = rawClean.toLowerCase();
+  const dayIdx = (parseInt(dayNumber, 10) || 1) - 1;
+
+  // 1. DOM & Event Handling match
+  if (sNameClean.includes('dom') || rawLower.includes('dom') || (sNameClean.includes('event') && !sNameClean.includes('loop'))) {
+    const domSubs = TECHNICAL_SUBTOPIC_MAP['dom selection & event handling'];
+    const idx = Math.max(0, Math.min(domSubs.length - 1, dayIdx));
+    return domSubs[idx];
+  }
+
+  // 2. Direct match in technical map
+  for (const [key, subtopics] of Object.entries(TECHNICAL_SUBTOPIC_MAP)) {
+    if (sNameClean.includes(key) || key.includes(sNameClean) || rawLower.includes(key)) {
+      const idx = Math.max(0, Math.min(subtopics.length - 1, dayIdx));
+      return subtopics[idx];
+    }
+  }
+
+  // 3. If rawSubskillName contains generic template suffixes, strip them to restore pure technical topic
+  const genericTemplateRegex = /:\s*(Core Principles & Syntax|Component Structure & Memory|Implementation Patterns & Flow|Edge Cases & Practical Exercises|Integration & Placement Questions|Hands-on Project & Evaluation)/i;
+  if (genericTemplateRegex.test(rawClean)) {
+    const baseName = rawClean.replace(genericTemplateRegex, '').trim();
+    return baseName || skillName || 'Core Placement Foundations';
+  }
+
+  return rawClean || skillName || 'Core Placement Foundations';
+}
+
 function makeTask({ monthNumber, weekNumber, dayNumber, taskIndex = 1, skill, subskill, mode, domain, overallLevel, mastery, durationMinutes = 45, dsaLanguage = null }) {
   const skillName = skill.skillName || skill.name || 'Core Skill';
-  const subskillName = subskill?.subskillName || subskill?.skillName || subskill?.name || skillName;
+  const rawSubskillName = subskill?.subskillName || subskill?.skillName || subskill?.name || skillName;
+  const subskillName = resolveTechnicalSubtopic(skillName, rawSubskillName, dayNumber);
   const difficulty = normalizeLevel(
     subskill?.difficulty ||
     (mastery?.assessed && mastery.score >= 80 ? 'ADVANCED' : skill.difficulty || overallLevel)
@@ -574,20 +762,64 @@ function generateIntelligentRoadmap({
       const skill = selectedSkills[skillCursor];
       skillCursor += 1;
 
-      // If the graph has fewer unique skills than the requested timeline,
-      // reuse the highest-priority skill only as a final revision/integration
-      // week instead of silently cycling the entire roadmap from Week 1.
+      // If the learner has fewer skills than requested timeline weeks, fill
+      // remaining weeks with project/capstone weeks that combine DIFFERENT skills
+      // already covered, with a new project brief each time, instead of repeating the last skill.
       if (!skill) {
-        const reviewSkill = selectedSkills[selectedSkills.length - 1];
-        if (!reviewSkill) throw new Error('Unable to construct roadmap skills.');
-        monthSkills.push(reviewSkill);
+        const covered = selectedSkills.filter(s => s && s.skillId);
+        if (!covered.length) throw new Error('Unable to construct roadmap skills.');
+
+        const idxA = (integrationIndex * 2 - 2) % covered.length;
+        let idxB = (integrationIndex * 2 - 1) % covered.length;
+        if (idxB === idxA && covered.length > 1) {
+          idxB = (idxA + 1) % covered.length;
+        }
+        const skillA = covered[idxA] || covered[0];
+        const skillB = covered[idxB] || covered[0];
+
+        const capstoneSkillId = `capstone_${domainKey}_lab_${integrationIndex}`;
+        const capstoneSkill = {
+          skillId: capstoneSkillId,
+          skillName: `Capstone Integration: ${skillA.skillName} & ${skillB.skillName}`,
+          topicName: `Capstone Synthesis & Project Portfolio`,
+          level: overallLevel,
+          prerequisites: [skillA.skillId, skillB.skillId],
+          subskills: [
+            {
+              subskillId: `${capstoneSkillId}_arch`,
+              subskillName: `System Architecture & Unified Pipeline: ${skillA.skillName} + ${skillB.skillName}`
+            },
+            {
+              subskillId: `${capstoneSkillId}_impl`,
+              subskillName: `Implementation Brief & Multi-Component Integration`
+            },
+            {
+              subskillId: `${capstoneSkillId}_stress`,
+              subskillName: `Stress Testing, Edge Conditions & Error Recovery`
+            },
+            {
+              subskillId: `${capstoneSkillId}_perf`,
+              subskillName: `Performance Profiling & Scalability Tuning`
+            },
+            {
+              subskillId: `${capstoneSkillId}_doc`,
+              subskillName: `Production Deployment Guide & Portfolio Documentation`
+            },
+            {
+              subskillId: `${capstoneSkillId}_defense`,
+              subskillName: `Placement Capstone Defense & Mock Interview Walkthrough`
+            }
+          ]
+        };
+
+        monthSkills.push(capstoneSkill);
         weeks.push(buildWeek({
           monthNumber,
           weekNumber,
-          skill: reviewSkill,
+          skill: capstoneSkill,
           domain: domainKey,
           overallLevel,
-          mastery: masteryMap.get(reviewSkill.skillId) || { score: 0, assessed: false, tier: 'NOT_ASSESSED' },
+          mastery: { score: 75, assessed: true, tier: 'PROFICIENT' },
           minutesPerDay,
           dsaLanguage,
           integrationWeek: true,
@@ -727,5 +959,6 @@ function validateRoadmap(roadmap) {
 module.exports = {
   generateIntelligentRoadmap,
   validateRoadmap,
-  validateDailyTasks
+  validateDailyTasks,
+  resolveTechnicalSubtopic
 };

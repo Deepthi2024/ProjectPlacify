@@ -158,11 +158,16 @@ def rag_query(request: RAGRequest):
                 query=query_str
             )
 
+        coverage = result.get("coverage", "full" if (result.get("resources") and len(result.get("resources")) > 0) else "none")
+        message = result.get("message", "Curated resources retrieved successfully." if coverage == "full" else "Curated videos coming soon for this domain")
+
         return {
             "success": True,
             "user_id": request.user_id or "anonymous",
             "query": result["query"],
-            "answer": result.get("answer", ""),
+            "coverage": coverage,
+            "message": message,
+            "answer": result.get("answer", message),
             "resources": result.get("resources", [])
         }
 

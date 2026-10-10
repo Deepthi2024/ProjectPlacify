@@ -411,11 +411,19 @@ def run_task_rag(task_data):
     )
 
     query_str = task_data.get("query") or task_data.get("taskTitle") or task_data.get("task_title") or "Daily Task"
+    coverage = "full" if (resources and len(resources) > 0) else "none"
+    message = (
+        f"Retrieved {len(resources)} highly aligned learning resources for {query_str}."
+        if coverage == "full"
+        else "Curated videos coming soon for this domain"
+    )
 
     return {
         "query": query_str,
-        "answer": f"Retrieved {len(resources)} highly aligned learning resources for {query_str}.",
-        "resources": resources
+        "coverage": coverage,
+        "message": message,
+        "answer": message,
+        "resources": resources or []
     }
 
 
@@ -470,6 +478,9 @@ def run_rag(query, task_context=None):
     except Exception as groq_err:
         print(f"[RAG NOTE] Groq generation skipped or unavailable: {groq_err}")
         answer = f"Found {len(resources)} relevant educational resources for: '{query}'."
+
+    coverage = "full" if (resources and len(resources) > 0) else "none"
+    message = "Curated resources retrieved successfully." if coverage == "full" else "Curated videos coming soon for this domain"
 
     return {
         "query": query,

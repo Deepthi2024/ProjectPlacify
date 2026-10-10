@@ -1316,148 +1316,367 @@ class ResourceSuggesterAgent {
     this.ragCache = new Map();
   }
 
-  getCuratedTopicFallbacks(topic, taskHeading, domain) {
+  getCuratedTopicFallbacks(topic, taskHeading, domain, subtopic = '') {
     const headingLower = (taskHeading || '').toLowerCase();
     const topicLower = (topic || '').toLowerCase();
     const domainLower = (domain || '').toLowerCase();
+    const subLower = (subtopic || '').toLowerCase();
 
-    const text = `${headingLower} ${topicLower} ${domainLower}`;
+    const text = `${headingLower} ${topicLower} ${domainLower} ${subLower}`;
 
-    if (text.includes('html') || text.includes('doctype') || text.includes('boilerplate') || text.includes('dom structure')) {
+    // 1. DOM & Events Specific
+    if (text.includes('dom') || (text.includes('event') && !text.includes('loop') && !text.includes('kafka'))) {
+      return [
+        {
+          resource_id: 'dom_mdn_intro',
+          title: 'MDN Web Docs: Introduction to the DOM & Manipulation',
+          url: 'https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model/Introduction',
+          platform: 'MDN Web Docs',
+          resource_type: 'documentation',
+          description: 'Official MDN guide explaining the Document Object Model tree structure, nodes, and element access.',
+          estimated_minutes: 25,
+          duration_minutes: 25,
+          relevance_reason: 'Directly teaches DOM tree representation and element access.',
+          category_label: 'PRIMARY',
+          is_official: true,
+          verificationStatus: 'OFFICIAL_DOCS',
+          isFallback: true,
+          fallback_level: 3
+        },
+        {
+          resource_id: 'dom_mdn_query',
+          title: 'MDN Web Docs: Document.querySelector() & Element Selection',
+          url: 'https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelector',
+          platform: 'MDN Web Docs',
+          resource_type: 'documentation',
+          description: 'Technical specification and practical examples of querySelector and querySelectorAll matching.',
+          estimated_minutes: 20,
+          duration_minutes: 20,
+          relevance_reason: 'Deep dive on CSS selectors for DOM node matching.',
+          category_label: 'ALTERNATIVE',
+          is_official: true,
+          verificationStatus: 'OFFICIAL_DOCS',
+          isFallback: true,
+          fallback_level: 3
+        },
+        {
+          resource_id: 'dom_mdn_events',
+          title: 'MDN Web Docs: EventTarget.addEventListener() & Event Handling',
+          url: 'https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener',
+          platform: 'MDN Web Docs',
+          resource_type: 'documentation',
+          description: 'Authoritative guide to attaching event handlers, event objects, bubbling, and delegation.',
+          estimated_minutes: 30,
+          duration_minutes: 30,
+          relevance_reason: 'Explains modern event listeners and bubbling propagation.',
+          category_label: 'PRACTICE',
+          is_official: true,
+          verificationStatus: 'OFFICIAL_DOCS',
+          isFallback: true,
+          fallback_level: 3
+        }
+      ];
+    }
+
+    // 2. React
+    if (text.includes('react') || text.includes('jsx') || text.includes('hook') || text.includes('usestate')) {
+      return [
+        {
+          resource_id: 'react_docs_quickstart',
+          title: 'React Official Documentation: Quick Start & Core Concepts',
+          url: 'https://react.dev/learn',
+          platform: 'React Docs',
+          resource_type: 'documentation',
+          description: 'Official React guide for components, props, state, and declarative UI rendering.',
+          estimated_minutes: 35,
+          duration_minutes: 35,
+          relevance_reason: 'Authoritative React core documentation.',
+          category_label: 'PRIMARY',
+          is_official: true,
+          verificationStatus: 'OFFICIAL_DOCS',
+          isFallback: true,
+          fallback_level: 3
+        },
+        {
+          resource_id: 'react_docs_state',
+          title: 'React Official Documentation: Managing State & Hooks',
+          url: 'https://react.dev/learn/managing-state',
+          platform: 'React Docs',
+          resource_type: 'documentation',
+          description: 'Step-by-step documentation on React state management and hooks.',
+          estimated_minutes: 30,
+          duration_minutes: 30,
+          relevance_reason: 'In-depth guide to modern stateful React components.',
+          category_label: 'ALTERNATIVE',
+          is_official: true,
+          verificationStatus: 'OFFICIAL_DOCS',
+          isFallback: true,
+          fallback_level: 3
+        }
+      ];
+    }
+
+    // 3. Node.js & Express
+    if (text.includes('node') || text.includes('express') || text.includes('backend api') || text.includes('event loop')) {
+      return [
+        {
+          resource_id: 'node_docs_getting_started',
+          title: 'Node.js Official Documentation: Getting Started Guide',
+          url: 'https://nodejs.org/en/learn/getting-started/introduction-to-nodejs',
+          platform: 'Node.js Official',
+          resource_type: 'documentation',
+          description: 'Official guide to Node.js asynchronous runtime, event loop, and modules.',
+          estimated_minutes: 30,
+          duration_minutes: 30,
+          relevance_reason: 'Authoritative documentation for Node.js runtime fundamentals.',
+          category_label: 'PRIMARY',
+          is_official: true,
+          verificationStatus: 'OFFICIAL_DOCS',
+          isFallback: true,
+          fallback_level: 3
+        },
+        {
+          resource_id: 'express_guide',
+          title: 'Express.js Official Guide: Routing & Middleware',
+          url: 'https://expressjs.com/en/starter/basic-routing.html',
+          platform: 'Express.js',
+          resource_type: 'documentation',
+          description: 'Official tutorial on building RESTful API endpoints and middleware in Express.',
+          estimated_minutes: 25,
+          duration_minutes: 25,
+          relevance_reason: 'Essential guide for server-side Express routing.',
+          category_label: 'ALTERNATIVE',
+          is_official: true,
+          verificationStatus: 'OFFICIAL_DOCS',
+          isFallback: true,
+          fallback_level: 3
+        }
+      ];
+    }
+
+    // 4. HTML
+    if (text.includes('html') || text.includes('doctype') || text.includes('boilerplate')) {
       return [
         {
           resource_id: 'html_mdn_doc',
           title: 'MDN Web Docs: HTML Introduction & Document Structure',
           url: 'https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML/Getting_started',
           platform: 'MDN Web Docs',
+          resource_type: 'documentation',
           description: 'Official MDN guide covering HTML document syntax, DOCTYPE declarations, head/body organization, and boilerplate structure.',
           estimated_minutes: 25,
+          duration_minutes: 25,
           relevance_reason: 'Directly covers HTML document structure, DOCTYPE, and fundamental elements.',
           category_label: 'PRIMARY',
-          is_official: true
-        },
-        {
-          resource_id: 'html_yt_tutorial',
-          title: 'HTML Complete Tutorial: Page Structure & Tags',
-          url: 'https://www.youtube.com/watch?v=UB1O30fR-EE',
-          platform: 'YouTube',
-          description: 'Visual crash course demonstrating how to structure HTML documents from scratch.',
-          estimated_minutes: 35,
-          relevance_reason: 'Hands-on video tutorial covering HTML document boilerplate setup.',
-          category_label: 'ALTERNATIVE',
-          is_official: false
+          is_official: true,
+          verificationStatus: 'OFFICIAL_DOCS',
+          isFallback: true,
+          fallback_level: 3
         },
         {
           resource_id: 'html_w3_guide',
           title: 'W3Schools: HTML Basics & DOCTYPE Reference',
           url: 'https://www.w3schools.com/html/html_basic.asp',
           platform: 'W3Schools',
+          resource_type: 'tutorial',
           description: 'Interactive reference guide for core HTML elements and document tags.',
           estimated_minutes: 20,
+          duration_minutes: 20,
           relevance_reason: 'Interactive practice environment for basic HTML structure.',
-          category_label: 'PRACTICE',
-          is_official: false
+          category_label: 'ALTERNATIVE',
+          is_official: false,
+          verificationStatus: 'VERIFIED_URL',
+          isFallback: true,
+          fallback_level: 3
         }
       ];
-    } else if (text.includes('css') || text.includes('flexbox') || text.includes('grid') || text.includes('style')) {
+    }
+
+    // 5. CSS
+    if (text.includes('css') || text.includes('flexbox') || text.includes('grid') || text.includes('style')) {
       return [
         {
           resource_id: 'css_mdn_flex',
           title: 'MDN Web Docs: CSS Layouts & Flexbox Guide',
           url: 'https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Flexbox',
           platform: 'MDN Web Docs',
+          resource_type: 'documentation',
           description: 'Comprehensive documentation on CSS flexbox, alignment, and modern layout techniques.',
           estimated_minutes: 30,
+          duration_minutes: 30,
           relevance_reason: 'Authoritative guide for CSS layouts, flex container properties, and alignment.',
           category_label: 'PRIMARY',
-          is_official: true
+          is_official: true,
+          verificationStatus: 'OFFICIAL_DOCS',
+          isFallback: true,
+          fallback_level: 3
         },
         {
-          resource_id: 'css_yt_flex',
-          title: 'CSS Flexbox & Grid Masterclass',
-          url: 'https://www.youtube.com/watch?v=phWxA89Dy94',
-          platform: 'YouTube',
-          description: 'Step-by-step video guide explaining flexbox containers, main axis, cross axis, and responsive grids.',
-          estimated_minutes: 40,
-          relevance_reason: 'Visual walkthrough of CSS styling and layout principles.',
+          resource_id: 'css_w3_flex',
+          title: 'W3Schools: CSS Flexbox Reference and Interactive Practice',
+          url: 'https://www.w3schools.com/css/css3_flexbox.asp',
+          platform: 'W3Schools',
+          resource_type: 'tutorial',
+          description: 'Interactive tutorial with live code examples for CSS Flexbox layouts.',
+          estimated_minutes: 25,
+          duration_minutes: 25,
+          relevance_reason: 'Interactive hands-on practice for CSS flex layouts.',
           category_label: 'ALTERNATIVE',
-          is_official: false
+          is_official: false,
+          verificationStatus: 'VERIFIED_URL',
+          isFallback: true,
+          fallback_level: 3
         }
       ];
-    } else if (text.includes('js') || text.includes('javascript') || text.includes('async') || text.includes('dom') || text.includes('es6')) {
-      return [
-        {
-          resource_id: 'js_mdn_guide',
-          title: 'MDN Web Docs: JavaScript Fundamentals & Core Concepts',
-          url: 'https://developer.mozilla.org/en-US/docs/Learn/JavaScript/First_steps',
-          platform: 'MDN Web Docs',
-          description: 'Essential guide covering JavaScript syntax, data types, functions, and DOM manipulation.',
-          estimated_minutes: 35,
-          relevance_reason: 'Core MDN guide for modern JavaScript programming.',
-          category_label: 'PRIMARY',
-          is_official: true
-        },
-        {
-          resource_id: 'js_yt_course',
-          title: 'Modern JavaScript Full Course for Beginners',
-          url: 'https://www.youtube.com/watch?v=W6NZfCO5SIk',
-          platform: 'YouTube',
-          description: 'Practical video tutorial introducing variables, events, async/await, and API integration.',
-          estimated_minutes: 45,
-          relevance_reason: 'Comprehensive video covering JS execution and practice drills.',
-          category_label: 'ALTERNATIVE',
-          is_official: false
-        }
-      ];
-    } else if (text.includes('dsa') || text.includes('tree') || text.includes('array') || text.includes('algorithm') || text.includes('complexity')) {
+    }
+
+    // 6. DSA
+    if (text.includes('dsa') || text.includes('tree') || text.includes('graph') || text.includes('bfs') || text.includes('dfs') || text.includes('algorithm') || text.includes('complexity')) {
       return [
         {
           resource_id: 'dsa_gfg_guide',
           title: 'GeeksforGeeks: Data Structures & Algorithms Roadmap',
           url: 'https://www.geeksforgeeks.org/data-structures/',
           platform: 'GeeksforGeeks',
+          resource_type: 'article',
           description: 'Detailed tutorial covering data structure operations, time/space complexity analysis, and coding problems.',
           estimated_minutes: 40,
+          duration_minutes: 40,
           relevance_reason: 'In-depth explanation of core DSA concepts and problem-solving patterns.',
           category_label: 'PRIMARY',
-          is_official: false
+          is_official: false,
+          verificationStatus: 'VERIFIED_URL',
+          isFallback: true,
+          fallback_level: 3
         },
         {
-          resource_id: 'dsa_yt_guide',
-          title: 'DSA Complete Beginner to Advanced Tutorial',
-          url: 'https://www.youtube.com/watch?v=8hly31xKLI0',
-          platform: 'YouTube',
-          description: 'Step-by-step visual explanation of algorithms, recursion, and data structures.',
-          estimated_minutes: 50,
+          resource_id: 'dsa_w3_algorithms',
+          title: 'W3Schools: Data Structures and Algorithms Tutorial',
+          url: 'https://www.w3schools.com/dsa/',
+          platform: 'W3Schools',
+          resource_type: 'tutorial',
+          description: 'Structured visual explanations and implementation guides for algorithms and complexity analysis.',
+          estimated_minutes: 30,
+          duration_minutes: 30,
           relevance_reason: 'Visual algorithm demonstrations and practice coding problems.',
           category_label: 'ALTERNATIVE',
-          is_official: false
+          is_official: false,
+          verificationStatus: 'VERIFIED_URL',
+          isFallback: true,
+          fallback_level: 3
         }
       ];
     }
 
+    // 7. SQL
+    if (text.includes('sql') || text.includes('database') || text.includes('postgres') || text.includes('mysql')) {
+      return [
+        {
+          resource_id: 'sql_w3_tutorial',
+          title: 'W3Schools: SQL Tutorial & Interactive Queries',
+          url: 'https://www.w3schools.com/sql/',
+          platform: 'W3Schools',
+          resource_type: 'tutorial',
+          description: 'Interactive SQL reference covering SELECT, JOIN, GROUP BY, indexes, and database manipulation.',
+          estimated_minutes: 30,
+          duration_minutes: 30,
+          relevance_reason: 'Hands-on interactive practice with standard SQL queries.',
+          category_label: 'PRIMARY',
+          is_official: false,
+          verificationStatus: 'VERIFIED_URL',
+          isFallback: true,
+          fallback_level: 3
+        },
+        {
+          resource_id: 'pg_docs_tutorial',
+          title: 'PostgreSQL Official Documentation: SQL Language Tutorial',
+          url: 'https://www.postgresql.org/docs/current/tutorial-sql.html',
+          platform: 'PostgreSQL Official',
+          resource_type: 'documentation',
+          description: 'Authoritative guide to relational queries, constraints, transactions, and performance.',
+          estimated_minutes: 35,
+          duration_minutes: 35,
+          relevance_reason: 'Authoritative documentation for relational SQL concepts.',
+          category_label: 'ALTERNATIVE',
+          is_official: true,
+          verificationStatus: 'OFFICIAL_DOCS',
+          isFallback: true,
+          fallback_level: 3
+        }
+      ];
+    }
+
+    // 8. General JS Fallback
+    if (text.includes('js') || text.includes('javascript') || text.includes('async') || text.includes('es6')) {
+      return [
+        {
+          resource_id: 'js_mdn_guide',
+          title: 'MDN Web Docs: JavaScript Fundamentals & Core Concepts',
+          url: 'https://developer.mozilla.org/en-US/docs/Learn/JavaScript/First_steps',
+          platform: 'MDN Web Docs',
+          resource_type: 'documentation',
+          description: 'Essential guide covering JavaScript syntax, data types, functions, and control flow.',
+          estimated_minutes: 35,
+          duration_minutes: 35,
+          relevance_reason: 'Core MDN guide for modern JavaScript programming.',
+          category_label: 'PRIMARY',
+          is_official: true,
+          verificationStatus: 'OFFICIAL_DOCS',
+          isFallback: true,
+          fallback_level: 3
+        },
+        {
+          resource_id: 'js_gfg_tutorial',
+          title: 'GeeksforGeeks: Modern JavaScript Tutorial',
+          url: 'https://www.geeksforgeeks.org/javascript-tutorial/',
+          platform: 'GeeksforGeeks',
+          resource_type: 'article',
+          description: 'Structured programming examples and exercises for JavaScript fundamentals.',
+          estimated_minutes: 30,
+          duration_minutes: 30,
+          relevance_reason: 'Practical tutorial covering JavaScript concepts.',
+          category_label: 'ALTERNATIVE',
+          is_official: false,
+          verificationStatus: 'VERIFIED_URL',
+          isFallback: true,
+          fallback_level: 3
+        }
+      ];
+    }
+
+    // 9. Default Verified Documentation
     return [
       {
         resource_id: 'gen_mdn_docs',
-        title: `Official Learning Documentation for ${taskHeading}`,
-        url: 'https://developer.mozilla.org/en-US/',
-        platform: 'Web Docs',
-        description: `Curated learning guide covering fundamental topics and best practices for ${taskHeading}.`,
+        title: `MDN Web Docs: ${taskHeading} Reference Guide`,
+        url: 'https://developer.mozilla.org/en-US/docs/Web',
+        platform: 'MDN Web Docs',
+        resource_type: 'documentation',
+        description: `Authoritative web development reference covering standards, syntax, and APIs for ${taskHeading}.`,
         estimated_minutes: 30,
-        relevance_reason: `Direct reference material for ${taskHeading}.`,
+        duration_minutes: 30,
+        relevance_reason: `Curated documentation reference for ${taskHeading}.`,
         category_label: 'PRIMARY',
-        is_official: true
+        is_official: true,
+        verificationStatus: 'OFFICIAL_DOCS',
+        isFallback: true,
+        fallback_level: 4
       },
       {
-        resource_id: 'gen_yt_video',
-        title: `Video Tutorial: ${taskHeading}`,
-        url: 'https://www.youtube.com/',
-        platform: 'YouTube',
-        description: `Video walkthrough explaining practical implementation details of ${taskHeading}.`,
-        estimated_minutes: 35,
-        relevance_reason: `Visual tutorial for ${taskHeading}.`,
+        resource_id: 'gen_gfg_ref',
+        title: `GeeksforGeeks: ${taskHeading} Overview & Tutorials`,
+        url: 'https://www.geeksforgeeks.org/',
+        platform: 'GeeksforGeeks',
+        resource_type: 'article',
+        description: `Comprehensive technical reference and code examples for ${taskHeading}.`,
+        estimated_minutes: 25,
+        duration_minutes: 25,
+        relevance_reason: `Tutorial and problem-solving guide for ${taskHeading}.`,
         category_label: 'ALTERNATIVE',
-        is_official: false
+        is_official: false,
+        verificationStatus: 'VERIFIED_URL',
+        isFallback: true,
+        fallback_level: 4
       }
     ];
   }
@@ -1595,13 +1814,11 @@ class ResourceSuggesterAgent {
       const data = await res.json();
       if (data.success && Array.isArray(data.resources) && data.resources.length > 0) {
         const mappedResources = data.resources.map((r, idx) => ({
-          resource_id: r.resource_id,
+          resource_id: r.resource_id || `res_${taskId}_${idx}`,
           title: r.title || 'Recommended Resource',
           url: r.url || '#',
-          platform: r.channel || r.platform || 'YouTube',
-          description: r.subtopic
-            ? `${r.topic || ''}${r.topic ? ' — ' : ''}${r.subtopic}`
-            : (r.topic || r.description || 'Recommended learning resource'),
+          platform: r.platform || r.channel || (r.resource_type === 'video' ? 'YouTube' : 'Web Resource'),
+          description: r.description || (r.subtopic ? `${r.topic || ''} — ${r.subtopic}` : 'Recommended learning resource'),
           estimated_minutes: r.duration_minutes || r.estimated_minutes || 20,
           duration_minutes: r.duration_minutes || r.estimated_minutes || 20,
           task_budget_minutes: taskDuration,
@@ -1610,22 +1827,41 @@ class ResourceSuggesterAgent {
           duration_fit_score: r.duration_fit_score || 0.9,
           relevance_score: r.relevance_score || 0.85,
           final_score: r.final_score || 0.85,
-          resource_type: r.resource_type || 'VIDEO',
-          is_official: Boolean(r.is_official)
+          resource_type: r.resource_type || (r.url && r.url.includes('youtube') ? 'video' : 'article'),
+          is_official: Boolean(r.is_official),
+          is_chapter: Boolean(r.is_chapter),
+          startTimestamp: r.startTimestamp || null,
+          endTimestamp: r.endTimestamp || null,
+          start_seconds: r.start_seconds || null,
+          end_seconds: r.end_seconds || null,
+          verificationStatus: r.verificationStatus || (r.is_chapter ? 'VERIFIED_CHAPTER' : (r.is_official ? 'OFFICIAL_DOCS' : 'CURATED_RESOURCE')),
+          isFallback: Boolean(r.isFallback),
+          fallback_level: r.fallback_level || 1,
+          matchedSubtopics: r.matchedSubtopics || []
         }));
+
+        mappedResources.coverage = data.coverage || 'full';
+        mappedResources.message = data.message || 'Curated resources retrieved successfully.';
 
         this.ragCache.set(cacheKey, mappedResources);
         try { localStorage.setItem(cacheKey, JSON.stringify(mappedResources)); } catch(e) {}
         this.recordUsedResourceIds(userId, weekNum, mappedResources.map(r => r.resource_id));
         return mappedResources;
       }
-      console.warn('YouTube RAG API notice:', data?.message || 'No resources returned');
-    } catch (err) {
-      console.warn('YouTube RAG resource retrieval notice/timeout:', err.message);
-    }
 
-    // Never return unrelated fallback URLs
-    return [];
+      console.warn('Backend resource API yielded no items, using curated fallback:', data?.message);
+      const fallbackList = this.getCuratedTopicFallbacks(taskTopic, taskTitle, domain, taskSubtopic);
+      fallbackList.coverage = 'fallback';
+      fallbackList.message = 'Displaying verified educational references.';
+      this.ragCache.set(cacheKey, fallbackList);
+      return fallbackList;
+    } catch (err) {
+      console.warn('Resource retrieval error/timeout, using curated fallback:', err.message);
+      const fallbackList = this.getCuratedTopicFallbacks(taskTopic, taskTitle, domain, taskSubtopic);
+      fallbackList.coverage = 'fallback';
+      fallbackList.message = 'Displaying verified educational references.';
+      return fallbackList;
+    }
   }
 }
 

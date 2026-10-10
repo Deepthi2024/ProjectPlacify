@@ -26,6 +26,12 @@ METADATA_PATH = os.path.join(
     "rag_embedding_metadata.json"
 )
 
+DOCUMENTS_PATH = os.path.join(
+    BASE_DIR,
+    "data",
+    "rag_documents_final.json"
+)
+
 
 # ============================================================
 # MODEL CONFIGURATION
@@ -1383,6 +1389,89 @@ def load_metadata():
     return metadata
 
 
+_DOCUMENTS_CACHE = None
+
+def load_documents_map():
+    global _DOCUMENTS_CACHE
+    if _DOCUMENTS_CACHE is not None:
+        return _DOCUMENTS_CACHE
+
+    if not os.path.exists(DOCUMENTS_PATH):
+        _DOCUMENTS_CACHE = {}
+        return _DOCUMENTS_CACHE
+
+    try:
+        with open(DOCUMENTS_PATH, "r", encoding="utf-8") as f:
+            docs = json.load(f)
+            _DOCUMENTS_CACHE = {
+                d.get("metadata", {}).get("resource_id", d.get("resource_id")): d
+                for d in docs
+            }
+            return _DOCUMENTS_CACHE
+    except Exception as e:
+        print(f"[WARN] Could not load rag_documents_final.json: {e}")
+        _DOCUMENTS_CACHE = {}
+        return _DOCUMENTS_CACHE
+
+
+def parse_video_chapters(text, total_duration_minutes):
+    """
+    Parses timestamped chapter markers from video description/text.
+    Supports formats:
+      05:25:46 9 Document Object Model (DOM)
+      06:21:01 Select HTML Elements
+      00:00 Introduction
+      Chapter 1 - 23:25
+      #(0:18:04) Adding Middleware
+    """
+    if not text:
+        return []
+    chapters = []
+    lines = text.split("\n")
+    pattern = re.compile(r'(?:#\(|\b)?(?:(\d{1,2}):)?(\d{2}):(\d{2})\)?(?:\s*[-–:]\s*|\s+)(.+)')
+    pattern_alt = re.compile(r'(.+?)\s*[-–:]\s*(?:(\d{1,2}):)?(\d{2}):(\d{2})')
+
+    for line in lines:
+        line_clean = line.strip()
+        m = pattern.search(line_clean)
+        if m:
+            h = int(m.group(1)) if m.group(1) else 0
+            m_val = int(m.group(2))
+            s = int(m.group(3))
+            sec = h * 3600 + m_val * 60 + s
+            t_str = f"{h:02d}:{m_val:02d}:{s:02d}" if h else f"{m_val:02d}:{s:02d}"
+            title = m.group(4).strip()
+            title = re.sub(r'^(?:Chapter\s*\d+|Ch[- ]*\d+[-–\d]*|\d+)[\.\s:–-]+', '', title, flags=re.I).strip()
+            if title and not any(k in title.lower() for k in ["http", "github", "whatsapp", "instagram", "facebook", "twitter", "subscribe", "social media", "handbook", "notes"]):
+                chapters.append({'seconds': sec, 'timestamp': t_str, 'title': title})
+        else:
+            m2 = pattern_alt.search(line_clean)
+            if m2 and not any(k in m2.group(1).lower() for k in ['http', 'duration', 'published', 'github', 'notes']):
+                h = int(m2.group(2)) if m2.group(2) else 0
+                m_val = int(m2.group(3))
+                s = int(m2.group(4))
+                sec = h * 3600 + m_val * 60 + s
+                t_str = f"{h:02d}:{m_val:02d}:{s:02d}" if h else f"{m_val:02d}:{s:02d}"
+                title = m2.group(1).strip()
+                title = re.sub(r'^(?:Chapter\s*\d+|Ch[- ]*\d+[-–\d]*|\d+)[\.\s:–-]+', '', title, flags=re.I).strip()
+                if title:
+                    chapters.append({'seconds': sec, 'timestamp': t_str, 'title': title})
+
+    chapters.sort(key=lambda x: x['seconds'])
+    unique = []
+    for c in chapters:
+        if not unique or unique[-1]['seconds'] != c['seconds']:
+            unique.append(c)
+
+    total_sec = max(60, int(total_duration_minutes or 60) * 60)
+    for i, c in enumerate(unique):
+        next_sec = unique[i+1]['seconds'] if i+1 < len(unique) else total_sec
+        c['duration_minutes'] = max(1, round((next_sec - c['seconds']) / 60))
+        c['end_timestamp'] = unique[i+1]['timestamp'] if i+1 < len(unique) else ''
+
+    return unique
+
+
 # ============================================================
 # RETRIEVE RESOURCES
 # ============================================================
@@ -1732,6 +1821,29 @@ def build_task_rag_query(task_data):
     return ". ".join(p for p in parts if p)
 
 
+def canonicalize_domain_key(d):
+    if not d:
+        return ""
+    d_clean = str(d).strip().lower()
+    if any(k in d_clean for k in ["fullstack", "full_stack", "full stack", "web dev"]):
+        return "fullstack"
+    if any(k in d_clean for k in ["datascience", "data science", "data_science", "machine learning"]):
+        return "datascience"
+    if any(k in d_clean for k in ["dsa", "data structures", "algorithm"]):
+        return "dsa"
+    if any(k in d_clean for k in ["devops", "cloud", "cloud engineering"]):
+        return "devops"
+    if any(k in d_clean for k in ["cybersecurity", "security", "ethical hacking"]):
+        return "cybersecurity"
+    if any(k in d_clean for k in ["mobile", "react native", "flutter"]):
+        return "mobile"
+    if any(k in d_clean for k in ["ai_llm", "ai", "llm", "llm systems"]):
+        return "ai_llm"
+    if any(k in d_clean for k in ["system_design", "system design", "distributed architecture"]):
+        return "system_design"
+    return d_clean
+
+
 def retrieve_daily_task_resources(
     task_data,
     index,
@@ -1760,6 +1872,7 @@ def retrieve_daily_task_resources(
     topic = str(task_data.get("topic") or task_data.get("dailyTopic") or task_data.get("taskTopic") or "")
     subtopic = str(task_data.get("subtopic") or task_data.get("taskSubtopic") or topic)
     domain = str(task_data.get("domain") or task_data.get("chosen_domain") or "")
+    task_canon_domain = canonicalize_domain_key(domain)
     user_level = str(task_data.get("userLevel") or task_data.get("user_level") or task_data.get("difficulty") or "BEGINNER").upper()
     task_difficulty = str(task_data.get("difficulty") or task_data.get("taskDifficulty") or user_level).upper()
 
@@ -1797,6 +1910,7 @@ def retrieve_daily_task_resources(
     print(f"Subtopic  : {subtopic}")
     print(f"Type      : {task_type}")
     print(f"Budget    : {task_budget_minutes} mins")
+    print(f"Domain    : {domain} (canonical: {task_canon_domain})")
     print(f"User Level: {user_level}")
     print(f"RAG Query : {structured_query}")
 
@@ -1807,10 +1921,34 @@ def retrieve_daily_task_resources(
     print(f"\n[RAG RETRIEVAL]")
     print(f"Candidates retrieved from FAISS: {len(indices[0])}")
 
+    docs_map = load_documents_map()
+
+    # Extract specific technical concept keywords from task details
+    combined_task_text = f"{task_title} {subtopic} {task_data.get('taskDescription') or ''}".lower()
+    clean_task_words = re.sub(r'[:,\-\(\)/]', ' ', combined_task_text).split()
+    generic_stop = {
+        'learn', 'practice', 'study', 'module', 'drill', 'task', 'day', 'week',
+        'the', 'and', 'for', 'with', 'basics', 'basic', 'core', 'component',
+        'structure', 'memory', 'principles', 'syntax', 'flow', 'optimization',
+        'failure', 'handling', 'production', 'patterns', 'implementation',
+        'overview', 'introduction', 'guide', 'tutorial', 'questions', 'exercises',
+        'programming', 'development', 'software', 'engineering', 'web'
+    }
+    concept_keywords = [w for w in clean_task_words if len(w) > 2 and w not in generic_stop]
+
+    # Specific concept phrases
+    is_dom_task = any(k in combined_task_text for k in ['dom', 'document object model', 'queryselector', 'addeventlistener', 'event bubbling', 'event delegation'])
+    is_event_handling_task = 'event' in combined_task_text or 'listener' in combined_task_text
+
+    # Pre-populate specific concepts
+    specific_concepts = set(concept_keywords)
+    if is_dom_task:
+        specific_concepts.update(['dom', 'queryselector', 'addeventlistener', 'element', 'elements', 'bubbling', 'delegation', 'selection'])
+
     scored_candidates = []
     rejected_log = []
 
-    # 3. Hard Relevance & Duration Filtering + Multi-Signal Scoring
+    # 3. Hard Relevance & Duration Filtering + Chapter Timestamp Extraction
     for score, idx in zip(scores[0], indices[0]):
         if idx < 0 or idx >= len(metadata):
             continue
@@ -1830,75 +1968,122 @@ def retrieve_daily_task_resources(
             rejected_log.append((r_title or r_id, "Missing URL or Title"))
             continue
 
-        # Hard Filter 2: Strict Duration Compatibility
-        # System must never recommend a 60-90 min video for a 30-45 min task
-        if r_duration > task_budget_minutes:
-            rejected_log.append((r_title, f"Duration {r_duration}m exceeds task budget {task_budget_minutes}m"))
+        # Hard Filter 2: Domain Consistency Filter
+        r_domain_raw = str(resource.get("domain") or "Full Stack Development")
+        r_canon_domain = canonicalize_domain_key(r_domain_raw)
+        if task_canon_domain and r_canon_domain and task_canon_domain != r_canon_domain:
+            rejected_log.append((r_title, f"Domain mismatch: task is '{task_canon_domain}' but resource is '{r_canon_domain}'"))
             continue
 
-        # Semantic Score (Normalized to 0..1 range)
-        semantic_score = max(0.0, min(1.0, float(score)))
+        # Topic boundary & Anti-collision checks
+        r_topic_low = str(resource.get("topic") or "").lower()
+        r_title_low = r_title.lower()
+        r_subtopic_low = str(resource.get("subtopic") or "").lower()
 
-        # Topic & Subtopic Scores
+        # Critical Anti-collision: Client-side DOM vs Server-side Node.js event loop
+        if is_dom_task:
+            if "node" in r_topic_low or "node" in r_title_low or "event loop" in r_title_low or "call stack" in r_title_low:
+                rejected_log.append((r_title, "Rejected: Node.js backend/event loop is incompatible with client-side DOM events"))
+                continue
+
+        # Hard Filter 3: Strict Level Boundary Filter
+        r_level = str(resource.get("level") or "INTERMEDIATE").strip().upper()
+        if user_level == "BEGINNER" and r_level == "ADVANCED":
+            rejected_log.append((r_title, f"Level mismatch: Beginner task rejected Advanced resource"))
+            continue
+        if user_level == "ADVANCED" and r_level == "BEGINNER":
+            rejected_log.append((r_title, f"Level mismatch: Advanced task rejected Beginner resource"))
+            continue
+
+        doc = docs_map.get(r_id)
+        doc_text = doc.get("text", "") if doc else ""
+        chapters = parse_video_chapters(doc_text, r_duration)
+
+        # Chapter Matching for Long Videos or Deep Topics
+        matched_chapters = []
+        for ch in chapters:
+            ch_title_low = ch['title'].lower()
+            if is_dom_task and ('event loop' in ch_title_low or 'call stack' in ch_title_low or 'node' in ch_title_low):
+                continue
+            if any(cp in ch_title_low for cp in specific_concepts):
+                matched_chapters.append(ch)
+
+        # Add matching chapters as verified chapter candidates
+        for ch in matched_chapters:
+            ch_dur = ch['duration_minutes']
+            if ch_dur <= task_budget_minutes + 15:
+                sep = '&' if '?' in r_url else '?'
+                ch_url = f"{r_url}{sep}t={ch['seconds']}s"
+                ch_title = f"{r_title} - Chapter: {ch['title']}"
+
+                ch_relevance_score = 0.95
+                ch_final_score = 0.92
+
+                scored_candidates.append({
+                    "resource_id": f"{r_id}_ch_{ch['seconds']}",
+                    "title": ch_title,
+                    "url": ch_url,
+                    "platform": resource.get("channel") or "YouTube",
+                    "resource_type": "VIDEO",
+                    "topic": resource.get("topic") or topic,
+                    "subtopic": ch['title'],
+                    "difficulty": resource.get("level") or task_difficulty,
+                    "duration_minutes": ch_dur,
+                    "task_id": task_id,
+                    "task_budget_minutes": task_budget_minutes,
+                    "duration_fit_score": calculate_duration_fit(ch_dur, task_budget_minutes),
+                    "relevance_score": ch_relevance_score,
+                    "final_score": ch_final_score,
+                    "relevance_reason": f"Verified chapter '{ch['title']}' ({ch['timestamp']} - {ch['end_timestamp']}) directly covers {subtopic} within your study time budget ({ch_dur}m).",
+                    "selected_segment": ch['title'],
+                    "startTimestamp": ch['timestamp'],
+                    "endTimestamp": ch['end_timestamp'],
+                    "start_seconds": ch['seconds'],
+                    "is_chapter": True,
+                    "verificationStatus": "VERIFIED_CHAPTER",
+                    "is_official": False
+                })
+
+        # Evaluate Whole Video:
+        if r_duration > task_budget_minutes:
+            if not matched_chapters:
+                rejected_log.append((r_title, f"Duration {r_duration}m exceeds task budget {task_budget_minutes}m and has no matching chapter"))
+            continue
+
+        # If full video is within budget, enforce strict concept match:
+        full_text_low = f"{r_title_low} {r_subtopic_low}"
+        has_concept_match = any(cp in full_text_low for cp in specific_concepts)
+
+        # Hard constraint: Broad topic match cannot compensate for unrelated learning objective
+        if not has_concept_match:
+            rejected_log.append((r_title, f"Unrelated learning objective: broad topic '{topic}' cannot compensate for missing subtopics '{subtopic}'"))
+            continue
+
+        semantic_score = max(0.0, min(1.0, float(score)))
         topic_score, subtopic_score, task_match_score = calculate_topic_subtopic_scores(
             resource, topic, subtopic, task_title
         )
 
-        # Hard Filter 3: Minimum Topic Relevance Threshold
-        # Reject resources that have 0 topic/subtopic match and weak semantic similarity
-        if topic_score < 0.20 and subtopic_score < 0.20 and semantic_score < 0.35:
-            rejected_log.append((r_title, "No meaningful topic or subtopic relevance"))
-            continue
-
-        # Task Type Suitability
         type_score = calculate_task_type_score(resource, task_type)
-
-        # Difficulty Suitability
         diff_score = calculate_difficulty_score(resource.get("level"), user_level)
-
-        # Duration Compatibility Score
         duration_fit_score = calculate_duration_fit(r_duration, task_budget_minutes)
 
-        # Quality Score
         try:
             raw_qual = float(resource.get("quality_score") or 70.0)
             quality_score = min(1.0, max(0.0, raw_qual / 100.0))
         except (ValueError, TypeError):
             quality_score = 0.70
 
-        # Weighted Final Score (dominant on semantic, topic, subtopic)
         final_score = (
             semantic_score * 0.35
-            + topic_score * 0.20
-            + subtopic_score * 0.15
+            + topic_score * 0.15
+            + subtopic_score * 0.25
             + task_match_score * 0.10
             + diff_score * 0.05
             + type_score * 0.05
-            + duration_fit_score * 0.05
-            + quality_score * 0.05
+            + duration_fit_score * 0.03
+            + quality_score * 0.02
         )
-
-        # Weak Area Learning Personalization Bonus
-        if is_weak_topic:
-            final_score += 0.05
-
-        # Personalization Score if present in dataset
-        if personalized_scores and r_id in personalized_scores:
-            p_score = float(personalized_scores[r_id])
-            final_score = (final_score * 0.90) + (p_score * 0.10)
-
-        # Repetition Penalties
-        if r_id in week_ids:
-            final_score *= 0.50  # -50% same week penalty
-        elif r_id in history_ids:
-            final_score *= 0.70  # -30% recently used penalty
-
-        relevance_reason = (
-            f"Matches topic '{topic}' and subtopic '{subtopic}' at {user_level} level. "
-            f"Duration ({int(r_duration)} min) fits within task budget ({task_budget_minutes} min)."
-        )
-        if is_weak_topic:
-            relevance_reason += " (Personalized boost for quiz weak-area remediation)"
 
         scored_candidates.append({
             "resource_id": r_id,
@@ -1915,8 +2100,12 @@ def retrieve_daily_task_resources(
             "duration_fit_score": round(duration_fit_score, 4),
             "relevance_score": round(max(semantic_score, (topic_score + subtopic_score) / 2), 4),
             "final_score": round(final_score, 4),
-            "relevance_reason": relevance_reason,
+            "relevance_reason": f"Matches topic '{topic}' and subtopic '{subtopic}' at {user_level} level ({int(r_duration)}m).",
             "selected_segment": None,
+            "startTimestamp": None,
+            "endTimestamp": None,
+            "is_chapter": False,
+            "verificationStatus": "VERIFIED_INDEXED",
             "is_official": False
         })
 
@@ -1935,18 +2124,26 @@ def retrieve_daily_task_resources(
     accumulated_minutes = 0
 
     # Hard threshold: minimum score to be accepted
-    MIN_SCORE_THRESHOLD = 0.28
+    MIN_SCORE_THRESHOLD = 0.45
+    seen_urls = set()
 
     for cand in scored_candidates:
         if cand["final_score"] < MIN_SCORE_THRESHOLD:
             continue
 
+        cand_url = cand.get("url", "").split("&t=")[0]
+        # Allow at most 2 chapters from the same long course
+        url_count = sum(1 for u in seen_urls if u == cand_url)
+        if url_count >= 2:
+            continue
+
         cand_dur = cand["duration_minutes"]
-        if accumulated_minutes + cand_dur <= task_budget_minutes:
+        if accumulated_minutes + cand_dur <= task_budget_minutes or len(accepted_resources) == 0:
             cand["category_label"] = "PRIMARY" if len(accepted_resources) == 0 else (
                 "ALTERNATIVE" if len(accepted_resources) == 1 else "PRACTICE"
             )
             accepted_resources.append(cand)
+            seen_urls.add(cand_url)
             accumulated_minutes += cand_dur
 
             if len(accepted_resources) >= max(1, top_k):

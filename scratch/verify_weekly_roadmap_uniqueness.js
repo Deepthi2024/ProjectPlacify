@@ -30,6 +30,34 @@ const testCases = [
     timeline_months: 3,
     daily_hours: 2.0,
     userLevel: 'ADVANCED'
+  },
+  {
+    domain: 'dsa',
+    domainName: 'Data Structures & Algorithms (Interview Prep)',
+    timeline_months: 6,
+    daily_hours: 2.0,
+    userLevel: 'ADVANCED'
+  },
+  {
+    domain: 'mobile',
+    domainName: 'Mobile App Development (React Native & Flutter)',
+    timeline_months: 4,
+    daily_hours: 2.0,
+    userLevel: 'INTERMEDIATE'
+  },
+  {
+    domain: 'ai_llm',
+    domainName: 'AI & LLM Systems Engineering',
+    timeline_months: 6,
+    daily_hours: 2.5,
+    userLevel: 'BEGINNER'
+  },
+  {
+    domain: 'system_design',
+    domainName: 'System Design & Distributed Architecture',
+    timeline_months: 6,
+    daily_hours: 2.0,
+    userLevel: 'ADVANCED'
   }
 ];
 

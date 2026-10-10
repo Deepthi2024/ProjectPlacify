@@ -52,7 +52,9 @@ async function testAll8Domains() {
         email,
         password: 'password123',
         chosen_domain: d.id,
-        timeline_weeks: 4,
+        dsa_language: d.id === 'dsa' ? 'Python' : undefined,
+        timeline_months: 3,
+        timeline_weeks: 12,
         daily_hours: 2.0
       });
 
@@ -83,8 +85,23 @@ async function testAll8Domains() {
       console.log(`   MongoDB Atlas Persisted Domain: "${savedDomain}"`);
 
       if (evalRes.status === 200 && savedDomain === d.expectedName) {
-        console.log(`   ✅ PASSED! Domain "${d.id}" correctly matched to "${savedDomain}"\n`);
-        passedCount++;
+        console.log(`   ✅ PASSED! Domain "${d.id}" correctly matched to "${savedDomain}"`);
+
+        // 3. Verify roadmap generation for this registered domain
+        const roadRes = await postJSON('/api/roadmap/generate', {
+          user_id: userId,
+          domain: d.id,
+          timeline_months: 3,
+          daily_hours: 2.0,
+          dsa_language: d.id === 'dsa' ? 'Python' : undefined
+        });
+
+        if (roadRes.status === 200 && roadRes.json?.roadmap?.monthly_roadmap?.length === 3) {
+          console.log(`   ✅ Roadmap Generation PASSED for "${d.id}" (3 months, 12 weeks verified)\n`);
+          passedCount++;
+        } else {
+          console.error(`   ❌ Roadmap generation failed for "${d.id}":`, roadRes.json);
+        }
       } else {
         console.error(`   ❌ FAILED! Domain "${d.id}" expected "${d.expectedName}" but got "${savedDomain}"\n`);
       }

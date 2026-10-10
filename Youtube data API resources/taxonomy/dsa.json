@@ -1,0 +1,42 @@
+{
+  "domain": "Data Structures & Algorithms",
+  "levels": [
+    "Beginner",
+    "Intermediate",
+    "Advanced",
+    "Unknown"
+  ],
+  "languages": [
+    "English",
+    "Hindi",
+    "Kannada",
+    "Tamil",
+    "Telugu",
+    "Malayalam",
+    "Other",
+    "Unknown"
+  ],
+  "topics": {
+    "Algorithmic Foundations": {
+      "Time & Space Complexity": "Big-O notation, asymptotic upper bounds, memory footprints, and recurrence relations",
+      "Arrays & String Manipulation": "Two pointers, sliding window technique, prefix sums, and in-place manipulations",
+      "Recursion & Backtracking": "Base cases, recursive trees, permutations, subsets, and N-Queens"
+    },
+    "Core Linear Data Structures": {
+      "Linked Lists (Singly & Doubly)": "Node reversal, cycle detection (Floyd algorithm), dummy heads, and merge operations",
+      "Stacks & Queues": "Monotonic stacks, next greater element, circular queues, and deque patterns",
+      "Hash Tables & Collision Resolution": "Chaining, open addressing, hash map lookups, and frequency counter patterns"
+    },
+    "Hierarchical Structures & Trees": {
+      "Binary Trees & Traversals": "Preorder, inorder, postorder, level-order BFS, and tree symmetry",
+      "Binary Search Trees (BST)": "BST insertion, deletion, validation, LCA, and balanced rotations",
+      "Heaps & Priority Queues": "Min-heap, max-heap, heapify algorithm, Top-K problems, and median finders"
+    },
+    "Advanced Algorithms & Graphs": {
+      "Graph Traversals (BFS & DFS)": "Adjacency lists, topological sorting, connected components, and cycle detection",
+      "Shortest Path Algorithms": "Dijkstra algorithm, Bellman-Ford, Floyd-Warshall, and priority queue relaxation",
+      "Disjoint Set Union (DSU)": "Path compression, union by rank, and Kruskal Minimum Spanning Tree",
+      "Dynamic Programming (1D & 2D)": "Memoization, tabulation, knapsack problems, LCS, and coin change variants"
+    }
+  }
+}

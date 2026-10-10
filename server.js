@@ -25,8 +25,9 @@ const { execFile } = require('child_process');
 
 const { getKnowledgeGraph, getAllSkillsInGraph, normalizeDomainKey, DOMAIN_CONFIG } = require('./engine/knowledgeGraph');
 const { buildUserSkillProfile, updateSkillMastery } = require('./engine/skillProfiler');
-const { generateIntelligentRoadmap, validateRoadmap } = require('./engine/roadmapPlanner');
+const { generateIntelligentRoadmap, validateRoadmap, resolveTechnicalSubtopic } = require('./engine/roadmapPlanner');
 const { recalculateAdaptiveRoadmap } = require('./engine/adaptiveEngine');
+const { orchestrateTaskResources, searchTavilyLive } = require('./services/resources/resourcePipeline');
 
 const NewsArticle = require('./models/NewsArticle');
 const { startNewsFetchJob } = require('./jobs/newsFetchJob');
@@ -62,17 +63,19 @@ function normalizeDailyTask(rawTask, context = {}) {
 
   let taskTitle = rawTask.taskTitle || rawTask.title || context.taskTitle || '';
   let taskTopic = rawTask.taskTopic || rawTask.topic || rawTask.task_topic || context.taskTopic || context.topic || 'Core Learning';
-  let taskSubtopic = rawTask.taskSubtopic || rawTask.subtopic || rawTask.subskillName || rawTask.task_subtopic || context.taskSubtopic || context.subtopic || taskTopic;
+  let rawSubtopic = rawTask.taskSubtopic || rawTask.subtopic || rawTask.subskillName || rawTask.task_subtopic || context.taskSubtopic || context.subtopic || taskTopic;
+  let taskSubtopic = resolveTechnicalSubtopic(taskTopic, rawSubtopic, dayNumber);
 
-  // Clean up any stray "undefined" text if it slipped in
-  if (!taskTitle || taskTitle.includes('undefined')) {
-    if (taskTitle.includes('Learn: undefined')) {
+  // Clean up any stray generic template text or "undefined" text
+  const isGenericTemplateTitle = /Component Structure & Memory|Core Principles & Syntax|Implementation Patterns & Flow|Edge Cases & Practical Exercises/i.test(taskTitle);
+  if (!taskTitle || taskTitle.includes('undefined') || isGenericTemplateTitle) {
+    if (taskTitle.includes('Learn: undefined') || taskType === 'LEARN') {
       taskTitle = `Learn: ${taskSubtopic}`;
-    } else if (taskTitle.includes('Guided Practice: undefined')) {
-      taskTitle = `Guided Practice: ${taskSubtopic} Drills`;
-    } else if (taskTitle.includes('Implement: undefined')) {
+    } else if (taskTitle.includes('Guided Practice') || taskType === 'PRACTICE') {
+      taskTitle = `Practice: ${taskSubtopic}`;
+    } else if (taskTitle.includes('Implement') || taskType === 'IMPLEMENT') {
       taskTitle = `Implement: ${taskSubtopic}`;
-    } else if (taskTitle.includes('Assessment: undefined')) {
+    } else if (taskTitle.includes('Assessment') || taskType === 'ASSESSMENT') {
       taskTitle = `Assessment: ${taskSubtopic}`;
     } else {
       taskTitle = `${taskType === 'LEARN' ? 'Learn' : (taskType === 'PRACTICE' ? 'Practice' : 'Study')}: ${taskSubtopic}`;
@@ -3032,7 +3035,8 @@ You MUST return ONLY a valid JSON object matching this exact structure:
         salt,
         chosen_domain,
         timeline_months,
-        daily_hours
+        daily_hours,
+        dsa_language
       } = payload;
 
 
@@ -3178,6 +3182,8 @@ You MUST return ONLY a valid JSON object matching this exact structure:
         timeline_months: months,
 
         daily_hours: hours,
+
+        dsa_language: (domain === 'dsa' && dsa_language) ? dsa_language : null,
 
         current_skill_level: 'UNASSESSED'
 
@@ -4133,11 +4139,16 @@ You MUST return ONLY a valid JSON object matching this exact structure:
         });
       }
 
-      if (user.chosen_domain === 'dsa' && !user.dsa_language) {
+      const dsaLang = user.dsa_language || payload.dsa_language || payload.dsaLanguage || null;
+      if (user.chosen_domain === 'dsa' && !dsaLang) {
         return sendJSON(res, 400, {
           error: 'DSA programming language is required before generating a DSA roadmap.',
           code: 'DSA_LANGUAGE_REQUIRED'
         });
+      }
+      if (user.chosen_domain === 'dsa' && !user.dsa_language && dsaLang) {
+        user.dsa_language = dsaLang;
+        await user.save();
       }
 
       // Fetch latest completed quiz evaluation from MongoDB Atlas (`quiz_evaluations` collection) or payload
@@ -5141,114 +5152,31 @@ You MUST return ONLY a valid JSON object matching this exact structure:
   // ==========================================================
   // RAG RESOURCE RETRIEVAL HELPER
   // ==========================================================
-  const ragServerCache = new Map();
-
   async function recommendResourcesForTask(params = {}) {
-    const ragBaseUrl = (process.env.RAG_API_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '');
-    const targetUrl = `${ragBaseUrl}/api/rag/query`;
-
-    const cacheKey = `${params.domain || ''}_${params.taskTitle || params.title || ''}_${params.taskId || params.id || ''}_${params.taskDuration || 45}_${params.taskDifficulty || params.difficulty || ''}`;
-    if (ragServerCache.has(cacheKey)) {
-      const cached = ragServerCache.get(cacheKey);
-      if (Array.isArray(cached) && cached.length > 0) {
-        return cached;
-      }
-    }
-
-    const payload = {
-      user_id: params.user_id || params.userId || 'anonymous',
-      query: params.query || params.taskTitle || params.title || '',
-      taskId: params.taskId || params.id,
-      taskTitle: params.taskTitle || params.title,
-      taskType: params.taskType || params.type || 'LEARN',
-      taskDifficulty: params.taskDifficulty || params.difficulty,
-      taskDuration: params.taskDuration || params.durationMinutes || params.estimated_minutes || 45,
-      dailyTopic: params.dailyTopic || params.topic,
-      subtopic: params.subtopic || params.taskSubtopic,
-      topic: params.topic || params.dailyTopic,
-      domain: params.domain || params.chosen_domain,
-      userLevel: params.userLevel || params.skillLevel || 'BEGINNER',
-      topK: params.topK || 3,
-      dailyHours: params.dailyHours || params.daily_hours,
-      dailyBudgetMinutes: params.dailyBudgetMinutes || params.daily_budget_minutes,
-      taskDescription: params.taskDescription || params.description,
-      weekNumber: params.weekNumber || params.week_number,
-      dayNumber: params.dayNumber || params.day_number,
-      quizTopicPerformance: params.quizTopicPerformance || params.quiz_topic_performance,
-      learningObjective: params.learningObjective,
-      preferredLanguage: params.preferredLanguage || params.language,
-      history_resource_ids: params.history_resource_ids || [],
-      week_resource_ids: params.week_resource_ids || []
-    };
-
     try {
-      if (typeof globalThis.fetch === 'function') {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000);
-
-        const ragRes = await globalThis.fetch(targetUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: controller.signal,
-          body: JSON.stringify(payload)
-        });
-
-        clearTimeout(timeoutId);
-
-        if (ragRes.ok) {
-          const ragData = await ragRes.json();
-          if (ragData && ragData.success && Array.isArray(ragData.resources)) {
-            if (ragData.resources.length > 0) {
-              ragServerCache.set(cacheKey, ragData.resources);
-            }
-            return ragData.resources;
-          }
-        } else {
-          console.warn(`[RAG PROXY WARNING] RAG API returned HTTP ${ragRes.status}`);
-        }
-      } else {
-        const ragData = await new Promise((resolve) => {
-          const parsedTarget = url.parse(targetUrl);
-          const postData = JSON.stringify(payload);
-          const reqOpts = {
-            hostname: parsedTarget.hostname || '127.0.0.1',
-            port: parsedTarget.port || 8000,
-            path: parsedTarget.path || '/api/rag/query',
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Content-Length': Buffer.byteLength(postData)
-            }
-          };
-          const clientReq = http.request(reqOpts, (clientRes) => {
-            let bodyStr = '';
-            clientRes.on('data', chunk => { bodyStr += chunk; });
-            clientRes.on('end', () => {
-              try { resolve(JSON.parse(bodyStr)); } catch (e) { resolve(null); }
-            });
-          });
-          clientReq.on('error', () => resolve(null));
-          clientReq.setTimeout(30000, () => { clientReq.destroy(); resolve(null); });
-          clientReq.write(postData);
-          clientReq.end();
-        });
-
-        if (ragData && ragData.success && Array.isArray(ragData.resources)) {
-          if (ragData.resources.length > 0) {
-            ragServerCache.set(cacheKey, ragData.resources);
-          }
-          return ragData.resources;
-        }
-      }
+      const orchestrated = await orchestrateTaskResources(params);
+      const list = Array.isArray(orchestrated?.resources) ? orchestrated.resources : [];
+      list.coverage = orchestrated.coverage || (list.length > 0 ? 'full' : 'none');
+      list.message = orchestrated.message || (list.length > 0 ? 'Curated resources retrieved successfully.' : 'Personalized resources synced.');
+      list.levelUsed = orchestrated.levelUsed;
+      return list;
     } catch (err) {
-      if (err.name !== 'AbortError' && !err.message?.includes('aborted')) {
-        console.warn('⚠️ YouTube RAG retrieval error:', err.message);
-      } else {
-        console.warn('⚠️ YouTube RAG request timed out after 30s');
-      }
+      console.error('[RESOURCE PIPELINE ERROR]', err);
+      const { DOMAIN_CATALOG } = require('./services/resources/resourcePipeline');
+      const domainKey = (params.domain || 'fullstack').toLowerCase().replace(/[^a-z0-9_]/g, '');
+      const fallbackList = DOMAIN_CATALOG[domainKey] || DOMAIN_CATALOG['fullstack'];
+      const mapped = fallbackList.map((r, idx) => ({
+        ...r,
+        resource_id: `catalog_err_${idx + 1}`,
+        category_label: idx === 0 ? 'PRIMARY' : (idx === 1 ? 'ALTERNATIVE' : 'PRACTICE'),
+        verificationStatus: 'CURATED_FALLBACK',
+        isFallback: true
+      }));
+      mapped.coverage = 'domain_catalog';
+      mapped.message = 'Curated placement resources available.';
+      mapped.levelUsed = 'Level 4: Domain Catalog';
+      return mapped;
     }
-
-    return [];
   }
 
   // ==========================================================
@@ -5261,30 +5189,88 @@ You MUST return ONLY a valid JSON object matching this exact structure:
   ) {
     try {
       const payload = await readRequestBody(req);
-      const user_id = payload?.user_id || 'anonymous';
-      const query = payload?.query || payload?.taskTitle || payload?.title || '';
-
-      const resources = await recommendResourcesForTask(payload);
-
-      if (Array.isArray(resources) && resources.length > 0) {
-        return sendJSON(res, 200, {
-          success: true,
-          query: query,
-          resources: resources
+      if (!payload || !payload.user_id) {
+        return sendJSON(res, 400, {
+          success: false,
+          error: 'user_id is required.'
         });
       }
+      const query = payload.query || payload.taskTitle || payload.title || '';
+      if (!query && !payload.taskId) {
+        return sendJSON(res, 400, {
+          success: false,
+          error: 'query or taskTitle is required.'
+        });
+      }
+      const user_id = payload.user_id;
+
+      const resources = await recommendResourcesForTask(payload);
+      const coverage = resources.coverage || (resources.length > 0 ? 'full' : 'none');
+      const message = resources.message || (resources.length > 0 ? 'Curated resources retrieved successfully.' : 'Curated videos coming soon for this domain');
 
       return sendJSON(res, 200, {
-        success: false,
-        message: 'No sufficiently relevant resource was found for this task.',
-        resources: []
+        success: resources.length > 0,
+        coverage: coverage,
+        message: message,
+        query: query,
+        resources: resources
       });
     } catch (err) {
       console.error('❌ RAG proxy endpoint error:', err);
       return sendJSON(res, 200, {
         success: false,
-        message: 'No sufficiently relevant resource was found for this task.',
+        coverage: 'none',
+        message: 'Curated videos coming soon for this domain',
         resources: []
+      });
+    }
+  }
+
+  // ==========================================================
+  // TAVILY WEB RESOURCE FALLBACK ENDPOINT
+  // POST /api/resources/tavily-fallback
+  // ==========================================================
+  if (
+    req.method === 'POST' &&
+    parsedUrl.pathname === '/api/resources/tavily-fallback'
+  ) {
+    try {
+      const payload = await readRequestBody(req);
+      const taskTitle = payload?.taskTitle || payload?.title || 'Placement Learning Task';
+      const topic = payload?.topic || payload?.taskTopic || 'Technical Core';
+      const subtopic = payload?.subtopic || payload?.taskSubtopic || topic;
+      const domain = payload?.domain || 'fullstack';
+      const level = payload?.level || payload?.difficulty || 'BEGINNER';
+      const taskType = payload?.taskType || 'LEARN';
+
+      // 1. Try targeted live Tavily search
+      const liveResults = await searchTavilyLive(taskTitle, topic, subtopic, domain, level);
+      if (Array.isArray(liveResults) && liveResults.length > 0) {
+        return sendJSON(res, 200, {
+          success: true,
+          count: liveResults.length,
+          resources: liveResults
+        });
+      }
+
+      // 2. If Tavily search returned 0 records or had issues, fall back to Level 3 / Level 4 catalog
+      const orchestrated = await orchestrateTaskResources({
+        taskTitle, topic, subtopic, domain, difficulty: level, taskType
+      });
+
+      return sendJSON(res, 200, {
+        success: true,
+        count: (orchestrated.resources || []).length,
+        resources: orchestrated.resources || []
+      });
+    } catch (err) {
+      console.error('❌ Tavily fallback error:', err);
+      const { DOMAIN_CATALOG } = require('./services/resources/resourcePipeline');
+      const domainKey = (payload?.domain || 'fullstack').toLowerCase().replace(/[^a-z0-9_]/g, '');
+      const catalog = DOMAIN_CATALOG[domainKey] || DOMAIN_CATALOG['fullstack'];
+      return sendJSON(res, 200, {
+        success: true,
+        resources: catalog
       });
     }
   }
