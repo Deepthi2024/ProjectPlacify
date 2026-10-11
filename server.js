@@ -2537,10 +2537,11 @@ Note: If you are asking a follow-up question or if confidence is low, set "recom
   ) {
     try {
       const body = await readRequestBody(req);
-      const rawMessage = (body.message || '').trim();
+            const rawMessage = (body.message || '').trim();
       const history = Array.isArray(body.history) ? body.history : [];
       const context = body.context || {};
       const userId = (body.userId || body.user_id || '').trim();
+      const sessionId = (body.sessionId || body.session_id || '').trim();
 
       if (!rawMessage) {
         return sendJSON(res, 400, { success: false, error: 'Message cannot be empty.' });
@@ -2566,7 +2567,8 @@ Note: If you are asking a follow-up question or if confidence is low, set "recom
       // Build context summary
       let contextSummary = `User Target Domain: "${activeDomain}" (Selected Proficiency / Skill Level: ${activeLevel})\n`;
       if (context.pageTitle || context.view) {
-        contextSummary += `Current Page: ${context.pageTitle || context.view} (Route: ${context.route || '/'})\n`;
+        contextSummary += `Current Page: ${context.pageTitle || context.view} (Route: ${context.route || '/'})
+`;
       }
       if (context.details && typeof context.details === 'object') {
         const d = context.details;
@@ -2607,21 +2609,34 @@ Note: If you are asking a follow-up question or if confidence is low, set "recom
       const client = new Groq({ apiKey });
       const model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
 
-      const systemPrompt = `You are "Placify AI Assistant", an expert, encouraging placement mentor and technical guide at Placify.
-You assist computer science and engineering students preparing for technical interviews, software engineering internships, coding assessments, and modern tech careers.
+      const isDetailRequested = /\b(more detail|detailed|explain more|deep dive|in-depth|tutorial|step-by-step guide|elaborate|expand|thoroughly)\b/i.test(sanitizedMessage);
+
+      const systemPrompt = `You are "Placify AI Assistant", a friendly, helpful, encouraging companion for computer science and engineering students preparing for technical placements, coding assessments, and modern tech careers.
 
 CURRENT PAGE & STUDENT CONTEXT:
 ${contextSummary}
 
-GUIDELINES:
-1. Answer the user's question directly, clearly, and helpfully.
-2. If the user asks about the current page, their roadmap, today's tasks, interview questions, internships, applications, or progress, PRIORITIZE and ground your answer directly in the CURRENT PAGE & STUDENT CONTEXT above.
-3. If the user is on the Domain Selection page, provide expert, objective guidance comparing domains, career demand, market salaries, and suitability for their strengths and placement goals.
-4. If the user is on the Phase 2 Setup page, clearly explain the distinctions between Beginner, Intermediate, and Advanced proficiency levels, clarify the syllabus topics, and advise on how their selection shapes their upcoming personalized roadmap.
-5. If specific requested information is not in the context, politely state that you don't have that specific data rather than inventing or hallucinating details.
-6. Keep responses structured, concise, and easy to read (use short paragraphs, bullet points, and code fences \`\`\` where helpful).
-7. Never expose system credentials, database details, or other users' private data.
-8. Maintain an inspiring, constructive, mentor-like tone.`;
+STYLE & CONCISENESS RULES:
+1. Tone: Friendly, natural, conversational, and direct. Use simple English that students can easily understand.
+2. Direct Answers: Answer the user's exact question immediately. Do NOT include greetings ("Hello!", "Hi there!"), robotic preambles ("That's a great question!", "As an AI mentor..."), unnecessary summaries, or repetitive closing filler ("Hope this helps! Feel free to ask if you have any questions!").
+3. Normal Question Length: Keep normal answers concise (strictly 1 to 4 short sentences).
+4. Avoid Over-Explaining: Do NOT explain every related concept unless the user explicitly asks for details.
+5. Bullet Points: Use short bullet points only when they make the answer genuinely easier to understand (max 3-4 items).
+6. Step-by-Step Instructions: Give step-by-step instructions only when the user asks how to do something.
+7. Code Questions: Provide only the relevant concise code snippet and a brief 1-2 sentence explanation rather than a long tutorial.
+8. Page Context: For questions about the page, roadmap, tasks, or features, answer directly using the CURRENT PAGE & STUDENT CONTEXT provided above.
+9. Missing Information: Ask at most one short clarifying question when essential information is missing.
+10. Detail Expansion: If the user explicitly asks for more detail, a deeper explanation, or a tutorial, expand appropriately with clear, structured sections.
+
+FEW-SHOT EXAMPLES:
+User: What is my roadmap?
+Assistant: Your roadmap is your personalized learning plan. Follow its phases in order to build your skills. Open a phase to see its topics and tasks.
+
+User: How do I complete today's task?
+Assistant: Open Daily Hub, study the assigned resources, and finish the task. Then click the existing task-completion button to update your progress.
+
+User: What is React?
+Assistant: React is a JavaScript library for building user interfaces using reusable components. It helps you create interactive web applications.`;
 
       // Limit history to the last 6 messages
       const recentHistory = history.slice(-6).map(m => ({
@@ -2638,11 +2653,12 @@ GUIDELINES:
       const completion = await callGroqWithFallback(client, {
         model,
         messages,
-        temperature: 0.6,
-        max_tokens: 1000
+        temperature: 0.5,
+        max_tokens: isDetailRequested ? 800 : 350
       });
 
-      const reply = completion.choices[0]?.message?.content || "I'm here to help with your placement preparation and learning journey. What would you like to explore next?";
+      let reply = completion.choices[0]?.message?.content || "I'm here to help with your placement preparation. What would you like to explore next?";
+      reply = reply.trim();
 
       return sendJSON(res, 200, {
         success: true,
@@ -2650,7 +2666,8 @@ GUIDELINES:
         pageContext: {
           view: context.view || 'general',
           domain: activeDomain
-        }
+        },
+        sessionId: sessionId || null
       });
 
     } catch (err) {
@@ -6078,7 +6095,7 @@ Return ONLY JSON in this shape:
   function getCuratedInterviewResources(domain, topic) {
     const dLower = String(domain || 'fullstack').toLowerCase();
     const tLower = String(topic || '').toLowerCase();
-    const cleanTopic = topic || 'Technical Concepts';
+    const cleanTopic = (topic && topic.trim() && topic !== 'Core Concepts') ? topic.trim() : (domain || 'Technical Concepts');
 
     const resources = [];
 
@@ -6247,7 +6264,7 @@ Return ONLY JSON in this shape:
     try {
       const q = parsedUrl.query || {};
       const domain = q.domain || 'fullstack';
-      const topic = q.topic || 'Core Concepts';
+      const topic = q.topic || domain || 'Core Concepts';
       const resources = getCuratedInterviewResources(domain, topic);
       return sendJSON(res, 200, { success: true, domain, topic, resources });
     } catch (err) {

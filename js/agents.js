@@ -387,6 +387,11 @@ class AuthAgent {
       localStorage.removeItem(this.sessionKey);
       sessionStorage.removeItem(this.sessionKey);
     } catch (err) {}
+    if (typeof window.resetPlacifyChatbotSession === 'function') {
+      try {
+        window.resetPlacifyChatbotSession({ startFresh: false });
+      } catch (e) {}
+    }
   }
 
 }

@@ -136,6 +136,12 @@ file :image, styles: { vert: '220', hor: '940x101' }
           </button>
         </div>
 
+        <div style="display: flex; justify-content: center; margin-top: 0.8rem; margin-bottom: 0.5rem;">
+          <button type="button" class="page-context-help-btn" data-page-help="onboarding" title="What can I do on Welcome Screen?">
+            <i class="ph ph-question"></i> What can I do here?
+          </button>
+        </div>
+
         <!-- Highlights Strip -->
         <div class="opening-features-strip">
           <div class="opening-feature-pill">
@@ -257,8 +263,13 @@ file :image, styles: { vert: '220', hor: '940x101' }
     <!-- VIEW 1b: Domain Selection (Post-Registration) -->
     <section id="view-domain-selection" class="view-section">
       <div class="glass-card domain-selection-main">
-        <div class="section-title">
-          <i class="ph ph-compass"></i> Choose Your Learning Domain
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.75rem;">
+          <div class="section-title" style="margin-bottom: 0;">
+            <i class="ph ph-compass"></i> Choose Your Learning Domain
+          </div>
+          <button type="button" class="page-context-help-btn" data-page-help="domainSelection" title="What can I do in Domain Selection?">
+            <i class="ph ph-question"></i> What can I do here?
+          </button>
         </div>
         <p class="section-subtitle" id="domain-selection-subtitle">Welcome! Select the tech domain you want to master. Your personalized roadmap will be built around this choice.</p>
 
@@ -311,10 +322,15 @@ file :image, styles: { vert: '220', hor: '940x101' }
             </div>
             <p class="section-subtitle" style="margin-bottom: 0;">Declare where you stand in <strong id="diagnostic-domain-name-header" style="color: var(--accent-cyan);">Chosen Domain</strong> and choose whether to validate with our AI Diagnostic Quiz.</p>
           </div>
-          <div
-            id="diagnostic-concept-count-badge"
-            style="background: rgba(139, 92, 246, 0.15); color: var(--accent-violet); padding: 0.4rem 0.8rem; border-radius: 50px; font-size: 0.85rem; font-weight: 700;">
-            Technical Diagnostic Quiz
+          <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+            <button type="button" class="page-context-help-btn" data-page-help="diagnostic" title="What can I do in Phase 2 Setup?">
+              <i class="ph ph-question"></i> What can I do here?
+            </button>
+            <div
+              id="diagnostic-concept-count-badge"
+              style="background: rgba(139, 92, 246, 0.15); color: var(--accent-violet); padding: 0.4rem 0.8rem; border-radius: 50px; font-size: 0.85rem; font-weight: 700;">
+              Technical Diagnostic Quiz
+            </div>
           </div>
         </div>
 
@@ -531,9 +547,14 @@ file :image, styles: { vert: '220', hor: '940x101' }
     <!-- VIEW 3: Skill Assessment & Gap Report -->
     <section id="view-assessment-report" class="view-section">
       <div class="glass-card">
-        <div class="section-title" style="margin-bottom: 1.5rem;">
-          <i class="ph ph-chart-polar"></i>
-          Phase 2 Output: Diagnostic Evaluation & Topic-Wise Proficiency Report
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
+          <div class="section-title" style="margin-bottom: 0;">
+            <i class="ph ph-chart-polar"></i>
+            Phase 2 Output: Diagnostic Evaluation & Topic-Wise Proficiency Report
+          </div>
+          <button type="button" class="page-context-help-btn" data-page-help="assessmentReport" title="What can I do in Assessment Report?">
+            <i class="ph ph-question"></i> What can I do here?
+          </button>
         </div>
 
         <div class="assessment-results-grid">
@@ -639,7 +660,7 @@ file :image, styles: { vert: '220', hor: '940x101' }
         </div>
 
         <!-- User Profile Parameters Bar -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; background: rgba(255, 255, 255, 0.03); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-glass);">
+        <div id="roadmap-profile-summary-bar" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; background: rgba(255, 255, 255, 0.03); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-glass);">
           <div>
             <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Selected Domain</div>
             <div id="rm-summary-domain" style="font-size: 0.95rem; font-weight: 700; color: #fff; margin-top: 0.2rem;">-</div>
@@ -826,6 +847,9 @@ file :image, styles: { vert: '220', hor: '940x101' }
               Detailed question-by-question evaluation, score breakdown, and targeted revision recommendations.
             </p>
           </div>
+          <button type="button" class="page-context-help-btn" data-page-help="assessmentEvaluation" title="What can I do in Assessment Evaluation?">
+            <i class="ph ph-question"></i> What can I do here?
+          </button>
         </div>
 
         <!-- Dynamic Container for Evaluation Summary, Question Breakdown, Concepts to Review -->
@@ -943,24 +967,14 @@ file :image, styles: { vert: '220', hor: '940x101' }
             </span>
           </div>
 
-          <!-- Step A: Choose Preparation Day or Topic -->
+          <!-- Step A: Explore Interview Resources -->
           <div style="background: rgba(255,255,255,0.02); padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-glass); margin-bottom: 1.5rem;">
             <h4 style="color: #fff; font-family: var(--font-heading); margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
-              <i class="ph ph-calendar" style="color: var(--accent-cyan);"></i> Choose Interview Preparation Phase / Day
+              <i class="ph ph-compass" style="color: var(--accent-cyan);"></i> Explore Interview Resources
             </h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; align-items: center;">
+            <div class="interview-ext-filter-grid">
               <div>
-                <label for="interview-ext-phase-select" style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 0.3rem;"><i class="ph ph-calendar"></i> Roadmap Phase / Day:</label>
-                <select id="interview-ext-phase-select" class="form-control" style="background: rgba(15, 23, 42, 0.8);">
-                  <option value="">-- Select from your Roadmap Phases --</option>
-                </select>
-              </div>
-              <div id="interview-ext-custom-topic-container">
-                <label for="interview-ext-custom-topic" style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 0.3rem;"><i class="ph ph-pencil-simple"></i> Or Specific Topic / Concept:</label>
-                <input type="text" id="interview-ext-custom-topic" class="form-control" placeholder="e.g. Asynchronous JavaScript, Closures, System Design">
-              </div>
-              <div>
-                <label for="interview-ext-resource-type" style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 0.3rem;"><i class="ph ph-tag"></i> Resource Type:</label>
+                <label for="interview-ext-resource-type" style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 0.4rem;"><i class="ph ph-tag"></i> Resource Type:</label>
                 <select id="interview-ext-resource-type" class="form-control" style="background: rgba(15, 23, 42, 0.8);">
                   <option value="all" selected>All Resource Types</option>
                   <option value="interview_questions">Interview Questions & Answers</option>
@@ -970,8 +984,8 @@ file :image, styles: { vert: '220', hor: '940x101' }
                   <option value="mock_interviews">Mock Interviews & Problem Kits</option>
                 </select>
               </div>
-              <div style="padding-top: 1.4rem;">
-                <button type="button" id="interview-ext-fetch-resources-btn" class="btn btn-primary" style="width: 100%;">
+              <div>
+                <button type="button" id="interview-ext-fetch-resources-btn" class="btn btn-primary" style="width: 100%; white-space: nowrap;">
                   <i class="ph ph-magnifying-glass"></i> Explore Resources
                 </button>
               </div>
@@ -1479,7 +1493,11 @@ file :image, styles: { vert: '220', hor: '940x101' }
           </div>
         </div>
         <div class="chatbot-header-actions">
-          <button id="chatbot-clear-btn" type="button" class="chatbot-icon-btn" title="Clear conversation" aria-label="Clear conversation">
+          <button id="chatbot-new-chat-btn" type="button" class="chatbot-new-chat-btn" title="Start a fresh conversation" aria-label="New Chat">
+            <i class="ph ph-plus-circle"></i>
+            <span>New Chat</span>
+          </button>
+          <button id="chatbot-clear-btn" type="button" class="chatbot-icon-btn" title="Clear conversation" aria-label="Clear conversation" style="display: none;">
             <i class="ph ph-trash"></i>
           </button>
           <button id="chatbot-close-btn" type="button" class="chatbot-icon-btn" title="Close chat" aria-label="Close chat">
@@ -1950,42 +1968,64 @@ file :image, styles: { vert: '220', hor: '940x101' }
     <div id="placify-tour-spotlight" style="position: absolute; border-radius: 8px; box-shadow: 0 0 0 3px var(--accent-cyan), 0 0 25px rgba(6, 182, 212, 0.65); pointer-events: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);"></div>
 
     <!-- Floating Tour Tooltip Popover -->
-    <div id="placify-tour-popover" class="placify-tour-popover" style="position: absolute; width: 340px; pointer-events: auto; z-index: 10003; transition: all 0.25s ease;" role="dialog" aria-labelledby="tour-step-title">
-      <div class="glass-card" style="padding: 1.25rem; border: 1px solid rgba(6, 182, 212, 0.4); box-shadow: 0 15px 50px rgba(0, 0, 0, 0.75); border-radius: 12px; background: rgba(13, 19, 33, 0.96);">
+    <div id="placify-tour-popover" class="placify-tour-popover" style="position: absolute; width: min(390px, calc(100vw - 28px)); pointer-events: auto; z-index: 10003; transition: all 0.25s ease;" role="dialog" aria-labelledby="tour-step-title">
+      <div class="glass-card" style="padding: 1.25rem; border: 1px solid rgba(6, 182, 212, 0.4); box-shadow: 0 15px 50px rgba(0, 0, 0, 0.8); border-radius: 14px; background: rgba(13, 19, 33, 0.98);">
         
         <!-- Header -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
-          <span id="tour-step-badge" style="font-size: 0.72rem; font-weight: 800; color: var(--accent-cyan); background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); padding: 0.15rem 0.55rem; border-radius: 20px; text-transform: uppercase;">
-            Step 1 of 8
-          </span>
-          <button type="button" id="tour-skip-x-btn" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 0.2rem; line-height: 1;" title="Skip Tour" aria-label="Skip Tour">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span id="tour-step-badge" style="font-size: 0.72rem; font-weight: 800; color: var(--accent-cyan); background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); padding: 0.15rem 0.55rem; border-radius: 20px; text-transform: uppercase;">
+              Step 1 of 12
+            </span>
+            <span id="tour-step-view-tag" style="font-size: 0.7rem; font-weight: 700; color: var(--accent-violet); background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(139, 92, 246, 0.3); padding: 0.15rem 0.55rem; border-radius: 20px; text-transform: uppercase;">
+              Roadmap
+            </span>
+          </div>
+          <button type="button" id="tour-skip-x-btn" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; padding: 0.2rem; line-height: 1;" title="Close Tour" aria-label="Close Tour">
             <i class="ph ph-x"></i>
           </button>
         </div>
 
-        <!-- Title & Text -->
-        <h4 id="tour-step-title" style="color: #fff; font-size: 1.05rem; font-family: var(--font-heading); margin: 0 0 0.4rem 0; font-weight: 700;">
+        <!-- Title -->
+        <h4 id="tour-step-title" style="color: #fff; font-size: 1.1rem; font-family: var(--font-heading); margin: 0 0 0.65rem 0; font-weight: 700;">
           Step Title
         </h4>
-        <p id="tour-step-desc" style="color: var(--text-muted); font-size: 0.84rem; line-height: 1.45; margin: 0 0 0.75rem 0;">
-          Step description text.
-        </p>
 
-        <!-- Action Prompt -->
-        <div id="tour-step-action-prompt" style="font-size: 0.78rem; color: #38bdf8; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); padding: 0.45rem 0.65rem; border-radius: 6px; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.4rem;">
-          <i class="ph ph-info"></i> <span id="tour-step-action-text">Action instructions</span>
+        <!-- Structured 3-Part Explanations -->
+        <div id="tour-step-sections" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.9rem;">
+          <!-- 1. What is this? -->
+          <div class="tour-qa-block">
+            <div class="tour-qa-label"><i class="ph ph-info"></i> What is this?</div>
+            <div id="tour-step-what-is-this" class="tour-qa-text">Description</div>
+          </div>
+
+          <!-- 2. What should I do here? -->
+          <div class="tour-qa-block action">
+            <div class="tour-qa-label"><i class="ph ph-cursor-click"></i> What should I do here?</div>
+            <div id="tour-step-what-to-do" class="tour-qa-text">Action</div>
+          </div>
+
+          <!-- 3. What happens next? -->
+          <div class="tour-qa-block next">
+            <div class="tour-qa-label"><i class="ph ph-arrow-right"></i> What happens next?</div>
+            <div id="tour-step-what-next" class="tour-qa-text">Next Step</div>
+          </div>
         </div>
 
+        <!-- Hidden legacy elements for backward-compatibility -->
+        <p id="tour-step-desc" style="display: none;"></p>
+        <span id="tour-step-action-text" style="display: none;"></span>
+
         <!-- Controls -->
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <button type="button" id="tour-skip-btn" style="background: transparent; border: none; color: var(--text-muted); font-size: 0.78rem; cursor: pointer; text-decoration: underline; padding: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 0.75rem;">
+          <button type="button" id="tour-skip-btn" style="background: transparent; border: none; color: var(--text-muted); font-size: 0.8rem; cursor: pointer; text-decoration: underline; padding: 0;">
             Skip Tour
           </button>
           <div style="display: flex; gap: 0.45rem;">
-            <button type="button" id="tour-prev-btn" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
+            <button type="button" id="tour-prev-btn" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.82rem;">
               <i class="ph ph-arrow-left"></i> Prev
             </button>
-            <button type="button" id="tour-next-btn" class="btn btn-primary" style="padding: 0.35rem 0.85rem; font-size: 0.8rem;">
+            <button type="button" id="tour-next-btn" class="btn btn-primary" style="padding: 0.4rem 0.95rem; font-size: 0.82rem;">
               Next <i class="ph ph-arrow-right"></i>
             </button>
           </div>
