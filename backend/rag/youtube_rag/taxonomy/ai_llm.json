@@ -1,0 +1,40 @@
+{
+  "domain": "AI & LLM Systems Engineering",
+  "levels": [
+    "Beginner",
+    "Intermediate",
+    "Advanced",
+    "Unknown"
+  ],
+  "languages": [
+    "English",
+    "Hindi",
+    "Kannada",
+    "Tamil",
+    "Telugu",
+    "Malayalam",
+    "Other",
+    "Unknown"
+  ],
+  "topics": {
+    "Prompting & Foundations": {
+      "Prompt Engineering & In-Context Learning": "Zero-shot, few-shot, Chain-of-Thought, system prompt design, and delimiter formatting",
+      "Tokenization & Transformer Foundations": "BPE tokenizers, context windows, self-attention mechanisms, and positional embeddings",
+      "LLM APIs & Streaming Responses": "OpenAI/Groq/Anthropic SDKs, SSE streaming, temperature parameters, and rate limiting"
+    },
+    "Retrieval-Augmented Generation (RAG)": {
+      "Text Chunking & Preprocessing": "Fixed-size, recursive character, and semantic boundary chunking strategies",
+      "Vector Embeddings & Indexing": "Dense vector representations, cosine similarity, FAISS, ChromaDB, and Pinecone",
+      "Hybrid Search & Re-ranking": "BM25 sparse search combined with dense vector search and cross-encoder re-ranking"
+    },
+    "Agentic Systems & Frameworks": {
+      "Function Calling & Tool Use": "Structured JSON outputs, tool definitions, arguments parsing, and multi-tool routing",
+      "LangChain & LlamaIndex Frameworks": "Chains, memory modules, document loaders, vector stores, and custom agent loops"
+    },
+    "Evaluation & Production Serving": {
+      "RAG Triad & LLM Evaluation (Ragas)": "Faithfulness, answer relevance, context precision, and automated red-teaming",
+      "Guardrails & Output Validation": "Pydantic schemas, hallucination detection, safety checks, and NeMo Guardrails",
+      "Fine-Tuning & Quantization": "LoRA/QLoRA adaptation, dataset formatting, vLLM serving, and model quantization (GGUF)"
+    }
+  }
+}

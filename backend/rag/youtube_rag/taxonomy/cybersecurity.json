@@ -1,0 +1,40 @@
+{
+  "domain": "Cybersecurity & Ethical Hacking",
+  "levels": [
+    "Beginner",
+    "Intermediate",
+    "Advanced",
+    "Unknown"
+  ],
+  "languages": [
+    "English",
+    "Hindi",
+    "Kannada",
+    "Tamil",
+    "Telugu",
+    "Malayalam",
+    "Other",
+    "Unknown"
+  ],
+  "topics": {
+    "Security Foundations": {
+      "CIA Triad & Threat Modeling": "Confidentiality, integrity, availability, STRIDE model, and attack surface mapping",
+      "Cryptography & Encryption": "Symmetric vs asymmetric ciphers, AES, RSA, hashing (SHA-256), and HMAC",
+      "PKI Certificates & TLS Handshake": "Certificate authorities, TLS 1.3 handshake, cipher suites, and trust chains"
+    },
+    "Network & OS Security": {
+      "Wireshark & Packet Analysis": "Packet capture, protocol dissection, TCP handshake analysis, and ARP spoof detection",
+      "Linux/Windows OS Security Hardening": "Disabling insecure services, CIS benchmarks, auditd, and kernel parameters",
+      "Active Directory & Privilege Escalation": "Kerberos, LDAP, group policies, sudo misconfigurations, and SUID exploitation"
+    },
+    "Web Application Security": {
+      "OWASP Top 10 Exploits": "SQL injection, cross-site scripting (XSS), CSRF, and broken access controls",
+      "Authentication Vulnerabilities": "JWT tampering, session fixation, credential stuffing, and OAuth security",
+      "Burp Suite & Dynamic Testing": "Proxy interception, repeater, intruder fuzzing, and security payload crafting"
+    },
+    "SOC & Defensive Operations": {
+      "SIEM Log Analysis & Splunk": "Query languages, log correlation, alert triage, and incident response playbooks",
+      "Threat Hunting & Malware Analysis": "IOC identification, sandbox analysis, reverse engineering basics, and YARA rules"
+    }
+  }
+}

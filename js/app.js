@@ -156,6 +156,18 @@ document.addEventListener('DOMContentLoaded', () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    // Toggle top navigation bar visibility
+    const mainNavbar = document.getElementById('main-navbar');
+    if (mainNavbar) {
+      if (actualView === 'onboarding' || !activeSession) {
+        mainNavbar.style.display = 'none';
+        document.body.classList.add('onboarding-active');
+      } else {
+        mainNavbar.style.display = 'flex';
+        document.body.classList.remove('onboarding-active');
+      }
+    }
+
     // Sync active nav item state in top navbar
     document.querySelectorAll('.main-navbar .nav-item').forEach(btn => {
       if (btn.dataset.view === actualView && activeSession) {
@@ -235,6 +247,11 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({ user_id: activeSession.user_id, last_route: actualView })
       }).catch(e => console.warn('Could not persist last_route to DB:', e));
     }
+
+    // Update global floating chatbot visibility and page context
+    if (typeof updateChatbotVisibilityAndContext === 'function') {
+      updateChatbotVisibilityAndContext(actualView);
+    }
   }
 
   function updateHeaderStats(customStats = null) {
@@ -281,6 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const domainEl = document.getElementById('user-display-domain');
     const authGroup = document.getElementById('header-auth-group');
     const streakPill = document.getElementById('header-streak-pill');
+    const mainNavbar = document.getElementById('main-navbar');
 
     if (profile) {
       const domainObj = window.PLACIFY_DATA.findDomain(profile.chosen_domain || profile.domainId || profile);
@@ -289,10 +307,15 @@ document.addEventListener('DOMContentLoaded', () => {
       if (domainEl) domainEl.textContent = domainObj ? domainObj.name : 'Full-Stack Web Development';
       if (authGroup) authGroup.style.display = 'none';
       if (streakPill) streakPill.style.display = 'flex';
+      const curView = document.querySelector('.view-section.active');
+      if (curView && curView.id !== 'view-onboarding' && mainNavbar) {
+        mainNavbar.style.display = 'flex';
+      }
     } else {
       if (badge) badge.style.display = 'none';
       if (authGroup) authGroup.style.display = 'flex';
       if (streakPill) streakPill.style.display = 'none';
+      if (mainNavbar) mainNavbar.style.display = 'none';
     }
   }
 
@@ -358,11 +381,13 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedDomainId = card.dataset.id;
         const errEl = document.getElementById('domain-select-error');
         if (errEl) errEl.style.display = 'none';
+
+        // Refresh global floating chatbot context badge and suggestion chips for domainSelection
+        if (typeof updateChatbotContextBadgeAndChips === 'function' && chatbotState.currentView === 'domainSelection') {
+          updateChatbotContextBadgeAndChips('domainSelection');
+        }
       });
     });
-
-    // Initialize AI Domain Selection Chatbot
-    initDomainAssistantChatbot();
   }
 
   // =========================================================================
@@ -694,6 +719,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   initializeApplicationSession();
+  initPlacifyHelpAndTour();
 
   // Logout Handler
   document.getElementById('logout-btn').addEventListener('click', () => {
@@ -705,6 +731,8 @@ document.addEventListener('DOMContentLoaded', () => {
     window.currentAssessmentData = null;
     updateHeaderUserPill(null);
     updateHeaderStats();
+    const navEl = document.getElementById('main-navbar');
+    if (navEl) navEl.style.display = 'none';
     supervisor.logAgentAction('auth_specialist', 'User Signed Out', 'Cleared active session credentials.');
     if (window.history && window.history.replaceState) {
       window.history.replaceState(null, '', '/login');
@@ -712,6 +740,495 @@ document.addEventListener('DOMContentLoaded', () => {
     switchView('onboarding');
     showAuthChoiceScreen();
   });
+
+
+  // =========================================================================
+  // VIEW 15: INTERACTIVE USER NAVIGATION GUIDE & GUIDED TOUR SYSTEM
+  // =========================================================================
+
+  const PAGE_HELP_DEFINITIONS = {
+    roadmap: {
+      title: 'Roadmap Navigation Guide',
+      purpose: 'Your personalized master learning curriculum generated specifically for your selected domain and diagnostic skill level.',
+      actions: 'Browse multi-month phases and weekly milestones. Click individual days to inspect specific learning topics, or click "Start My Journey" to anchor milestones to real calendar dates.',
+      impact: 'Eliminates guesswork by guiding you through comprehensive prerequisite foundations tested by technical interviewers.',
+      nextStep: 'Drill down to your active phase and open the Daily Hub to start today\'s assigned learning.'
+    },
+    dailyHub: {
+      title: 'Daily Hub Execution Guide',
+      purpose: 'Your active daily workbench for studying concepts, watching curated videos, and executing practical exercises.',
+      actions: 'Study the recommended video chapters and official documentation. Check off each completed task to update your daily progress and earn XP.',
+      impact: 'Maintains daily study consistency and unlocks the optional phase assessment once all tasks in a phase are complete.',
+      nextStep: 'Finish today\'s assigned tasks and proceed to the Phase Assessment to validate your learning.'
+    },
+    interviewQuestions: {
+      title: 'Interview Preparation Guide',
+      purpose: 'Domain-tailored technical, coding, and behavioral interview preparation powered by Groq AI and curated external resources.',
+      actions: 'Generate batches of 5 domain interview questions with comprehensive model answers. Study question rationale and explore external coding platforms.',
+      impact: 'Builds fluent technical recall and prepares you for real technical screening rounds and system design questions.',
+      nextStep: 'Generate 5 questions, try explaining answers out loud, and compare with model solutions.'
+    },
+    techNews: {
+      title: 'Tech News Hub Guide',
+      purpose: 'Real-time curated technology news aggregated from Hacker News, Dev.to, Google News, and Tavily, filtered for your domain.',
+      actions: 'Read latest framework releases, software engineering breakthroughs, and tech industry developments.',
+      impact: 'Develops broad tech literacy and gives you relevant conversation points during hiring and managerial rounds.',
+      nextStep: 'Browse top articles to stay informed on emerging industry tools.'
+    },
+    progressAnalytics: {
+      title: 'Mastery & Analytics Guide',
+      purpose: 'Real-time progress dashboard tracking your placement preparation velocity, XP gain, and skill tier upgrades.',
+      actions: 'Analyze your domain mastery percentage, current study streak, and total XP earned across completed tasks.',
+      impact: 'Visualizes knowledge retention and highlights any weak topics identified during diagnostic assessments.',
+      nextStep: 'Check weak topics and revisit corresponding tasks in your Roadmap.'
+    },
+    internships: {
+      title: 'Internship Discovery Guide',
+      purpose: 'Curated real-time job and internship listings filtered by your tech domain and location preference.',
+      actions: 'Search opportunities by keyword, filter by domain/location, and click external apply links to submit genuine applications.',
+      impact: 'Provides direct bridges from placement preparation to real employment opportunities.',
+      nextStep: 'Submit applications on external employer portals, then confirm submission in Placify to track them.'
+    },
+    myApplications: {
+      title: 'My Applications Tracker Guide',
+      purpose: 'Personal Application Tracking System (ATS) for opportunities you have explicitly confirmed as submitted.',
+      actions: 'Update status stages (Applied, Assessment, Interview, Offer, Rejected), record timeline notes, and set follow-up reminders.',
+      impact: 'Ensures you stay organized across multiple recruitment pipelines and never miss interview dates or assessments.',
+      nextStep: 'Update the status of any ongoing applications and set reminders for upcoming rounds.'
+    }
+  };
+
+  function initPlacifyHelpAndTour() {
+    const guideModal = document.getElementById('placify-guide-modal');
+    const openGuideBtn = document.getElementById('open-help-guide-btn');
+    const closeGuideBtn = document.getElementById('close-guide-modal-btn');
+    const closeGuideBottomBtn = document.getElementById('guide-modal-close-bottom-btn');
+    const startTourFromModalBtn = document.getElementById('start-tour-from-modal-btn');
+
+    // Tab buttons inside guide modal
+    const tabBtns = document.querySelectorAll('.guide-tab-btn');
+    const tabContents = document.querySelectorAll('.guide-tab-content');
+
+    // 1. Open/Close Guide Modal
+    if (openGuideBtn && guideModal) {
+      openGuideBtn.addEventListener('click', () => {
+        guideModal.style.display = 'flex';
+      });
+    }
+
+    function closeGuideModal() {
+      if (guideModal) guideModal.style.display = 'none';
+    }
+
+    if (closeGuideBtn) closeGuideBtn.addEventListener('click', closeGuideModal);
+    if (closeGuideBottomBtn) closeGuideBottomBtn.addEventListener('click', closeGuideModal);
+    if (guideModal) {
+      guideModal.addEventListener('click', (e) => {
+        if (e.target === guideModal) closeGuideModal();
+      });
+    }
+
+    // 2. Tab Switching inside Guide Modal
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetTab = btn.dataset.tab;
+        tabBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        tabContents.forEach(content => {
+          if (content.id === `guide-tab-content-${targetTab}`) {
+            content.style.display = 'block';
+            content.classList.add('active');
+          } else {
+            content.style.display = 'none';
+            content.classList.remove('active');
+          }
+        });
+      });
+    });
+
+    // 3. "Where Should I Go?" Quick Navigation Cards
+    document.querySelectorAll('.guide-goal-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const action = card.dataset.action;
+        const target = card.dataset.target;
+        closeGuideModal();
+
+        if (action === 'navigate' && target) {
+          const activeSession = supervisor.authAgent ? supervisor.authAgent.getActiveSession() : null;
+          if (!activeSession) {
+            switchView('onboarding');
+            showAuthChoiceScreen();
+            return;
+          }
+          switchView(target);
+        } else if (action === 'open-chatbot') {
+          const trigger = document.getElementById('placify-chatbot-trigger');
+          if (trigger) trigger.click();
+        }
+      });
+    });
+
+    // 4. Contextual "What can I do here?" Page Help Banners
+    document.querySelectorAll('.page-context-help-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const pageKey = btn.dataset.pageHelp;
+        const def = PAGE_HELP_DEFINITIONS[pageKey];
+        if (!def) return;
+
+        // Find current section
+        const section = btn.closest('.view-section');
+        if (!section) return;
+
+        let existingBanner = section.querySelector('.page-context-help-card');
+        if (existingBanner) {
+          existingBanner.remove();
+          return;
+        }
+
+        const banner = document.createElement('div');
+        banner.className = 'page-context-help-card';
+        banner.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.8rem; margin-bottom: 0.6rem;">
+            <h4><i class="ph ph-info" style="color: var(--accent-cyan);"></i> ${def.title}</h4>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <button type="button" class="btn btn-secondary guide-banner-open-full-btn" style="padding: 0.25rem 0.65rem; font-size: 0.76rem;">
+                <i class="ph ph-book-open"></i> Full Guide
+              </button>
+              <button type="button" class="guide-banner-close-btn" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 0.2rem;" title="Close" aria-label="Close">
+                <i class="ph ph-x"></i>
+              </button>
+            </div>
+          </div>
+          <p style="color: #e2e8f0; font-size: 0.85rem; line-height: 1.45; margin: 0 0 0.8rem 0;">${def.purpose}</p>
+          <div class="page-context-help-grid">
+            <div class="page-context-help-item">
+              <strong>⚡ Key Actions</strong>
+              <p>${def.actions}</p>
+            </div>
+            <div class="page-context-help-item">
+              <strong>🚀 Career Impact</strong>
+              <p>${def.impact}</p>
+            </div>
+            <div class="page-context-help-item">
+              <strong>➡️ Recommended Next Step</strong>
+              <p>${def.nextStep}</p>
+            </div>
+          </div>
+        `;
+
+        // Event listeners on banner
+        banner.querySelector('.guide-banner-close-btn').addEventListener('click', () => banner.remove());
+        banner.querySelector('.guide-banner-open-full-btn').addEventListener('click', () => {
+          banner.remove();
+          if (guideModal) guideModal.style.display = 'flex';
+        });
+
+        // Insert at top of section after header
+        const cardHeader = section.querySelector('.glass-card');
+        if (cardHeader) {
+          cardHeader.insertBefore(banner, cardHeader.firstChild);
+        } else {
+          section.insertBefore(banner, section.firstChild);
+        }
+      });
+    });
+
+    // =======================================================================
+    // STEP-BY-STEP INTERACTIVE GUIDED TOUR ENGINE
+    // =======================================================================
+
+    const tourContainer = document.getElementById('placify-tour-container');
+    const tourSpotlight = document.getElementById('placify-tour-spotlight');
+    const tourPopover = document.getElementById('placify-tour-popover');
+    const tourStepBadge = document.getElementById('tour-step-badge');
+    const tourStepTitle = document.getElementById('tour-step-title');
+    const tourStepDesc = document.getElementById('tour-step-desc');
+    const tourStepActionText = document.getElementById('tour-step-action-text');
+    const tourPrevBtn = document.getElementById('tour-prev-btn');
+    const tourNextBtn = document.getElementById('tour-next-btn');
+    const tourSkipBtn = document.getElementById('tour-skip-btn');
+    const tourSkipXBtn = document.getElementById('tour-skip-x-btn');
+    const tourBackdrop = document.getElementById('placify-tour-backdrop');
+
+    let currentTourStepIndex = 0;
+    let isTourActive = false;
+
+    const AUTH_TOUR_STEPS = [
+      {
+        selector: '#nav-btn-roadmap',
+        title: 'Roadmap Curriculum',
+        desc: 'Your personalized master learning roadmap. View monthly phases, weekly goals, and prerequisite skill hierarchies tailored to your domain.',
+        action: 'Click any phase or day card to explore foundational learning objectives.'
+      },
+      {
+        selector: '#nav-btn-daily-hub',
+        title: 'Daily Learning Hub',
+        desc: 'Your day-by-day study cockpit. Access curated video chapters, official documentation, and coding practice modules.',
+        action: 'Check off tasks as you finish them to earn XP, maintain streaks, and unlock phase assessments.'
+      },
+      {
+        selector: '#nav-btn-interview-questions',
+        title: 'Interview Preparation Studio',
+        desc: 'Practice technical interviews with AI-generated questions and comprehensive model answers tailored to your selected domain.',
+        action: 'Generate sets of 5 questions or explore external resources like LeetCode and GfG.'
+      },
+      {
+        selector: '#nav-btn-tech-news',
+        title: 'Live Tech News Feed',
+        desc: 'Real-time technology news aggregated across AI, Web Development, Cloud & DevOps, Data Science, and Systems Engineering.',
+        action: 'Stay up-to-date with industry trends to stand out in hiring discussions.'
+      },
+      {
+        selector: '#nav-btn-analytics',
+        title: 'Mastery & Analytics',
+        desc: 'Monitor your placement readiness velocity. Track domain mastery %, active daily streaks, total XP, and skill tier upgrades.',
+        action: 'Review diagnostic breakdowns to identify concepts needing extra practice.'
+      },
+      {
+        selector: '#nav-btn-internships',
+        title: 'Curated Internships',
+        desc: 'Discover live internship postings tailored to your domain and location. Filter by role and open direct external application links.',
+        action: 'Submit applications externally, then confirm submission in Placify to track them.'
+      },
+      {
+        selector: '#nav-btn-my-applications',
+        title: 'My Applications Tracker',
+        desc: 'Your personal Kanban board for tracked job opportunities. Update statuses (Applied, Assessment, Interview, Offer) and timeline notes.',
+        action: 'Keep your interview rounds and recruiter communication strictly organized.'
+      },
+      {
+        selector: '#placify-chatbot-trigger',
+        title: 'Placify AI Assistant',
+        desc: 'Your 24/7 placement mentor. The floating sparkle button in the bottom-right corner understands your active page and answers any question.',
+        action: 'Click this button anytime for instant, context-aware help on any topic.'
+      }
+    ];
+
+    const LANDING_TOUR_STEPS = [
+      {
+        selector: '#choice-signin-btn',
+        title: 'Sign In to Your Account',
+        desc: 'Access your saved roadmap, daily study streak, and synced placement progress.',
+        action: 'Click Sign In if you already have an account.'
+      },
+      {
+        selector: '#choice-signup-btn',
+        title: 'Sign Up as a New Learner',
+        desc: 'Create your Placify AI account to choose a domain, establish a baseline, and generate a customized roadmap.',
+        action: 'Click Sign Up to start your placement preparation journey.'
+      },
+      {
+        selector: '.opening-features-strip',
+        title: 'Platform Capabilities',
+        desc: 'Placify covers 8 tech domains with adaptive daily roadmaps, company assessment patterns, and Groq-powered AI mock interviews.',
+        action: 'Sign in to unlock full personalized access.'
+      },
+      {
+        selector: '#placify-chatbot-trigger',
+        title: 'Placify AI Assistant',
+        desc: 'Ask questions about domain choices, roadmap customizations, or platform features anytime.',
+        action: 'Click the sparkle button in the bottom right corner.'
+      }
+    ];
+
+    function getActiveTourSteps() {
+      const activeSession = supervisor.authAgent ? supervisor.authAgent.getActiveSession() : null;
+      return activeSession ? AUTH_TOUR_STEPS : LANDING_TOUR_STEPS;
+    }
+
+    function startGuidedTour() {
+      // Guard: Never start tour during active quiz screens
+      const curView = document.querySelector('.view-section.active');
+      if (curView && (curView.id === 'view-concept-quiz' || curView.id === 'view-diagnostic-quiz')) {
+        console.warn('[Tour Guard] Tour suppressed during active assessment.');
+        return;
+      }
+
+      closeGuideModal();
+      currentTourStepIndex = 0;
+      isTourActive = true;
+      if (tourContainer) tourContainer.style.display = 'block';
+      renderTourStep(currentTourStepIndex);
+    }
+
+    function endGuidedTour(recordCompletion = true) {
+      isTourActive = false;
+      if (tourContainer) tourContainer.style.display = 'none';
+      document.querySelectorAll('.placify-tour-highlighted-element').forEach(el => {
+        el.classList.remove('placify-tour-highlighted-element');
+      });
+
+      if (recordCompletion) {
+        const session = supervisor.authAgent ? supervisor.authAgent.getActiveSession() : null;
+        const uid = session ? session.user_id : 'anonymous';
+        try {
+          localStorage.setItem('placify_tour_completed_' + uid, 'true');
+        } catch (e) {}
+      }
+    }
+
+    function renderTourStep(index) {
+      const steps = getActiveTourSteps();
+      if (index < 0 || index >= steps.length) {
+        endGuidedTour(true);
+        return;
+      }
+
+      const step = steps[index];
+      const targetEl = document.querySelector(step.selector);
+
+      // Clean up previous highlight
+      document.querySelectorAll('.placify-tour-highlighted-element').forEach(el => {
+        el.classList.remove('placify-tour-highlighted-element');
+      });
+
+      if (tourStepBadge) tourStepBadge.textContent = `Step ${index + 1} of ${steps.length}`;
+      if (tourStepTitle) tourStepTitle.textContent = step.title;
+      if (tourStepDesc) tourStepDesc.textContent = step.desc;
+      if (tourStepActionText) tourStepActionText.textContent = step.action;
+
+      if (tourPrevBtn) tourPrevBtn.style.display = index === 0 ? 'none' : 'inline-flex';
+      if (tourNextBtn) {
+        tourNextBtn.innerHTML = index === steps.length - 1 ? 'Finish Tour <i class="ph ph-check"></i>' : 'Next <i class="ph ph-arrow-right"></i>';
+      }
+
+      if (targetEl && targetEl.offsetParent !== null) {
+        targetEl.classList.add('placify-tour-highlighted-element');
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+
+        const rect = targetEl.getBoundingClientRect();
+        if (tourSpotlight) {
+          tourSpotlight.style.display = 'block';
+          tourSpotlight.style.top = `${rect.top - 4}px`;
+          tourSpotlight.style.left = `${rect.left - 4}px`;
+          tourSpotlight.style.width = `${rect.width + 8}px`;
+          tourSpotlight.style.height = `${rect.height + 8}px`;
+        }
+
+        // Position popover
+        if (tourPopover) {
+          const popoverWidth = 340;
+          let popoverTop = rect.bottom + 12;
+          let popoverLeft = rect.left + (rect.width / 2) - (popoverWidth / 2);
+
+          // Keep within horizontal bounds
+          if (popoverLeft < 12) popoverLeft = 12;
+          if (popoverLeft + popoverWidth > window.innerWidth - 12) {
+            popoverLeft = window.innerWidth - popoverWidth - 12;
+          }
+
+          // If overflowing bottom, position above target
+          if (popoverTop + 240 > window.innerHeight) {
+            popoverTop = Math.max(12, rect.top - 250);
+          }
+
+          tourPopover.style.top = `${popoverTop}px`;
+          tourPopover.style.left = `${popoverLeft}px`;
+        }
+      } else {
+        // Fallback: target not visible, center popover
+        if (tourSpotlight) tourSpotlight.style.display = 'none';
+        if (tourPopover) {
+          tourPopover.style.top = '25%';
+          tourPopover.style.left = `calc(50% - 170px)`;
+        }
+      }
+    }
+
+    if (tourNextBtn) {
+      tourNextBtn.addEventListener('click', () => {
+        const steps = getActiveTourSteps();
+        if (currentTourStepIndex >= steps.length - 1) {
+          endGuidedTour(true);
+        } else {
+          currentTourStepIndex++;
+          renderTourStep(currentTourStepIndex);
+        }
+      });
+    }
+
+    if (tourPrevBtn) {
+      tourPrevBtn.addEventListener('click', () => {
+        if (currentTourStepIndex > 0) {
+          currentTourStepIndex--;
+          renderTourStep(currentTourStepIndex);
+        }
+      });
+    }
+
+    if (tourSkipBtn) tourSkipBtn.addEventListener('click', () => endGuidedTour(false));
+    if (tourSkipXBtn) tourSkipXBtn.addEventListener('click', () => endGuidedTour(false));
+    if (tourBackdrop) tourBackdrop.addEventListener('click', () => endGuidedTour(false));
+
+    if (startTourFromModalBtn) {
+      startTourFromModalBtn.addEventListener('click', startGuidedTour);
+    }
+
+    // Window resize & keyboard Escape support
+    window.addEventListener('resize', () => {
+      if (isTourActive) renderTourStep(currentTourStepIndex);
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (isTourActive) endGuidedTour(false);
+        closeGuideModal();
+      }
+    });
+
+    // Expose launcher globally
+    window.startPlacifyGuidedTour = startGuidedTour;
+
+    // =======================================================================
+    // FIRST-TIME WELCOME POPUP EXPERIENCE
+    // =======================================================================
+    const welcomeModal = document.getElementById('placify-welcome-modal');
+    const welcomeStartTourBtn = document.getElementById('welcome-start-tour-btn');
+    const welcomeDismissBtn = document.getElementById('welcome-dismiss-btn');
+
+    function checkFirstTimeWelcome(userId) {
+      if (!userId) return;
+      try {
+        const seen = localStorage.getItem('placify_welcome_tour_seen_' + userId);
+        if (!seen) {
+          setTimeout(() => {
+            // Guard: Never show welcome during active assessment
+            const curView = document.querySelector('.view-section.active');
+            if (curView && (curView.id === 'view-concept-quiz' || curView.id === 'view-diagnostic-quiz')) {
+              return;
+            }
+            if (welcomeModal) welcomeModal.style.display = 'flex';
+          }, 600);
+        }
+      } catch (e) {}
+    }
+
+    window.triggerFirstTimeWelcome = checkFirstTimeWelcome;
+
+    if (welcomeStartTourBtn) {
+      welcomeStartTourBtn.addEventListener('click', () => {
+        const session = supervisor.authAgent ? supervisor.authAgent.getActiveSession() : null;
+        if (session) {
+          try { localStorage.setItem('placify_welcome_tour_seen_' + session.user_id, 'true'); } catch (e) {}
+        }
+        if (welcomeModal) welcomeModal.style.display = 'none';
+        startGuidedTour();
+      });
+    }
+
+    if (welcomeDismissBtn) {
+      welcomeDismissBtn.addEventListener('click', () => {
+        const session = supervisor.authAgent ? supervisor.authAgent.getActiveSession() : null;
+        if (session) {
+          try { localStorage.setItem('placify_welcome_tour_seen_' + session.user_id, 'true'); } catch (e) {}
+        }
+        if (welcomeModal) welcomeModal.style.display = 'none';
+      });
+    }
+  }
+
 
   // Listen for browser navigation (back/forward popstate)
   window.addEventListener('popstate', () => {
@@ -839,6 +1356,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       updateHeaderUserPill(profile);
+      if (typeof window.triggerFirstTimeWelcome === "function") window.triggerFirstTimeWelcome(profile.user_id);
       updateHeaderStats({
         streak: profile.streak || 0,
         xp: profile.xp || 0,
@@ -1685,6 +2203,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateDeclaredLevelUI(normalizedLevel);
     renderRoadmapSyllabus(currentDiagnosticDomainObj ? currentDiagnosticDomainObj.id : selectedDomainId, normalizedLevel);
+
+    // Refresh chatbot context badge and suggestion chips when proficiency level changes on Phase 2
+    if (typeof updateChatbotContextBadgeAndChips === 'function' && chatbotState.currentView === 'diagnostic') {
+      updateChatbotContextBadgeAndChips('diagnostic');
+    }
   }
 
   // Handle Level Card Clicks (Step 1)
@@ -3522,14 +4045,6 @@ document.addEventListener('DOMContentLoaded', () => {
           difficulty: taskItem.difficulty || userLevel
         };
 
-        try {
-          const taskResources = await supervisor.resourceSuggester.suggestResources(
-            taskTopic,
-            taskItem.difficulty || userLevel,
-            taskContext
-          );
-
-          if (taskResources && taskResources.length > 0) {
         const taskBudgetMins = taskItem.durationMinutes || taskItem.estimated_minutes || 45;
 
         const renderResourceCardsHtml = (resources, budgetMins) => {
@@ -4153,6 +4668,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const item = activePendingApplicationItem;
       const alertBox = document.getElementById('post-apply-alert-box');
       btnConfirmTrack.disabled = true;
+      const originalBtnHtml = btnConfirmTrack.innerHTML;
+      btnConfirmTrack.innerHTML = '<i class="ph ph-spinner spinner"></i> Saving...';
 
       try {
         const response = await fetch('http://localhost:5000/api/applications', {
@@ -4160,6 +4677,7 @@ document.addEventListener('DOMContentLoaded', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             userId: session.user_id,
+            user_id: session.user_id,
             internshipId: item.id,
             jobTitle: item.title,
             company: item.company,
@@ -4172,20 +4690,11 @@ document.addEventListener('DOMContentLoaded', () => {
             stipend: item.stipend,
             skills: item.skills,
             status: 'Applied',
-            notes: `Applied on ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} via ${item.source || 'external platform'}.`
+            notes: `Application submitted and confirmed on ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} via ${item.source || 'external platform'}.`
           })
         });
 
         const data = await response.json();
-
-        if (response.status === 409 || data.duplicate) {
-          if (alertBox) {
-            alertBox.textContent = 'This opportunity is already in your applications.';
-            alertBox.style.display = 'block';
-          }
-          btnConfirmTrack.disabled = false;
-          return;
-        }
 
         if (!response.ok || !data.success) {
           throw new Error(data.error || 'Unable to track application.');
@@ -4195,12 +4704,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('post-apply-modal').style.display = 'none';
         activePendingApplicationItem = null;
 
-        // Notify user & jump to My Applications
-        if (confirm(`🎉 Application Tracked Successfully!\n\n"${item.title}" at ${item.company} has been saved to "My Applications".\n\nWould you like to view My Applications now?`)) {
-          switchView('myApplications');
-        } else {
-          fetchMyApplications();
-        }
+        // Update the My Applications interface immediately without requiring a manual page refresh
+        await fetchMyApplications();
+        switchView('myApplications');
 
       } catch (err) {
         if (alertBox) {
@@ -4209,6 +4715,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       } finally {
         btnConfirmTrack.disabled = false;
+        btnConfirmTrack.innerHTML = originalBtnHtml;
       }
     });
   }
@@ -6020,6 +6527,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const userLevel = (userProfile.skill_tier || userState.tier || userProfile.level || 'Intermediate').toUpperCase();
 
     interviewPracticeState.domain = domainName;
+    interviewPracticeState.difficulty = userLevel;
+    if (!Array.isArray(interviewPracticeState.askedQuestions)) {
+      interviewPracticeState.askedQuestions = [];
+    }
+    if (!Array.isArray(interviewPracticeState.questions)) {
+      interviewPracticeState.questions = [];
+    }
 
     // Update target domain badges in UI
     const domainBadgeEl = document.getElementById('interview-user-domain-label');
@@ -6028,11 +6542,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const extDomainNameEl = document.getElementById('interview-ext-domain-name');
     if (extDomainNameEl) extDomainNameEl.textContent = domainName;
 
-    const cfgDomainNameEl = document.getElementById('interview-cfg-domain-name');
-    if (cfgDomainNameEl) cfgDomainNameEl.textContent = domainName;
+    const qaDomainEl = document.getElementById('interview-qa-detected-domain');
+    if (qaDomainEl) qaDomainEl.textContent = domainName;
 
-    const cfgDomainInput = document.getElementById('interview-cfg-domain');
-    if (cfgDomainInput) cfgDomainInput.value = domainName;
+    const qaLevelEl = document.getElementById('interview-qa-detected-level');
+    if (qaLevelEl) qaLevelEl.textContent = userLevel;
 
     // DOM views
     const hubView = document.getElementById('interview-landing-hub');
@@ -6040,13 +6554,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const placifyView = document.getElementById('interview-placify-workflow');
 
     // DOM states for Placify AI practice
-    const formConfig = document.getElementById('interview-config-form');
     const loadingState = document.getElementById('interview-practice-loading');
     const errorState = document.getElementById('interview-practice-error');
-    const runnerState = document.getElementById('interview-practice-runner');
-    const resultsState = document.getElementById('interview-practice-results');
+    const qaContainer = document.getElementById('interview-qa-container');
+    const qaBottomActions = document.getElementById('interview-qa-bottom-actions');
 
-    // Fetch roadmap phases to populate dropdowns
+    // Fetch roadmap phases to populate external dropdown and supply context
     let roadmap = userState.personalizedRoadmap || window.activePersonalizedRoadmap;
     if (!roadmap && activeSession.user_id) {
       try {
@@ -6071,18 +6584,15 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Populate phase selects
+    // Populate phase select for external resources
     const extPhaseSelect = document.getElementById('interview-ext-phase-select');
-    const cfgPhaseSelect = document.getElementById('interview-cfg-phase-select');
-
-    function populatePhaseSelect(selectEl) {
-      if (!selectEl) return;
-      selectEl.innerHTML = '';
+    if (extPhaseSelect) {
+      extPhaseSelect.innerHTML = '';
       if (phases && phases.length > 0) {
         const generalOpt = document.createElement('option');
         generalOpt.value = 'all';
         generalOpt.textContent = '⚡ All Domain Topics (Comprehensive)';
-        selectEl.appendChild(generalOpt);
+        extPhaseSelect.appendChild(generalOpt);
 
         phases.forEach((p, idx) => {
           const opt = document.createElement('option');
@@ -6093,35 +6603,14 @@ document.addEventListener('DOMContentLoaded', () => {
           opt.dataset.title = pTitle;
           opt.dataset.topics = topics;
           opt.textContent = `Phase ${pNum}: ${pTitle}`;
-          selectEl.appendChild(opt);
+          extPhaseSelect.appendChild(opt);
         });
       } else {
         const opt = document.createElement('option');
         opt.value = 'all';
         opt.textContent = `General ${domainName} Core Topics`;
-        selectEl.appendChild(opt);
+        extPhaseSelect.appendChild(opt);
       }
-    }
-
-    populatePhaseSelect(extPhaseSelect);
-    populatePhaseSelect(cfgPhaseSelect);
-
-    // Pre-select difficulty in config
-    const diffSelect = document.getElementById('interview-cfg-difficulty');
-    if (diffSelect) {
-      if (userLevel.includes('ADV')) diffSelect.value = 'Advanced';
-      else if (userLevel.includes('BEG')) diffSelect.value = 'Beginner';
-      else diffSelect.value = 'Intermediate';
-    }
-
-    function showPlacifyConfigForm() {
-      if (formConfig) formConfig.style.display = 'block';
-      if (loadingState) loadingState.style.display = 'none';
-      if (errorState) errorState.style.display = 'none';
-      if (runnerState) runnerState.style.display = 'none';
-      if (resultsState) resultsState.style.display = 'none';
-      const domainField = document.getElementById('interview-cfg-domain');
-      if (domainField) domainField.value = domainName;
     }
 
     // View Navigation Transition Helpers
@@ -6142,7 +6631,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if (pushRoute && window.location.pathname !== '/interview-questions/ai-practice' && window.history && window.history.pushState) {
         window.history.pushState(null, '', '/interview-questions/ai-practice');
       }
-      showPlacifyConfigForm();
+
+      // Directly generate and display questions without showing any configuration form!
+      if (!interviewPracticeState.questions || interviewPracticeState.questions.length === 0) {
+        loadAndDisplayInterviewQA(false);
+      } else {
+        renderInterviewQAList();
+      }
     }
 
     function backToHub(pushRoute = true) {
@@ -6182,7 +6677,7 @@ document.addEventListener('DOMContentLoaded', () => {
       };
     });
 
-    // Wire Back to Hub & Cancel Buttons across all workflows
+    // Wire Back to Hub Buttons across all workflows
     const backTargets = [
       ...document.querySelectorAll('.back-to-interview-hub-btn'),
       document.getElementById('btn-back-to-interview-hub-1'),
@@ -6197,8 +6692,18 @@ document.addEventListener('DOMContentLoaded', () => {
       };
     });
 
+    // Wire Generate More Questions Buttons
+    const genMoreBtnTop = document.getElementById('btn-generate-more-questions');
+    if (genMoreBtnTop) {
+      genMoreBtnTop.onclick = () => loadAndDisplayInterviewQA(true);
+    }
+    const genMoreBtnBottom = document.getElementById('btn-generate-more-questions-bottom');
+    if (genMoreBtnBottom) {
+      genMoreBtnBottom.onclick = () => loadAndDisplayInterviewQA(true);
+    }
+
     // -----------------------------------------------------------------------
-    // Option 1 Logic: External Resources
+    // Option 1 Logic: External Resources (Preserved unchanged)
     // -----------------------------------------------------------------------
     const loadExtBtn = document.getElementById('interview-ext-load-btn') || document.getElementById('interview-ext-fetch-resources-btn');
     if (loadExtBtn) {
@@ -6322,58 +6827,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // -----------------------------------------------------------------------
-    // Option 2 Logic: Placify AI Interview Practice Runner
+    // Option 2 Logic: Direct Interview Questions and Answers via Groq API
     // -----------------------------------------------------------------------
-    if (formConfig) {
-      formConfig.onsubmit = async (e) => {
-        e.preventDefault();
-        await generatePracticeQuestions();
-      };
-    }
+    async function loadAndDisplayInterviewQA(isGeneratingMore = false) {
+      if (interviewPracticeState.isLoading) return;
+      interviewPracticeState.isLoading = true;
 
-    async function generatePracticeQuestions() {
-      if (interviewPracticeState.isSubmitting) return;
-
-      const customTopic = (document.getElementById('interview-cfg-custom-topic')?.value || '').trim();
-      let topic = customTopic;
-      let phaseNum = 1;
-      let phaseTitle = '';
-
-      if (!topic && cfgPhaseSelect) {
-        if (cfgPhaseSelect.value !== 'all' && cfgPhaseSelect.value !== '') {
-          const opt = cfgPhaseSelect.selectedOptions[0];
-          phaseNum = parseInt(cfgPhaseSelect.value, 10) || 1;
-          phaseTitle = opt ? opt.dataset.title || '' : '';
-          topic = opt ? `${phaseTitle} ${opt.dataset.topics || ''}`.trim() : 'Core Concepts';
-        } else {
-          topic = `Core ${domainName} Topics`;
-        }
+      if (errorState) errorState.style.display = 'none';
+      if (loadingState) loadingState.style.display = 'block';
+      const loadingSubtext = document.getElementById('interview-loading-subtext');
+      if (loadingSubtext) {
+        loadingSubtext.textContent = isGeneratingMore
+          ? `Generating a fresh set of questions and answers for ${domainName}...`
+          : `Synthesizing ${domainName} questions and answers tailored to your level (${userLevel}) via Groq AI...`;
       }
 
-      const difficulty = document.getElementById('interview-cfg-difficulty')?.value || 'Intermediate';
-      const count = parseInt(document.getElementById('interview-cfg-count')?.value || '5', 10);
-      const questionType = document.getElementById('interview-cfg-type')?.value || 'mixed';
-      const category = document.getElementById('interview-cfg-category')?.value || 'technical_fundamentals';
+      if (!isGeneratingMore && qaContainer) {
+        qaContainer.innerHTML = '';
+        if (qaBottomActions) qaBottomActions.style.display = 'none';
+      }
 
-      interviewPracticeState.domain = domainName;
-      interviewPracticeState.topic = topic || 'General Technical Fundamentals';
-      interviewPracticeState.phaseNumber = phaseNum;
-      interviewPracticeState.phaseTitle = phaseTitle;
-      interviewPracticeState.difficulty = difficulty;
-      interviewPracticeState.count = count;
-      interviewPracticeState.questionType = questionType;
-      interviewPracticeState.category = category;
-      interviewPracticeState.userAnswers = {};
-      interviewPracticeState.currentQuestionIndex = 0;
-      interviewPracticeState.questions = [];
-      interviewPracticeState.isSubmitting = true;
-
-      // Switch to loading UI
-      if (formConfig) formConfig.style.display = 'none';
-      if (errorState) errorState.style.display = 'none';
-      if (runnerState) runnerState.style.display = 'none';
-      if (resultsState) resultsState.style.display = 'none';
-      if (loadingState) loadingState.style.display = 'block';
+      const roadmapFocusAreas = phases.map(p => p.title || p.topic).filter(Boolean);
 
       try {
         const res = await fetch('http://localhost:5000/api/interview-questions/generate', {
@@ -6381,14 +6855,11 @@ document.addEventListener('DOMContentLoaded', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             domain: domainName,
-            topic: interviewPracticeState.topic,
-            difficulty,
-            count,
-            question_type: questionType,
-            category,
-            user_id: activeSession.user_id,
-            phase_number: phaseNum,
-            phase_title: phaseTitle
+            difficulty: userLevel,
+            count: 5,
+            exclude_questions: interviewPracticeState.askedQuestions || [],
+            roadmap_topics: roadmapFocusAreas,
+            user_id: activeSession.user_id
           })
         });
 
@@ -6399,485 +6870,113 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const data = await res.json();
         if (!data.questions || data.questions.length === 0) {
-          throw new Error('No interview questions were generated. Please try again.');
+          throw new Error('No interview questions were generated by Groq. Please try again.');
         }
 
-        interviewPracticeState.questions = data.questions;
-        interviewPracticeState.isSubmitting = false;
-
-        if (window.location.pathname !== '/interview-questions/ai-practice/session' && window.history && window.history.pushState) {
-          window.history.pushState(null, '', '/interview-questions/ai-practice/session');
-        }
-
-        // Render Question Runner
-        if (loadingState) loadingState.style.display = 'none';
-        if (runnerState) runnerState.style.display = 'block';
-        renderQuestionRunner();
-      } catch (err) {
-        interviewPracticeState.isSubmitting = false;
-        console.error('Question generation failed:', err);
-        if (loadingState) loadingState.style.display = 'none';
-        if (errorState) {
-          errorState.style.display = 'block';
-          const errMsgEl = document.getElementById('interview-practice-error-msg');
-          if (errMsgEl) errMsgEl.textContent = err.message || 'Failed to generate interview questions. Please try again.';
-          const retryBtn = document.getElementById('btn-retry-generate-questions');
-          if (retryBtn) retryBtn.onclick = () => generatePracticeQuestions();
-        }
-      }
-    }
-
-    function renderQuestionRunner() {
-      const qList = interviewPracticeState.questions;
-      const curIdx = interviewPracticeState.currentQuestionIndex;
-      const totalQ = qList.length;
-      if (curIdx < 0 || curIdx >= totalQ) return;
-
-      const curQ = qList[curIdx];
-
-      // Update palette
-      const paletteContainer = document.getElementById('interview-question-palette');
-      if (paletteContainer) {
-        paletteContainer.innerHTML = qList.map((q, idx) => {
-          const isAnswered = interviewPracticeState.userAnswers[q.id] !== undefined && String(interviewPracticeState.userAnswers[q.id]).trim() !== '';
-          const isCurrent = idx === curIdx;
-          const bgStyle = isCurrent 
-            ? 'background: var(--accent-cyan); color: #000; font-weight: 800; border-color: var(--accent-cyan); transform: scale(1.08);' 
-            : (isAnswered ? 'background: rgba(16, 185, 129, 0.25); color: var(--accent-emerald); border-color: var(--accent-emerald); font-weight: 700;' : 'background: rgba(255,255,255,0.05); color: var(--text-muted); border-color: var(--border-glass);');
-          return `
-            <button type="button" class="palette-bubble" data-idx="${idx}" style="width: 38px; height: 38px; border-radius: var(--radius-sm); border: 1px solid transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; transition: all 0.2s ease; ${bgStyle}">
-              ${idx + 1}
-            </button>
-          `;
-        }).join('');
-
-        paletteContainer.querySelectorAll('.palette-bubble').forEach(btn => {
-          btn.onclick = () => {
-            saveCurrentAnswer();
-            interviewPracticeState.currentQuestionIndex = parseInt(btn.dataset.idx, 10);
-            renderQuestionRunner();
-          };
+        // Track asked question texts to avoid repeating questions in the current session
+        data.questions.forEach(q => {
+          if (q.question && !interviewPracticeState.askedQuestions.includes(q.question)) {
+            interviewPracticeState.askedQuestions.push(q.question);
+          }
         });
-      }
 
-      // Update Active Question Card
-      const cardContainer = document.getElementById('interview-active-question-card');
-      if (cardContainer) {
-        const savedAnswer = interviewPracticeState.userAnswers[curQ.id] || '';
-        const typeLabel = curQ.type === 'mcq' ? 'Multiple Choice' : (curQ.type === 'coding' ? 'Coding Problem' : (curQ.type === 'scenario' ? 'Scenario / System' : 'Technical Theory'));
-        const typeBadgeColor = curQ.type === 'mcq' ? 'var(--accent-violet)' : (curQ.type === 'coding' ? 'var(--accent-emerald)' : 'var(--accent-amber)');
-
-        let answerInputHtml = '';
-        if (curQ.type === 'mcq' && Array.isArray(curQ.options)) {
-          answerInputHtml = `
-            <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.2rem;">
-              ${curQ.options.map((opt, oIdx) => {
-                const optLetter = String.fromCharCode(65 + oIdx);
-                const isSelected = savedAnswer === optLetter || savedAnswer === opt;
-                return `
-                  <label class="mcq-option-label" style="display: flex; align-items: center; gap: 1rem; padding: 1rem 1.2rem; background: ${isSelected ? 'rgba(6, 182, 212, 0.12)' : 'rgba(255,255,255,0.02)'}; border: 1px solid ${isSelected ? 'var(--accent-cyan)' : 'var(--border-glass)'}; border-radius: var(--radius-sm); cursor: pointer; transition: all 0.2s ease;">
-                    <input type="radio" name="practice_mcq_answer" value="${optLetter}" ${isSelected ? 'checked' : ''} style="accent-color: var(--accent-cyan); width: 18px; height: 18px;">
-                    <span style="font-weight: 700; color: ${isSelected ? 'var(--accent-cyan)' : '#fff'}; width: 22px;">${optLetter}.</span>
-                    <span style="color: ${isSelected ? '#fff' : 'rgba(255,255,255,0.85)'}; font-size: 0.95rem; line-height: 1.4;">${escapeHtml(opt)}</span>
-                  </label>
-                `;
-              }).join('')}
-            </div>
-          `;
-        } else if (curQ.type === 'coding') {
-          answerInputHtml = `
-            <div style="margin-top: 1.2rem;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
-                <span style="font-size: 0.78rem; font-weight: 700; color: var(--accent-emerald); text-transform: uppercase;">
-                  <i class="ph ph-code"></i> Code Solution
-                </span>
-                <span style="font-size: 0.72rem; color: var(--text-muted);">Write clean, runnable code with comments</span>
-              </div>
-              <textarea id="practice-answer-input" rows="10" placeholder="// Write your code solution here...\nfunction solution() {\n  \n}" style="width: 100%; font-family: 'Courier New', monospace; font-size: 0.9rem; padding: 1rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-glass); border-radius: var(--radius-sm); color: #38bdf8; line-height: 1.5; resize: vertical;">${escapeHtml(savedAnswer)}</textarea>
-            </div>
-          `;
+        if (isGeneratingMore) {
+          interviewPracticeState.questions = (interviewPracticeState.questions || []).concat(data.questions);
         } else {
-          answerInputHtml = `
-            <div style="margin-top: 1.2rem;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
-                <span style="font-size: 0.78rem; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase;">
-                  <i class="ph ph-article"></i> Technical Explanation
-                </span>
-                <span style="font-size: 0.72rem; color: var(--text-muted);">Include core principles, tradeoffs, and examples</span>
-              </div>
-              <textarea id="practice-answer-input" rows="7" placeholder="Provide your detailed answer explaining concepts, syntax, use-cases, and architecture..." style="width: 100%; font-size: 0.92rem; padding: 1rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-glass); border-radius: var(--radius-sm); color: #fff; line-height: 1.5; resize: vertical;">${escapeHtml(savedAnswer)}</textarea>
-            </div>
-          `;
+          interviewPracticeState.questions = data.questions;
         }
 
-        cardContainer.innerHTML = `
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 0.5rem;">
-            <div style="display: flex; align-items: center; gap: 0.6rem;">
-              <span style="font-size: 1.15rem; font-weight: 800; font-family: var(--font-heading); color: #fff;">Question ${curIdx + 1}</span>
-              <span style="font-size: 0.8rem; color: var(--text-muted);">of ${totalQ}</span>
-            </div>
-            <div style="display: flex; gap: 0.5rem; align-items: center;">
-              <span style="font-size: 0.72rem; font-weight: 700; color: ${typeBadgeColor}; background: rgba(255,255,255,0.05); padding: 0.25rem 0.6rem; border-radius: var(--radius-full); border: 1px solid rgba(255,255,255,0.1); text-transform: uppercase;">
-                ${typeLabel}
-              </span>
-              <span style="font-size: 0.72rem; font-weight: 700; color: var(--accent-amber); background: rgba(245, 158, 11, 0.1); padding: 0.25rem 0.6rem; border-radius: var(--radius-full); border: 1px solid rgba(245, 158, 11, 0.3);">
-                ${escapeHtml(curQ.difficulty || interviewPracticeState.difficulty)}
-              </span>
-              <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-muted); background: rgba(255,255,255,0.03); padding: 0.25rem 0.6rem; border-radius: var(--radius-full);">
-                ${escapeHtml(curQ.topic || interviewPracticeState.topic)}
-              </span>
-            </div>
-          </div>
+        if (loadingState) loadingState.style.display = 'none';
+        renderInterviewQAList();
 
-          <div style="font-size: 1.1rem; font-weight: 600; color: #fff; line-height: 1.5; margin-bottom: 1rem;">
-            ${escapeHtml(curQ.question)}
-          </div>
-
-          ${answerInputHtml}
-        `;
-
-        // Wire MCQ Option Clicks
-        cardContainer.querySelectorAll('input[name="practice_mcq_answer"]').forEach(radio => {
-          radio.onchange = () => {
-            saveCurrentAnswer();
-            renderQuestionRunner();
-          };
-        });
-
-        // Wire textarea input save on typing
-        const txtArea = cardContainer.querySelector('#practice-answer-input');
-        if (txtArea) {
-          txtArea.oninput = () => {
-            interviewPracticeState.userAnswers[curQ.id] = txtArea.value;
-          };
-        }
-      }
-
-      // Update Navigation Buttons
-      const prevBtn = document.getElementById('interview-prev-q-btn');
-      const nextBtn = document.getElementById('interview-next-q-btn');
-      const clearBtn = document.getElementById('interview-clear-q-btn');
-      const submitBtn = document.getElementById('interview-submit-practice-btn');
-
-      if (prevBtn) {
-        prevBtn.disabled = curIdx === 0;
-        prevBtn.onclick = () => {
-          saveCurrentAnswer();
-          interviewPracticeState.currentQuestionIndex--;
-          renderQuestionRunner();
-        };
-      }
-
-      if (nextBtn) {
-        nextBtn.disabled = curIdx === totalQ - 1;
-        nextBtn.onclick = () => {
-          saveCurrentAnswer();
-          interviewPracticeState.currentQuestionIndex++;
-          renderQuestionRunner();
-        };
-      }
-
-      if (clearBtn) {
-        clearBtn.onclick = () => {
-          delete interviewPracticeState.userAnswers[curQ.id];
-          renderQuestionRunner();
-        };
-      }
-
-      if (submitBtn) {
-        submitBtn.onclick = () => submitPracticeSession();
-      }
-    }
-
-    function saveCurrentAnswer() {
-      const qList = interviewPracticeState.questions;
-      const curIdx = interviewPracticeState.currentQuestionIndex;
-      if (!qList || !qList[curIdx]) return;
-      const curQ = qList[curIdx];
-
-      if (curQ.type === 'mcq') {
-        const checkedRadio = document.querySelector('input[name="practice_mcq_answer"]:checked');
-        if (checkedRadio) {
-          interviewPracticeState.userAnswers[curQ.id] = checkedRadio.value;
-        }
-      } else {
-        const txt = document.getElementById('practice-answer-input');
-        if (txt) {
-          interviewPracticeState.userAnswers[curQ.id] = txt.value;
-        }
-      }
-    }
-
-    async function submitPracticeSession() {
-      if (interviewPracticeState.isSubmitting) return;
-
-      saveCurrentAnswer();
-      const qList = interviewPracticeState.questions;
-      const answeredCount = Object.keys(interviewPracticeState.userAnswers).filter(k => interviewPracticeState.userAnswers[k] && String(interviewPracticeState.userAnswers[k]).trim() !== '').length;
-      const totalQ = qList.length;
-
-      if (answeredCount < totalQ) {
-        const confirmed = confirm(`You have answered ${answeredCount} of ${totalQ} questions. Are you ready to submit for evaluation?`);
-        if (!confirmed) return;
-      }
-
-      interviewPracticeState.isSubmitting = true;
-
-      // Show evaluating state
-      const runnerContainer = document.getElementById('interview-practice-runner');
-      if (runnerContainer) {
-        runnerContainer.innerHTML = `
-          <div style="text-align: center; padding: 4rem 1rem; color: var(--text-muted);">
-            <div class="spinner" style="margin: 0 auto 1.5rem; width: 44px; height: 44px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--accent-emerald); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
-            <h3 style="color: #fff; font-family: var(--font-heading); margin-bottom: 0.5rem;">Evaluating Your Technical Answers...</h3>
-            <p style="font-size: 0.95rem; max-width: 500px; margin: 0 auto; color: var(--text-muted);">Analyzing code syntax, core domain principles, accuracy, and best practices...</p>
-          </div>
-        `;
-      }
-
-      try {
-        const evalRes = await fetch('http://localhost:5000/api/interview-questions/evaluate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            questions: qList,
-            answers: interviewPracticeState.userAnswers,
-            domain: interviewPracticeState.domain,
-            topic: interviewPracticeState.topic,
-            difficulty: interviewPracticeState.difficulty
-          })
-        });
-
-        if (!evalRes.ok) {
-          throw new Error('Evaluation failed on server.');
-        }
-
-        const evalData = await evalRes.json();
-        interviewPracticeState.results = evalData;
-
-        // Persist session to MongoDB Atlas
+        // Persist to interview history log
         try {
           await fetch('http://localhost:5000/api/interview-practice/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               user_id: activeSession.user_id,
-              domain: interviewPracticeState.domain,
-              topic: interviewPracticeState.topic,
-              phase_number: interviewPracticeState.phaseNumber,
-              phase_title: interviewPracticeState.phaseTitle,
-              difficulty: interviewPracticeState.difficulty,
-              question_type: interviewPracticeState.questionType,
-              category: interviewPracticeState.category,
-              score_pct: evalData.score_pct || 0,
-              total_questions: totalQ,
-              correct_count: evalData.correct_count || 0,
-              partially_correct_count: evalData.partially_correct_count || 0,
-              incorrect_count: evalData.incorrect_count || 0,
-              questions: qList,
-              answers: interviewPracticeState.userAnswers,
-              evaluation_details: evalData.evaluation_details || [],
-              concepts_to_review: evalData.concepts_to_review || [],
-              follow_up_questions: evalData.follow_up_questions || []
+              domain: domainName,
+              topic: `${domainName} Interview Preparation`,
+              difficulty: userLevel,
+              total_questions: interviewPracticeState.questions.length,
+              questions: interviewPracticeState.questions
             })
           });
-        } catch (saveErr) {
-          console.warn('Could not persist interview practice session:', saveErr);
-        }
+        } catch (saveErr) {}
 
-        interviewPracticeState.isSubmitting = false;
-
-        if (window.location.pathname !== '/interview-questions/ai-practice/evaluation' && window.history && window.history.pushState) {
-          window.history.pushState(null, '', '/interview-questions/ai-practice/evaluation');
-        }
-
-        // Render Results
-        if (runnerState) runnerState.style.display = 'none';
-        if (resultsState) resultsState.style.display = 'block';
-        renderPracticeResults(evalData);
       } catch (err) {
-        interviewPracticeState.isSubmitting = false;
-        console.error('Submission failed:', err);
-        alert(`Evaluation error: ${err.message || 'Please try again.'}`);
-        renderQuestionRunner();
+        console.error('Groq Interview Q&A Generation Error:', err);
+        if (loadingState) loadingState.style.display = 'none';
+        if (errorState) {
+          errorState.style.display = 'block';
+          const errMsgEl = document.getElementById('interview-practice-error-msg');
+          if (errMsgEl) errMsgEl.textContent = err.message || 'Failed to generate interview questions via Groq API. Please try again.';
+          const retryBtn = document.getElementById('btn-retry-generate-questions');
+          if (retryBtn) retryBtn.onclick = () => loadAndDisplayInterviewQA(isGeneratingMore);
+        }
+      } finally {
+        interviewPracticeState.isLoading = false;
       }
     }
 
-    function renderPracticeResults(evalData) {
-      const resultsContainer = document.getElementById('interview-practice-results');
-      if (!resultsContainer) return;
+    function renderInterviewQAList() {
+      if (!qaContainer) return;
+      const qList = interviewPracticeState.questions || [];
+      if (qList.length === 0) return;
 
-      const score = evalData.score_pct || 0;
-      const scoreColor = score >= 75 ? 'var(--accent-emerald)' : (score >= 50 ? 'var(--accent-amber)' : 'var(--accent-rose)');
-      const qList = interviewPracticeState.questions;
-      const evalDetails = evalData.evaluation_details || [];
-      const concepts = evalData.concepts_to_review || [];
-      const followUps = evalData.follow_up_questions || [];
+      qaContainer.innerHTML = qList.map((q, idx) => {
+        const qNumber = idx + 1;
+        const qType = (q.type || 'technical').toLowerCase();
+        const typeLabel = qType === 'coding' ? 'Coding Problem' : (qType === 'conceptual' ? 'Conceptual' : 'Technical');
+        const typeBadgeColor = qType === 'coding' ? 'var(--accent-emerald)' : (qType === 'conceptual' ? 'var(--accent-cyan)' : 'var(--accent-violet)');
+        const typeBg = qType === 'coding' ? 'rgba(16, 185, 129, 0.12)' : (qType === 'conceptual' ? 'rgba(6, 182, 212, 0.12)' : 'rgba(139, 92, 246, 0.12)');
+        const typeBorder = qType === 'coding' ? 'rgba(16, 185, 129, 0.25)' : (qType === 'conceptual' ? 'rgba(6, 182, 212, 0.25)' : 'rgba(139, 92, 246, 0.25)');
 
-      resultsContainer.innerHTML = `
-        <div class="glass-card" style="padding: 2rem; margin-bottom: 2rem; border: 1px solid var(--border-glass);">
-          <!-- Top Results Header -->
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 1.2rem;">
-            <div>
-              <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.3rem;">
-                <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-cyan); background: rgba(6, 182, 212, 0.1); padding: 0.2rem 0.6rem; border-radius: var(--radius-full); border: 1px solid rgba(6, 182, 212, 0.3); text-transform: uppercase;">
-                  ${escapeHtml(interviewPracticeState.domain)}
+        const answerText = q.answer || q.model_answer || 'No answer provided.';
+
+        return `
+          <div class="glass-card interview-qa-card" style="padding: 1.6rem; border: 1px solid var(--border-glass); border-left: 4px solid ${typeBadgeColor}; background: rgba(255,255,255,0.02); border-radius: var(--radius-md); transition: transform 0.2s ease, border-color 0.2s ease;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.9rem; flex-wrap: wrap; gap: 0.6rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <span style="font-size: 0.8rem; font-weight: 800; color: ${typeBadgeColor}; background: ${typeBg}; border: 1px solid ${typeBorder}; padding: 0.22rem 0.65rem; border-radius: var(--radius-full); text-transform: uppercase; letter-spacing: 0.03em;">
+                  Q${qNumber} • ${typeLabel}
                 </span>
-                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">
-                  ${escapeHtml(interviewPracticeState.topic)}
-                </span>
+                ${q.topic ? `
+                  <span style="font-size: 0.75rem; color: var(--text-muted); background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); padding: 0.2rem 0.55rem; border-radius: var(--radius-full);">
+                    <i class="ph ph-tag"></i> ${escapeHtml(q.topic)}
+                  </span>
+                ` : ''}
               </div>
-              <h2 style="color: #fff; font-family: var(--font-heading); margin: 0; font-size: 1.6rem;">Interview Practice Evaluation</h2>
+              <span style="font-size: 0.73rem; font-weight: 700; color: var(--accent-amber); background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); padding: 0.18rem 0.5rem; border-radius: 4px;">
+                ${escapeHtml(q.difficulty || interviewPracticeState.difficulty || 'Intermediate')}
+              </span>
             </div>
-            <div style="text-align: right;">
-              <div style="font-size: 2.4rem; font-weight: 800; font-family: var(--font-heading); color: ${scoreColor}; line-height: 1;">
-                ${score}%
+
+            <h3 style="color: #fff; font-size: 1.15rem; font-weight: 700; line-height: 1.45; margin: 0 0 1rem 0;">
+              Q${qNumber}. ${escapeHtml(q.question)}
+            </h3>
+
+            ${q.starter_code ? `
+              <div style="margin-bottom: 1rem; background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 0.9rem;">
+                <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.4rem;"><i class="ph ph-code"></i> Starter / Context Code:</div>
+                <pre style="margin: 0; font-family: 'Fira Code', 'Courier New', monospace; font-size: 0.86rem; color: #38bdf8; overflow-x: auto; white-space: pre-wrap;"><code>${escapeHtml(q.starter_code)}</code></pre>
               </div>
-              <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-top: 0.2rem;">Overall Performance</div>
+            ` : ''}
+
+            <div class="qa-answer-box" style="background: rgba(0, 0, 0, 0.28); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 1.15rem; line-height: 1.6; font-size: 0.95rem;">
+              <div style="font-size: 0.8rem; font-weight: 800; color: var(--accent-emerald); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.45rem; display: flex; align-items: center; gap: 0.35rem;">
+                <i class="ph ph-check-circle" style="font-size: 1rem;"></i> Answer:
+              </div>
+              <div style="color: #e2e8f0; font-size: 0.94rem; line-height: 1.62; white-space: pre-wrap;">${escapeHtml(answerText)}</div>
             </div>
+
           </div>
+        `;
+      }).join('');
 
-          <!-- KPI Metric Chips -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-            <div style="background: rgba(255,255,255,0.02); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-glass); text-align: center;">
-              <div style="font-size: 1.4rem; font-weight: 800; color: #fff;">${qList.length}</div>
-              <div style="font-size: 0.75rem; color: var(--text-muted);">Total Questions</div>
-            </div>
-            <div style="background: rgba(16, 185, 129, 0.05); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid rgba(16, 185, 129, 0.2); text-align: center;">
-              <div style="font-size: 1.4rem; font-weight: 800; color: var(--accent-emerald);">${evalData.correct_count || 0}</div>
-              <div style="font-size: 0.75rem; color: var(--text-muted);">Correct</div>
-            </div>
-            <div style="background: rgba(245, 158, 11, 0.05); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid rgba(245, 158, 11, 0.2); text-align: center;">
-              <div style="font-size: 1.4rem; font-weight: 800; color: var(--accent-amber);">${evalData.partially_correct_count || 0}</div>
-              <div style="font-size: 0.75rem; color: var(--text-muted);">Partially Correct</div>
-            </div>
-            <div style="background: rgba(239, 68, 68, 0.05); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid rgba(239, 68, 68, 0.2); text-align: center;">
-              <div style="font-size: 1.4rem; font-weight: 800; color: var(--accent-rose);">${evalData.incorrect_count || 0}</div>
-              <div style="font-size: 0.75rem; color: var(--text-muted);">Needs Revision</div>
-            </div>
-          </div>
-
-          <!-- Concepts to Revise & Follow-ups -->
-          ${concepts.length > 0 || followUps.length > 0 ? `
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.2rem; margin-bottom: 2rem;">
-              ${concepts.length > 0 ? `
-                <div style="background: rgba(255,255,255,0.02); padding: 1.2rem; border-radius: var(--radius-sm); border: 1px solid var(--border-glass);">
-                  <div style="font-size: 0.85rem; font-weight: 700; color: var(--accent-amber); margin-bottom: 0.7rem; display: flex; align-items: center; gap: 0.4rem;">
-                    <i class="ph ph-warning"></i> Concepts to Revise
-                  </div>
-                  <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
-                    ${concepts.map(c => `<span style="font-size: 0.78rem; background: rgba(245, 158, 11, 0.12); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.3); padding: 0.25rem 0.6rem; border-radius: var(--radius-full);">${escapeHtml(c)}</span>`).join('')}
-                  </div>
-                </div>
-              ` : ''}
-
-              ${followUps.length > 0 ? `
-                <div style="background: rgba(255,255,255,0.02); padding: 1.2rem; border-radius: var(--radius-sm); border: 1px solid var(--border-glass);">
-                  <div style="font-size: 0.85rem; font-weight: 700; color: var(--accent-cyan); margin-bottom: 0.7rem; display: flex; align-items: center; gap: 0.4rem;">
-                    <i class="ph ph-lightbulb"></i> Recommended Follow-up Topics
-                  </div>
-                  <div style="display: flex; flex-direction: column; gap: 0.4rem;">
-                    ${followUps.map(f => `<div style="font-size: 0.82rem; color: rgba(255,255,255,0.85); display: flex; align-items: flex-start; gap: 0.4rem;"><i class="ph ph-caret-right" style="color: var(--accent-cyan); margin-top: 0.2rem;"></i> <span>${escapeHtml(f)}</span></div>`).join('')}
-                  </div>
-                </div>
-              ` : ''}
-            </div>
-          ` : ''}
-
-          <!-- Detailed Question by Question Review -->
-          <h3 style="color: #fff; font-family: var(--font-heading); font-size: 1.2rem; margin-bottom: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
-            <i class="ph ph-list-checks" style="color: var(--accent-cyan);"></i> Question-by-Question Breakdown
-          </h3>
-
-          <div style="display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 2rem;">
-            ${qList.map((q, idx) => {
-              const evalItem = evalDetails[idx] || {};
-              const isCorrect = evalItem.is_correct;
-              const isPartial = evalItem.is_partially_correct;
-              const statusColor = isCorrect ? 'var(--accent-emerald)' : (isPartial ? 'var(--accent-amber)' : 'var(--accent-rose)');
-              const statusIcon = isCorrect ? 'ph-check-circle' : (isPartial ? 'ph-scales' : 'ph-x-circle');
-              const statusText = isCorrect ? 'Correct' : (isPartial ? 'Partially Correct' : 'Incorrect');
-              const userAns = interviewPracticeState.userAnswers[q.id] || '(No answer provided)';
-
-              return `
-                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-glass); border-left: 4px solid ${statusColor}; border-radius: var(--radius-sm); padding: 1.4rem;">
-                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.8rem; flex-wrap: wrap; gap: 0.5rem;">
-                    <div style="font-weight: 700; color: #fff; font-size: 0.98rem;">
-                      <span style="color: var(--accent-cyan);">Q${idx + 1}.</span> ${escapeHtml(q.question)}
-                    </div>
-                    <span style="font-size: 0.75rem; font-weight: 700; color: ${statusColor}; background: rgba(255,255,255,0.05); padding: 0.25rem 0.65rem; border-radius: var(--radius-full); border: 1px solid ${statusColor}; display: inline-flex; align-items: center; gap: 0.3rem;">
-                      <i class="ph ${statusIcon}"></i> ${statusText} (${evalItem.score_awarded || 0}/${evalItem.max_score || 10} pts)
-                    </span>
-                  </div>
-
-                  <!-- User Answer -->
-                  <div style="background: rgba(0,0,0,0.3); padding: 0.8rem 1rem; border-radius: var(--radius-sm); margin-bottom: 0.8rem; border: 1px solid rgba(255,255,255,0.05);">
-                    <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem;">Your Answer:</div>
-                    <div style="font-size: 0.88rem; color: #fff; white-space: pre-wrap; font-family: ${q.type === 'coding' ? 'monospace' : 'inherit'};">${escapeHtml(userAns)}</div>
-                  </div>
-
-                  <!-- Model Answer / Correct Answer -->
-                  <div style="background: rgba(16, 185, 129, 0.05); padding: 0.8rem 1rem; border-radius: var(--radius-sm); margin-bottom: 0.8rem; border: 1px solid rgba(16, 185, 129, 0.2);">
-                    <div style="font-size: 0.72rem; font-weight: 700; color: var(--accent-emerald); text-transform: uppercase; margin-bottom: 0.25rem;">Ideal Model Answer / Key Points:</div>
-                    <div style="font-size: 0.88rem; color: rgba(255,255,255,0.9); white-space: pre-wrap; font-family: ${q.type === 'coding' ? 'monospace' : 'inherit'};">${escapeHtml(evalItem.correct_answer || q.answer || q.model_answer || 'Refer to explanation')}</div>
-                  </div>
-
-                  <!-- AI Feedback / Explanation -->
-                  <div style="padding: 0.6rem 0.8rem; background: rgba(255,255,255,0.01); border-radius: var(--radius-sm);">
-                    <div style="font-size: 0.72rem; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 0.3rem;">
-                      <i class="ph ph-sparkle"></i> AI Evaluator Feedback:
-                    </div>
-                    <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.45;">${escapeHtml(evalItem.feedback || evalItem.explanation || q.explanation || 'Good attempt.')}</div>
-                  </div>
-                </div>
-              `;
-            }).join('')}
-          </div>
-
-          <!-- Bottom Action Buttons -->
-          <div style="display: flex; justify-content: flex-end; gap: 0.8rem; flex-wrap: wrap; border-top: 1px solid var(--border-glass); padding-top: 1.4rem;">
-            <button type="button" class="btn btn-secondary" id="btn-retake-same-practice">
-              <i class="ph ph-arrow-counter-clockwise"></i> Retake Same Questions
-            </button>
-            <button type="button" class="btn btn-primary" id="btn-practice-new-topic">
-              <i class="ph ph-plus-circle"></i> Practice Another Topic
-            </button>
-            <button type="button" class="btn btn-secondary" id="btn-return-interview-studio">
-              <i class="ph ph-house"></i> Return to Studio Hub
-            </button>
-          </div>
-        </div>
-      `;
-
-      // Wire action buttons
-      const retakeBtn = document.getElementById('btn-retake-same-practice');
-      if (retakeBtn) {
-        retakeBtn.onclick = () => {
-          interviewPracticeState.userAnswers = {};
-          interviewPracticeState.currentQuestionIndex = 0;
-          if (window.location.pathname !== '/interview-questions/ai-practice/session' && window.history && window.history.pushState) {
-            window.history.pushState(null, '', '/interview-questions/ai-practice/session');
-          }
-          if (resultsState) resultsState.style.display = 'none';
-          if (runnerState) runnerState.style.display = 'block';
-          renderQuestionRunner();
-        };
-      }
-
-      const newTopicBtn = document.getElementById('btn-practice-new-topic');
-      if (newTopicBtn) {
-        newTopicBtn.onclick = () => {
-          if (window.location.pathname !== '/interview-questions/ai-practice' && window.history && window.history.pushState) {
-            window.history.pushState(null, '', '/interview-questions/ai-practice');
-          }
-          showPlacifyConfigForm();
-        };
-      }
-
-      const returnHubBtn = document.getElementById('btn-return-interview-studio');
-      if (returnHubBtn) {
-        returnHubBtn.onclick = () => backToHub(true);
-      }
+      if (qaBottomActions) qaBottomActions.style.display = 'flex';
     }
 
     // Detect Sub-view from current URL / Hash or parameter
@@ -6887,26 +6986,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (targetSubView === 'external' || currentPath.includes('/external-resources') || currentHash.includes('external')) {
       openExternalWorkflow(false);
     } else if (targetSubView === 'practice' || currentPath.includes('/ai-practice') || currentHash.includes('practice') || currentHash.includes('ai-practice')) {
-      if (hubView) hubView.style.display = 'none';
-      if (extView) extView.style.display = 'none';
-      if (placifyView) placifyView.style.display = 'block';
-      if (currentPath.includes('/session') && interviewPracticeState.questions.length > 0) {
-        if (formConfig) formConfig.style.display = 'none';
-        if (loadingState) loadingState.style.display = 'none';
-        if (errorState) errorState.style.display = 'none';
-        if (resultsState) resultsState.style.display = 'none';
-        if (runnerState) runnerState.style.display = 'block';
-        renderQuestionRunner();
-      } else if (currentPath.includes('/evaluation') && interviewPracticeState.results) {
-        if (formConfig) formConfig.style.display = 'none';
-        if (loadingState) loadingState.style.display = 'none';
-        if (errorState) errorState.style.display = 'none';
-        if (runnerState) runnerState.style.display = 'none';
-        if (resultsState) resultsState.style.display = 'block';
-        renderPracticeResults(interviewPracticeState.results);
-      } else {
-        showPlacifyConfigForm();
-      }
+      openPlacifyWorkflow(false);
     } else {
       backToHub(false);
     }
@@ -6970,4 +7050,483 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  // =========================================================================
+  // VIEW 14: GLOBAL FLOATING CONTEXT-AWARE CHATBOT ASSISTANT
+  // =========================================================================
+
+  const CHATBOT_EXCLUDED_VIEWS = [
+    'diagnosticQuiz',
+    'conceptQuiz',
+    'assessmentEvaluation',
+    'assessmentReport'
+  ];
+
+  // Specific routes that represent actual quiz questions or active assessment evaluations/results
+  const CHATBOT_EXCLUDED_PATHS = [
+    '/diagnostic-quiz',
+    '/quiz',
+    '/concept-quiz',
+    '/assessment-evaluation',
+    '/evaluation',
+    '/assessment-report',
+    '/report'
+  ];
+
+  const chatbotState = {
+    isOpen: false,
+    history: [],
+    currentView: 'roadmap',
+    isThinking: false,
+    lastFailedMessage: null
+  };
+
+  function formatChatbotMarkdown(text) {
+    if (!text) return '';
+    let html = String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    // Code blocks: ```lang ... ```
+    html = html.replace(/```(?:[a-zA-Z0-9_-]+)?\n?([\s\S]*?)```/g, (match, code) => {
+      return `<pre><code>${code.trim()}</code></pre>`;
+    });
+
+    // Inline code: `code`
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    // Bold: **text**
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+    // Italic: *text*
+    html = html.replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>');
+
+    // Bullet points: lines starting with - or *
+    const lines = html.split('\n');
+    let inList = false;
+    let processed = [];
+
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (/^[-*]\s+(.*)$/.test(trimmed)) {
+        const itemContent = trimmed.replace(/^[-*]\s+/, '');
+        if (!inList) {
+          processed.push('<ul>');
+          inList = true;
+        }
+        processed.push(`<li>${itemContent}</li>`);
+      } else if (/^\d+\.\s+(.*)$/.test(trimmed)) {
+        const itemContent = trimmed.replace(/^\d+\.\s+/, '');
+        if (!inList) {
+          processed.push('<ol>');
+          inList = true;
+        }
+        processed.push(`<li>${itemContent}</li>`);
+      } else {
+        if (inList) {
+          processed.push('</ul>');
+          inList = false;
+        }
+        if (trimmed.length > 0 && !trimmed.startsWith('<pre') && !trimmed.startsWith('</pre')) {
+          processed.push(`<p>${line}</p>`);
+        } else {
+          processed.push(line);
+        }
+      }
+    });
+    if (inList) processed.push('</ul>');
+
+    return processed.join('\n');
+  }
+
+  function getChatbotCurrentContext() {
+    const session = supervisor.authAgent ? supervisor.authAgent.getActiveSession() : null;
+    const view = chatbotState.currentView || 'roadmap';
+
+    let pageTitle = 'Placify Application';
+    let domain = (session && session.chosen_domain) || 'Full-Stack Web Development';
+    let details = {};
+
+    if (view === 'domainSelection') {
+      pageTitle = 'Choose Your Learning Domain';
+      const domainsList = (window.PLACIFY_DATA && window.PLACIFY_DATA.domains) ? window.PLACIFY_DATA.domains : [];
+      let selectedDomName = null;
+      if (typeof selectedDomainId !== 'undefined' && selectedDomainId) {
+        const found = domainsList.find(d => d.id === selectedDomainId);
+        if (found) selectedDomName = found.name;
+      }
+      details = {
+        phase: 'Domain Selection (Post-Registration)',
+        availableDomains: domainsList.map(d => d.name),
+        currentlySelectedDomain: selectedDomName || 'None selected yet'
+      };
+    } else if (view === 'diagnostic') {
+      pageTitle = 'Phase 2: Domain Proficiency Baseline & Assessment Setup';
+      const domainHeader = document.getElementById('diagnostic-domain-name-header')?.textContent?.trim() ||
+                           document.getElementById('manual-domain-title')?.textContent?.trim();
+      if (domainHeader && !domainHeader.includes('Chosen Domain')) {
+        domain = domainHeader;
+      } else if (typeof currentDiagnosticDomainObj !== 'undefined' && currentDiagnosticDomainObj && (currentDiagnosticDomainObj.name || currentDiagnosticDomainObj.title)) {
+        domain = currentDiagnosticDomainObj.name || currentDiagnosticDomainObj.title;
+      }
+
+      const currentLevel = (typeof selectedSelfLevel !== 'undefined' && selectedSelfLevel) ? selectedSelfLevel : 'BEGINNER';
+
+      // Read visible syllabus topics rendered in Phase 2
+      let syllabusTopics = [];
+      const syllabusEls = document.querySelectorAll('#roadmap-syllabus-list span');
+      if (syllabusEls && syllabusEls.length > 0) {
+        syllabusTopics = Array.from(syllabusEls).map(el => el.textContent.trim()).filter(Boolean);
+      } else if (typeof window.getDomainSyllabus === 'function') {
+        const domainIdToUse = (typeof currentDiagnosticDomainObj !== 'undefined' && currentDiagnosticDomainObj ? currentDiagnosticDomainObj.id : (typeof selectedDomainId !== 'undefined' ? selectedDomainId : 'fullstack'));
+        const cleanDom = String(domainIdToUse).replace(/^(domain-|webdev-)/, '');
+        syllabusTopics = window.getDomainSyllabus(cleanDom, currentLevel) || [];
+      }
+
+      details = {
+        phase: 'Phase 2: Domain Proficiency Baseline & Assessment Setup',
+        selectedProficiencyLevel: currentLevel,
+        availableProficiencyLevels: [
+          'BEGINNER: Novice / Foundational — Building core principles from scratch with foundational guidance',
+          'INTERMEDIATE: Practical Practitioner — Familiar with syntax & concepts, ready for applied projects and framework integration',
+          'ADVANCED: Experienced Developer — High technical proficiency, focusing on architecture, system design & optimization'
+        ],
+        syllabusTopics: syllabusTopics.slice(0, 15),
+        syllabusTopicCount: syllabusTopics.length
+      };
+    } else if (view === 'roadmap') {
+      pageTitle = 'Personalized Learning Roadmap';
+      const roadmap = window.roadmapState?.roadmap;
+      if (roadmap && roadmap.monthly_roadmap && roadmap.monthly_roadmap[0]) {
+        details.phaseTitle = roadmap.monthly_roadmap[0].month_title || roadmap.monthly_roadmap[0].theme || 'Phase 1 Foundations';
+      }
+      details.domain = roadmap?.domainName || domain;
+    } else if (view === 'dailyHub') {
+      pageTitle = 'Daily Learning Hub';
+      const dayTasks = window.currentDayTasks || [];
+      details.focusTopic = document.getElementById('daily-focus-topic-text')?.textContent?.trim() || 'Core Principles & Implementation';
+      if (Array.isArray(dayTasks) && dayTasks.length > 0) {
+        details.tasks = dayTasks.map(t => t.taskTitle || t.title).filter(Boolean);
+      }
+    } else if (view === 'interviewQuestions') {
+      pageTitle = 'Interview Questions and Answers';
+      domain = document.getElementById('interview-qa-detected-domain')?.textContent?.trim() || domain;
+      const firstQ = document.querySelector('.interview-qa-card .interview-qa-question-text')?.textContent?.trim();
+      if (firstQ) details.question = firstQ;
+    } else if (view === 'internships') {
+      pageTitle = 'Internship Opportunities';
+      details.internshipCount = document.querySelectorAll('.internship-card')?.length || 0;
+      details.role = document.getElementById('internship-search-input')?.value || 'Software Engineer Intern';
+    } else if (view === 'myApplications') {
+      pageTitle = 'My Applications Tracking';
+      const totalNum = document.getElementById('ats-hero-total-num')?.textContent?.trim() || '0';
+      details.applicationsTotal = parseInt(totalNum, 10) || 0;
+    } else if (view === 'progressAnalytics') {
+      pageTitle = 'Progress & Skill Analytics';
+      const userState = supervisor.progressTracker?.getUserState(session?.user_id);
+      details.analytics = {
+        level: userState?.level || 1,
+        xp: userState?.xp || 0,
+        streak: userState?.streak || 0
+      };
+    } else if (view === 'techNews') {
+      pageTitle = 'Personalized Tech News';
+    }
+
+    return {
+      view,
+      route: window.location.pathname || `/${view}`,
+      pageTitle,
+      domain,
+      details
+    };
+  }
+
+  function getChatbotContextChips(viewKey) {
+    switch (viewKey) {
+      case 'domainSelection':
+        return [
+          'Which domain has the highest placement demand?',
+          'Help me choose between Full-Stack and Data Science.',
+          'Which tech domain is best for beginners?',
+          'What skills does Cloud & DevOps require?'
+        ];
+      case 'diagnostic':
+        return [
+          'Explain the syllabus for my level.',
+          'Differences between Beginner, Intermediate & Advanced?',
+          'Which proficiency level should I pick?',
+          'How does this shape my roadmap?'
+        ];
+      case 'roadmap':
+        return [
+          'Explain my roadmap.',
+          'What should I learn next?',
+          'Why is this topic important?'
+        ];
+      case 'dailyHub':
+        return [
+          "Explain today's task.",
+          'How should I complete this task?',
+          'Suggest resources for this topic.'
+        ];
+      case 'interviewQuestions':
+        return [
+          'Explain this interview question.',
+          'Give me another example.',
+          'What concepts should I revise?'
+        ];
+      case 'internships':
+        return [
+          "Explain this internship's requirements.",
+          'How should I prepare for this role?',
+          'Tips to make my application stand out.'
+        ];
+      case 'myApplications':
+        return [
+          'What is the status of my application?',
+          'Help me prepare for this opportunity.',
+          'Next steps after applying.'
+        ];
+      case 'progressAnalytics':
+        return [
+          'Explain my progress.',
+          'Which topics should I revise?',
+          'How can I improve my streak and level?'
+        ];
+      case 'techNews':
+        return [
+          'Summarize top tech news.',
+          'How do these industry trends impact my domain?'
+        ];
+      default:
+        return [
+          'Explain my learning path.',
+          'How does Placify AI help me prepare?'
+        ];
+    }
+  }
+
+  function updateChatbotContextBadgeAndChips(viewKey) {
+    const badge = document.getElementById('chatbot-context-badge');
+    const chipsContainer = document.getElementById('chatbot-chips-container');
+    if (!badge || !chipsContainer) return;
+
+    const titles = {
+      domainSelection: 'Domain Advisor',
+      diagnostic: 'Proficiency & Syllabus Guide',
+      roadmap: 'Roadmap Mentor',
+      dailyHub: 'Daily Hub Guide',
+      interviewQuestions: 'Interview Coach',
+      internships: 'Career Advisor',
+      myApplications: 'Applications Tracker',
+      progressAnalytics: 'Skill Analytics',
+      techNews: 'Tech News'
+    };
+
+    badge.textContent = titles[viewKey] || 'Placement Assistant';
+
+    const chips = getChatbotContextChips(viewKey);
+    chipsContainer.innerHTML = chips.map(chip => `
+      <button type="button" class="chatbot-chip" data-query="${chip.replace(/"/g, '&quot;')}">
+        ${chip}
+      </button>
+    `).join('');
+
+    chipsContainer.querySelectorAll('.chatbot-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const query = btn.dataset.query;
+        if (query) sendChatbotMessage(query);
+      });
+    });
+  }
+
+  function updateChatbotVisibilityAndContext(viewKey) {
+    const widget = document.getElementById('placify-chatbot-widget');
+    if (!widget) return;
+
+    const path = (window.location.pathname || '').toLowerCase();
+
+    // Specifically allow the Phase 2 setup page (view 'diagnostic' and route '/diagnostic')
+    const isPhase2Setup = viewKey === 'diagnostic' || path === '/diagnostic';
+
+    const isExcludedView = CHATBOT_EXCLUDED_VIEWS.includes(viewKey);
+    const isExcludedPath = CHATBOT_EXCLUDED_PATHS.some(p => path === p || path.startsWith(p + '/'));
+
+    const shouldHide = !isPhase2Setup && (isExcludedView || isExcludedPath);
+
+    if (shouldHide) {
+      widget.style.display = 'none';
+      const panel = document.getElementById('placify-chatbot-panel');
+      const trigger = document.getElementById('placify-chatbot-trigger');
+      if (panel) panel.style.display = 'none';
+      if (trigger) trigger.classList.remove('open');
+      chatbotState.isOpen = false;
+      return;
+    }
+
+    widget.style.display = 'block';
+    chatbotState.currentView = viewKey;
+    updateChatbotContextBadgeAndChips(viewKey);
+  }
+
+  window.updateChatbotVisibilityAndContext = updateChatbotVisibilityAndContext;
+
+  async function sendChatbotMessage(messageText) {
+    const text = (messageText || '').trim();
+    if (!text || chatbotState.isThinking) return;
+
+    const messagesContainer = document.getElementById('chatbot-messages-container');
+    const inputEl = document.getElementById('chatbot-input');
+    const sendBtn = document.getElementById('chatbot-send-btn');
+    const typingIndicator = document.getElementById('chatbot-typing-indicator');
+    const errorNotice = document.getElementById('chatbot-error-notice');
+
+    chatbotState.lastFailedMessage = text;
+    chatbotState.isThinking = true;
+
+    if (inputEl) inputEl.value = '';
+    if (sendBtn) sendBtn.disabled = true;
+    if (errorNotice) errorNotice.style.display = 'none';
+
+    // Append user message bubble
+    const userMsgDiv = document.createElement('div');
+    userMsgDiv.className = 'chat-message chat-message-user';
+    userMsgDiv.innerHTML = `<div class="chat-bubble chat-bubble-user"><p>${text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p></div>`;
+    messagesContainer.appendChild(userMsgDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    chatbotState.history.push({ role: 'user', content: text });
+
+    // Show typing indicator
+    if (typingIndicator) typingIndicator.style.display = 'flex';
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    const session = supervisor.authAgent ? supervisor.authAgent.getActiveSession() : null;
+    const context = getChatbotCurrentContext();
+
+    try {
+      const response = await fetch('http://localhost:5000/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: text,
+          history: chatbotState.history.slice(-6),
+          context,
+          userId: session?.user_id
+        })
+      });
+
+      const data = await response.json();
+      if (typingIndicator) typingIndicator.style.display = 'none';
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'AI Assistant service unavailable.');
+      }
+
+      const replyHtml = formatChatbotMarkdown(data.reply);
+      const assistantMsgDiv = document.createElement('div');
+      assistantMsgDiv.className = 'chat-message chat-message-assistant';
+      assistantMsgDiv.innerHTML = `<div class="chat-bubble chat-bubble-assistant">${replyHtml}</div>`;
+      messagesContainer.appendChild(assistantMsgDiv);
+
+      chatbotState.history.push({ role: 'assistant', content: data.reply });
+      chatbotState.lastFailedMessage = null;
+
+    } catch (err) {
+      console.error('[Chatbot Error]', err);
+      if (typingIndicator) typingIndicator.style.display = 'none';
+      if (errorNotice) {
+        errorNotice.style.display = 'flex';
+        const errTextEl = document.getElementById('chatbot-error-text');
+        if (errTextEl) errTextEl.textContent = err.message || 'Failed to connect. Please retry.';
+      }
+    } finally {
+      chatbotState.isThinking = false;
+      if (sendBtn) sendBtn.disabled = false;
+      if (inputEl) inputEl.focus();
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+  }
+
+  function initGlobalChatbot() {
+    const trigger = document.getElementById('placify-chatbot-trigger');
+    const panel = document.getElementById('placify-chatbot-panel');
+    const closeBtn = document.getElementById('chatbot-close-btn');
+    const clearBtn = document.getElementById('chatbot-clear-btn');
+    const sendBtn = document.getElementById('chatbot-send-btn');
+    const inputEl = document.getElementById('chatbot-input');
+    const retryBtn = document.getElementById('chatbot-retry-btn');
+    const messagesContainer = document.getElementById('chatbot-messages-container');
+
+    if (!trigger || !panel) return;
+
+    trigger.addEventListener('click', () => {
+      chatbotState.isOpen = !chatbotState.isOpen;
+      if (chatbotState.isOpen) {
+        panel.style.display = 'flex';
+        trigger.classList.add('open');
+        if (inputEl) setTimeout(() => inputEl.focus(), 150);
+        if (messagesContainer) messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      } else {
+        panel.style.display = 'none';
+        trigger.classList.remove('open');
+      }
+    });
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        panel.style.display = 'none';
+        trigger.classList.remove('open');
+        chatbotState.isOpen = false;
+      });
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        chatbotState.history = [];
+        if (messagesContainer) {
+          messagesContainer.innerHTML = `
+            <div class="chat-message chat-message-assistant">
+              <div class="chat-bubble chat-bubble-assistant">
+                <p>Hi! I'm your <strong>Placify AI Assistant</strong>. Ask me anything about this page or your learning journey.</p>
+              </div>
+            </div>
+            <div id="chatbot-chips-container" class="chatbot-chips"></div>
+          `;
+          updateChatbotContextBadgeAndChips(chatbotState.currentView);
+        }
+      });
+    }
+
+    if (sendBtn) {
+      sendBtn.addEventListener('click', () => {
+        if (inputEl) sendChatbotMessage(inputEl.value);
+      });
+    }
+
+    if (inputEl) {
+      inputEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendChatbotMessage(inputEl.value);
+        }
+      });
+    }
+
+    if (retryBtn) {
+      retryBtn.addEventListener('click', () => {
+        if (chatbotState.lastFailedMessage) {
+          sendChatbotMessage(chatbotState.lastFailedMessage);
+        }
+      });
+    }
+
+    // Set initial context and chips
+    const initialView = getRequestedViewFromUrl();
+    updateChatbotVisibilityAndContext(initialView);
+  }
+
+  initGlobalChatbot();
 });

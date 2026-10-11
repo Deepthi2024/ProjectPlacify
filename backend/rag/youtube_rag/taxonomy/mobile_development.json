@@ -1,0 +1,39 @@
+{
+  "domain": "Mobile App Development",
+  "levels": [
+    "Beginner",
+    "Intermediate",
+    "Advanced",
+    "Unknown"
+  ],
+  "languages": [
+    "English",
+    "Hindi",
+    "Kannada",
+    "Tamil",
+    "Telugu",
+    "Malayalam",
+    "Other",
+    "Unknown"
+  ],
+  "topics": {
+    "Mobile Framework Foundations": {
+      "React Native Core Architecture": "Bridge, new architecture (Fabric & TurboModules), JSX, and primitive mobile views",
+      "Flutter & Dart Fundamentals": "Widget trees, stateless vs stateful widgets, Dart OOP syntax, and build methods"
+    },
+    "UI & State Management": {
+      "Mobile Layout & Flexbox": "Screen responsiveness, safe areas, platform-specific adaptations, and styled components",
+      "State Management (Redux/Provider/Bloc)": "Global application state, store configuration, actions, and reactive listeners",
+      "Navigation & Deep Linking": "Stack navigation, tabs, drawer menus, deep linking schemas, and route parameters"
+    },
+    "Device Integration & Storage": {
+      "AsyncStorage & SQLite Persistence": "Key-value stores, local database migrations, and offline caching patterns",
+      "Native Hardware APIs": "Camera access, geolocation, push notifications, accelerometer, and biometric auth",
+      "REST & GraphQL Mobile Clients": "Network handling, interceptors, offline queues, and image caching"
+    },
+    "Optimization & Store Release": {
+      "Mobile Performance Profiling": "Frame rate analysis (60fps), bundle splitting, memory leak debugging, and render reduction",
+      "Play Store & App Store Deployment": "Keystores, signing certificates, Fastlane automation, App Store Connect, and privacy declarations"
+    }
+  }
+}

@@ -1,0 +1,303 @@
+{
+  "domain": "Full Stack Development",
+
+  "levels": [
+    "Beginner",
+    "Intermediate",
+    "Advanced",
+    "Unknown"
+  ],
+
+  "languages": [
+    "English",
+    "Hindi",
+    "Kannada",
+    "Tamil",
+    "Telugu",
+    "Malayalam",
+    "Other",
+    "Unknown"
+  ],
+
+  "topics": {
+
+    "HTML": {
+      "Basics": "Introduction to HTML, document structure, HTML syntax and basic concepts",
+      "Elements & Attributes": "HTML elements, attributes, opening and closing tags, global attributes",
+      "Text & Formatting": "Headings, paragraphs, text formatting, quotations and related text elements",
+      "Links & Navigation": "Anchor elements, hyperlinks, navigation menus and internal/external links",
+      "Images": "Images, image attributes, figure and figcaption",
+      "Lists": "Ordered lists, unordered lists and description lists",
+      "Tables": "HTML tables, rows, columns, headers, captions and table structure",
+      "Forms": "Forms, input fields, labels, buttons, validation and form controls",
+      "Semantic HTML": "Semantic elements such as header, nav, main, section, article, aside and footer",
+      "Multimedia": "Audio, video, iframe and embedded multimedia content",
+      "HTML5": "HTML5 features, APIs and modern HTML capabilities",
+      "Accessibility": "Accessible HTML, ARIA basics, semantic accessibility and screen-reader support"
+    },
+
+    "CSS": {
+      "Basics": "Introduction to CSS, syntax, applying CSS and basic styling",
+      "Selectors": "Element, class, ID, attribute, pseudo-class and pseudo-element selectors",
+      "Box Model": "Margin, border, padding, width, height and CSS box model",
+      "Colors & Backgrounds": "Colors, gradients, background images and background properties",
+      "Typography": "Fonts, text styling, alignment, spacing and typography properties",
+      "Positioning": "Static, relative, absolute, fixed, sticky positioning and z-index",
+      "Flexbox": "CSS Flexbox layout, containers, flex items, alignment and responsive layouts",
+      "CSS Grid": "CSS Grid layout, rows, columns, grid areas and responsive grid design",
+      "Responsive Design": "Media queries, mobile-first design, responsive layouts and adaptive styling",
+      "Animations & Transitions": "CSS transitions, transforms, animations and keyframes",
+      "Advanced CSS": "CSS variables, advanced selectors, functions, architecture and advanced techniques",
+      "Projects": "Practical projects that primarily use CSS concepts"
+    },
+
+    "JavaScript": {
+      "Basics": "Introduction to JavaScript, syntax, console, statements and fundamental concepts",
+      "Variables & Data Types": "Variables, let, const, var, primitive types and type conversion",
+      "Operators": "Arithmetic, comparison, logical, assignment, ternary and other JavaScript operators",
+      "Control Flow": "if, else, switch, loops, break, continue and control structures",
+      "Functions": "Function declarations, expressions, arrow functions, parameters, return values and scope",
+      "Arrays": "Arrays, array methods, iteration and manipulation",
+      "Objects": "Objects, properties, methods, destructuring and object manipulation",
+      "Strings & Numbers": "String methods, template literals, numbers, Math and related operations",
+      "DOM": "Document Object Model, selecting elements, modifying elements and DOM manipulation",
+      "Events": "Event handling, event listeners, event propagation and delegation",
+      "Error Handling": "Errors, try/catch, throwing errors and error handling techniques",
+      "ES6+": "Modern JavaScript features including destructuring, spread, rest, classes and other ES6+ features",
+      "Modules": "JavaScript modules, import, export and module organization",
+      "Asynchronous JavaScript": "Callbacks, event loop, asynchronous execution and non-blocking JavaScript",
+      "Promises & Async/Await": "Promises, chaining, async functions and async/await",
+      "Fetch API": "Fetch API, HTTP requests, handling responses and consuming APIs",
+      "Web APIs": "Browser Web APIs such as localStorage, geolocation, timers and other browser APIs",
+      "Projects": "Practical projects that primarily use JavaScript concepts"
+    },
+
+    "Git & GitHub": {
+      "Git Basics": "Git installation, configuration, initialization, commits and basic Git commands",
+      "Repositories": "Creating, cloning and managing Git repositories",
+      "Branches": "Creating, switching, merging and managing Git branches",
+      "Merge & Rebase": "Git merge, rebase, conflict resolution and related workflows",
+      "Remote Repositories": "Git remotes, push, pull, fetch and synchronization",
+      "Pull Requests": "Creating, reviewing and merging GitHub pull requests",
+      "Collaboration": "Team workflows, collaboration, GitHub issues and shared development",
+      "GitHub Actions": "GitHub Actions, workflows and CI/CD automation",
+      "Advanced Git": "Advanced Git commands, reflog, cherry-pick, stash and advanced workflows"
+    },
+
+    "Responsive Design": {
+      "Responsive Design Basics": "Fundamentals of responsive web design and adaptive layouts",
+      "Media Queries": "CSS media queries and breakpoint-based responsive styling",
+      "Mobile-First Design": "Mobile-first development and progressive enhancement",
+      "Responsive Layouts": "Building flexible and responsive page layouts",
+      "Responsive Images": "Responsive images, picture element and image optimization",
+      "Responsive Typography": "Responsive font sizing and typography techniques",
+      "Responsive Frameworks": "Responsive design using frameworks and utility systems",
+      "Responsive Projects": "Practical projects focused primarily on responsive web design"
+    },
+
+    "React": {
+      "Basics": "Introduction to React, setup, project structure and fundamental concepts",
+      "Components": "React functional components, component composition and reusable components",
+      "JSX": "JSX syntax, expressions and JSX rendering",
+      "Props": "Passing, receiving and using props between React components",
+      "State": "Component state and state management fundamentals",
+      "Hooks": "React Hooks including useState, useEffect, useContext and custom hooks",
+      "Events & Forms": "React event handling, controlled components and forms",
+      "Conditional Rendering": "Conditional rendering techniques in React",
+      "Lists & Keys": "Rendering lists, mapping data and using React keys",
+      "Context API": "React Context API and sharing state across components",
+      "Routing": "React Router, routes, navigation and nested routing",
+      "API Integration": "Calling REST APIs and integrating backend services with React",
+      "State Management": "State management using Redux, Zustand or other state management solutions",
+      "Performance": "React performance optimization, memoization, lazy loading and rendering optimization",
+      "Authentication": "Authentication and authorization implementation in React applications",
+      "Projects": "Practical React projects and complete applications"
+    },
+
+    "Node.js": {
+      "Basics": "Introduction to Node.js, runtime environment and fundamental concepts",
+      "Modules": "Node.js modules, CommonJS, ES modules and module organization",
+      "NPM": "NPM, package management, package.json and dependencies",
+      "File System": "Node.js file system operations and working with files and directories",
+      "Events": "Event-driven architecture and EventEmitter",
+      "Streams": "Readable, writable, duplex streams and stream processing",
+      "HTTP": "Node.js HTTP server, requests, responses and HTTP handling",
+      "REST APIs": "Building REST APIs using Node.js",
+      "Authentication": "Authentication systems implemented using Node.js",
+      "Middleware": "Middleware concepts and middleware implementation",
+      "Security": "Node.js application security and secure backend development",
+      "Projects": "Practical Node.js projects and backend applications"
+    },
+
+    "Express.js": {
+      "Basics": "Introduction to Express.js and application setup",
+      "Routing": "Express routes, route parameters and route organization",
+      "Middleware": "Built-in, third-party and custom Express middleware",
+      "REST APIs": "Building RESTful APIs with Express.js",
+      "Error Handling": "Express error handling and error middleware",
+      "Authentication": "Authentication implementation using Express.js",
+      "Authorization": "Role-based access control and authorization",
+      "Validation": "Request validation and input validation",
+      "Security": "Express security, secure headers, sanitization and protection techniques",
+      "Projects": "Practical Express.js backend projects"
+    },
+
+    "REST APIs": {
+      "API Basics": "API concepts, client-server communication and API fundamentals",
+      "HTTP Methods": "GET, POST, PUT, PATCH, DELETE and other HTTP methods",
+      "Status Codes": "HTTP status codes and their appropriate usage",
+      "Request & Response": "HTTP requests, responses, headers, parameters, body and data formats",
+      "REST Architecture": "REST principles, resources, endpoints and RESTful architecture",
+      "Authentication": "Authentication mechanisms used with REST APIs",
+      "Authorization": "Authorization and access control for APIs",
+      "API Security": "API security, validation, rate limiting and protection techniques",
+      "API Testing": "Testing REST APIs using tools and automated tests",
+      "API Documentation": "API documentation using OpenAPI, Swagger and related tools"
+    },
+
+    "Full-Stack User Authentication & Permissions": {
+      "Authentication Basics": "Authentication concepts and implementing user login and registration",
+      "Registration & Login": "User registration, login, logout and account workflows",
+      "Password Security": "Password hashing, salting and secure password storage",
+      "Sessions": "Session-based authentication and session management",
+      "Cookies": "Authentication cookies, secure cookies and cookie-based sessions",
+      "JWT": "JSON Web Tokens and token-based authentication",
+      "OAuth": "OAuth, social login and third-party authentication",
+      "Authorization": "Authorization, roles, permissions and access control",
+      "Role-Based Access Control": "RBAC, user roles and permission management",
+      "CORS": "Cross-Origin Resource Sharing and configuration",
+      "CSRF": "Cross-Site Request Forgery and protection",
+      "XSS": "Cross-Site Scripting and prevention",
+      "Authentication Projects": "Full-stack authentication and permissions projects"
+    },
+
+    "Databases": {
+      "Database Basics": "Database fundamentals, database types and database concepts",
+      "Relational Databases": "Relational database concepts, tables, rows, columns and relationships",
+      "NoSQL Databases": "NoSQL concepts, document databases and non-relational databases",
+      "Database Design": "Database architecture, schema design and designing databases",
+      "Data Modeling": "Data modeling, relationships and structuring application data",
+      "CRUD Operations": "Create, read, update and delete database operations",
+      "Queries": "Database querying and retrieving application data",
+      "Indexes": "Database indexes and query performance",
+      "Transactions": "Database transactions, atomicity and transaction management",
+      "Normalization": "Database normalization and reducing data redundancy",
+      "Database Security": "Database security, permissions and protecting database access",
+      "Database Integration": "Connecting databases with frontend and backend applications"
+    },
+
+    "SQL": {
+      "Basics": "SQL fundamentals, databases, tables and basic SQL syntax",
+      "SELECT Queries": "SELECT statements and retrieving data",
+      "Filtering & Sorting": "WHERE, ORDER BY, filtering and sorting records",
+      "Joins": "INNER JOIN, LEFT JOIN, RIGHT JOIN, FULL JOIN and joining tables",
+      "Functions": "SQL functions including aggregate, string, date and numeric functions",
+      "Subqueries": "Nested queries and subqueries",
+      "Grouping": "GROUP BY, HAVING and grouped queries",
+      "Indexes": "SQL indexes and query performance",
+      "Transactions": "SQL transactions, COMMIT, ROLLBACK and transaction management",
+      "Database Design": "Designing relational databases and schemas",
+      "Normalization": "1NF, 2NF, 3NF and database normalization"
+    },
+
+    "MongoDB": {
+      "Basics": "MongoDB fundamentals, documents, collections and NoSQL concepts",
+      "CRUD Operations": "Creating, reading, updating and deleting MongoDB documents",
+      "Queries": "MongoDB queries, filters and query operators",
+      "Indexes": "MongoDB indexes and query optimization",
+      "Aggregation": "MongoDB aggregation pipeline and aggregation operations",
+      "Schema Design": "MongoDB schema design and document structure",
+      "Data Modeling": "Modeling relationships and application data in MongoDB",
+      "Relationships": "Embedding, referencing and modeling related data",
+      "Transactions": "MongoDB transactions and multi-document operations",
+      "MongoDB Atlas": "MongoDB Atlas cloud database and deployment",
+      "Projects": "Practical MongoDB projects and database applications"
+    },
+
+    "Backend Development": {
+      "Backend Basics": "Backend architecture, server-side programming and backend fundamentals",
+      "Server-Side Programming": "Programming application logic on the server",
+      "API Development": "Developing APIs and backend services",
+      "Database Integration": "Connecting backend applications with databases",
+      "Middleware": "Backend middleware and request processing",
+      "Authentication": "Implementing authentication in backend applications",
+      "Authorization": "Backend authorization and permission systems",
+      "Validation": "Server-side input and request validation",
+      "Error Handling": "Backend error handling and exception management",
+      "Security": "Backend security and secure server-side development",
+      "Backend Architecture": "Backend architecture, layered architecture and application structure",
+      "Backend Projects": "Practical backend development projects"
+    },
+
+    "Frontend Development": {
+      "Frontend Basics": "Fundamentals of frontend web development",
+      "HTML & CSS": "Building interfaces using HTML and CSS",
+      "JavaScript": "Using JavaScript for frontend application development",
+      "Responsive UI": "Building responsive and adaptive user interfaces",
+      "UI Components": "Reusable frontend UI components",
+      "Frontend Architecture": "Frontend project structure, architecture and organization",
+      "State Management": "Managing application state in frontend applications",
+      "API Integration": "Connecting frontend applications to backend APIs",
+      "Authentication UI": "Login, registration and authentication-related frontend interfaces",
+      "Performance Optimization": "Frontend performance optimization techniques",
+      "Accessibility": "Accessible frontend interfaces and web accessibility",
+      "Frontend Projects": "Practical frontend development projects"
+    },
+
+    "End-to-End Testing in Full Stack Development": {
+      "Testing Basics": "Software testing fundamentals and testing concepts",
+      "Unit Testing": "Testing individual functions and components",
+      "Integration Testing": "Testing interactions between application components and services",
+      "End-to-End Testing": "Testing complete user workflows across the full application",
+      "Frontend Testing": "Testing frontend applications and user interfaces",
+      "Backend Testing": "Testing backend services and server-side functionality",
+      "API Testing": "Testing REST APIs and backend endpoints",
+      "Jest": "Testing JavaScript and Node.js applications using Jest",
+      "React Testing": "Testing React components and React applications",
+      "Playwright": "End-to-end testing using Playwright",
+      "Cypress": "End-to-end testing using Cypress",
+      "Test Automation": "Automated testing pipelines and test automation",
+      "Testing Projects": "Practical testing projects for full-stack applications"
+    },
+
+    "Full-Stack Deployment & Hosting": {
+      "Deployment Basics": "Fundamentals of deploying full-stack applications",
+      "Frontend Hosting": "Deploying and hosting frontend applications",
+      "Backend Hosting": "Deploying and hosting backend services",
+      "Database Hosting": "Hosting and managing production databases",
+      "Cloud Deployment": "Deploying full-stack applications to cloud platforms",
+      "Environment Variables": "Managing environment variables and configuration",
+      "CI/CD": "Continuous integration and continuous deployment pipelines",
+      "Domain & DNS": "Domains, DNS configuration and connecting domains to applications",
+      "SSL & HTTPS": "SSL certificates, HTTPS and secure production deployments",
+      "Nginx": "Nginx configuration, reverse proxy and web server deployment",
+      "Monitoring": "Application monitoring, logging and production observability",
+      "Deployment Projects": "Practical full-stack deployment projects"
+    },
+
+    "Docker": {
+      "Basics": "Docker fundamentals, installation and container concepts",
+      "Images": "Docker images, image layers and image management",
+      "Containers": "Creating, running and managing Docker containers",
+      "Dockerfile": "Writing Dockerfiles and building custom images",
+      "Docker Compose": "Multi-container applications using Docker Compose",
+      "Networking": "Docker networking and communication between containers",
+      "Volumes": "Docker volumes and persistent data",
+      "Deployment": "Deploying applications using Docker",
+      "Docker Projects": "Practical Docker projects and containerized applications"
+    },
+
+    "Full Stack Projects": {
+      "Beginner Projects": "Simple full-stack projects suitable for beginners",
+      "Frontend Projects": "Projects primarily focused on frontend development",
+      "Backend Projects": "Projects primarily focused on backend development",
+      "MERN Projects": "Full-stack projects using MongoDB, Express.js, React and Node.js",
+      "Full Stack Applications": "Complete frontend-backend-database applications",
+      "E-commerce Projects": "Full-stack e-commerce applications",
+      "Authentication Projects": "Applications implementing authentication and authorization",
+      "CRUD Projects": "Full-stack CRUD applications",
+      "API Projects": "Projects focused on frontend-backend API integration",
+      "Deployment Projects": "Projects involving production deployment and hosting"
+    }
+  }
+}

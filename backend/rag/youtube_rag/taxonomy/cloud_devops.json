@@ -1,0 +1,40 @@
+{
+  "domain": "Cloud Engineering & DevOps",
+  "levels": [
+    "Beginner",
+    "Intermediate",
+    "Advanced",
+    "Unknown"
+  ],
+  "languages": [
+    "English",
+    "Hindi",
+    "Kannada",
+    "Tamil",
+    "Telugu",
+    "Malayalam",
+    "Other",
+    "Unknown"
+  ],
+  "topics": {
+    "Linux & Core Infrastructure": {
+      "Linux Administration & Bash": "File systems, permissions, process management, shell scripting, and grep/awk/sed",
+      "Networking & DNS Fundamentals": "TCP/IP stack, DNS resolution, HTTP/HTTPS, firewalls, and reverse proxies (NGINX)",
+      "SSH & Key-Based Authentication": "Public key cryptography, SSH tunnels, bastion hosts, and secret hygiene"
+    },
+    "Containerization & Microservices": {
+      "Docker Fundamentals": "Container lifecycles, Dockerfiles, layer caching, multi-stage builds, and volume mounting",
+      "Docker Compose & Multi-Container Apps": "Service orchestration, container networking, environment variables, and volumes"
+    },
+    "CI/CD Pipelines": {
+      "GitHub Actions & GitLab CI": "Workflow YAML syntax, build triggers, automated testing, and artifact deployment",
+      "Automated Testing & Linting Gates": "Quality gates, static analysis integration, security scanning, and test reports"
+    },
+    "Cloud Architecture & Kubernetes": {
+      "Cloud Essentials (AWS/GCP)": "IAM roles, EC2 instances, S3 storage, VPC peering, and security groups",
+      "Infrastructure as Code (Terraform)": "HCL syntax, state management, provider configuration, and resource provisioning",
+      "Kubernetes Architecture & Pods": "Control plane, kubelet, pods, deployments, services, and ReplicaSets",
+      "Observability (Prometheus & Grafana)": "Metrics scraping, dashboards, alerting rules, log aggregation, and tracing"
+    }
+  }
+}

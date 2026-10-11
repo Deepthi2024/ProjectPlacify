@@ -1,0 +1,27 @@
+{
+  "name": "placify-backend",
+  "version": "1.0.0",
+  "description": "Placify Backend API Server connected to MongoDB Atlas and Groq AI",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node tests/test_resource_pipeline_comprehensive.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.19.2",
+    "groq-sdk": "^1.5.0",
+    "mongoose": "^8.3.1"
+  },
+  "keywords": [
+    "placify",
+    "backend",
+    "mongodb",
+    "groq",
+    "rag"
+  ],
+  "author": "Placify AI Team",
+  "license": "ISC"
+}

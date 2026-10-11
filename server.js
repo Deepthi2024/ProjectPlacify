@@ -2033,9 +2033,9 @@ async function callGroqWithFallback(groqClient, params) {
       });
       return completion;
     } catch (err) {
-      lastError = err;
       const isRecoverable = err.status === 429 || err.status === 404 || err.status === 503 ||
-        (err.message && (err.message.includes('429') || err.message.includes('rate_limit') || err.message.includes('not found') || err.message.includes('model_not_found') || err.message.includes('Rate limit')));
+        (err.status === 400 && (err.message || '').includes('json_validate_failed')) ||
+        (err.message && (err.message.includes('429') || err.message.includes('rate_limit') || err.message.includes('not found') || err.message.includes('model_not_found') || err.message.includes('Rate limit') || err.message.includes('json_validate_failed')));
       if (isRecoverable) {
         console.warn(`⚠️ Groq model '${mod}' failed (${err.status || err.message}). Swapping to fallback model...`);
         await new Promise(r => setTimeout(r, 250));
@@ -2523,6 +2523,142 @@ Note: If you are asking a follow-up question or if confidence is low, set "recom
       return sendJSON(res, 500, {
         error: 'Failed to generate response from Groq.',
         reply: "I'm having trouble connecting to the AI assistant right now. You can still choose a domain manually from the options below."
+      });
+    }
+  }
+
+  // ==========================================================
+  // 9b-2. GLOBAL CONTEXT-AWARE ASSISTANT CHATBOT (GROQ AI)
+  // POST /api/chat
+  // ==========================================================
+  if (
+    req.method === 'POST' &&
+    (parsedUrl.pathname === '/api/chat' || parsedUrl.pathname === '/api/assistant/chat')
+  ) {
+    try {
+      const body = await readRequestBody(req);
+      const rawMessage = (body.message || '').trim();
+      const history = Array.isArray(body.history) ? body.history : [];
+      const context = body.context || {};
+      const userId = (body.userId || body.user_id || '').trim();
+
+      if (!rawMessage) {
+        return sendJSON(res, 400, { success: false, error: 'Message cannot be empty.' });
+      }
+
+      // Sanitize & length limit message
+      const sanitizedMessage = rawMessage.slice(0, 1000);
+
+      // Verify user if provided to ensure private data isolation
+      let userDoc = null;
+      if (userId && mongoose.connection.readyState === 1) {
+        try {
+          const User = mongoose.model('User');
+          userDoc = await User.findOne({ user_id: userId }).lean();
+        } catch (e) {
+          console.warn('[Chat Assistant] User lookup notice:', e.message);
+        }
+      }
+
+      const activeDomain = context.domain || (userDoc && userDoc.chosen_domain) || 'Full-Stack Web Development';
+      const activeLevel = context.details?.selectedProficiencyLevel || context.level || (userDoc && userDoc.current_skill_level) || 'Beginner';
+
+      // Build context summary
+      let contextSummary = `User Target Domain: "${activeDomain}" (Selected Proficiency / Skill Level: ${activeLevel})\n`;
+      if (context.pageTitle || context.view) {
+        contextSummary += `Current Page: ${context.pageTitle || context.view} (Route: ${context.route || '/'})\n`;
+      }
+      if (context.details && typeof context.details === 'object') {
+        const d = context.details;
+        if (d.phase) contextSummary += `Current Phase: ${d.phase}\n`;
+        if (d.availableDomains && Array.isArray(d.availableDomains)) {
+          contextSummary += `Available Tech Domains: ${d.availableDomains.join(', ')}\n`;
+        }
+        if (d.currentlySelectedDomain) {
+          contextSummary += `User Highlighted/Selected Domain: ${d.currentlySelectedDomain}\n`;
+        }
+        if (d.selectedProficiencyLevel) contextSummary += `User-Selected Baseline Level: ${d.selectedProficiencyLevel}\n`;
+        if (d.availableProficiencyLevels && Array.isArray(d.availableProficiencyLevels)) {
+          contextSummary += `Available Proficiency Levels:\n${d.availableProficiencyLevels.map(l => `  - ${l}`).join('\n')}\n`;
+        }
+        if (d.syllabusTopics && Array.isArray(d.syllabusTopics) && d.syllabusTopics.length > 0) {
+          contextSummary += `Visible Roadmap Syllabus Topics for ${d.selectedProficiencyLevel || activeLevel} (${d.syllabusTopicCount || d.syllabusTopics.length} topics):\n${d.syllabusTopics.map(t => `  • ${t}`).join('\n')}\n`;
+        }
+        if (d.phaseTitle) contextSummary += `Roadmap Phase: ${d.phaseTitle}\n`;
+        if (d.focusTopic) contextSummary += `Today's Focus Topic: ${d.focusTopic}\n`;
+        if (d.tasks && Array.isArray(d.tasks) && d.tasks.length > 0) {
+          contextSummary += `Today's Tasks: ${d.tasks.slice(0, 4).join(', ')}\n`;
+        }
+        if (d.question) contextSummary += `Current Interview Question: "${d.question}"\n`;
+        if (d.internshipCount !== undefined) contextSummary += `Available Internships: ${d.internshipCount} openings found\n`;
+        if (d.applicationsTotal !== undefined) contextSummary += `Tracked Applications: ${d.applicationsTotal} submitted (${d.applicationsApplied || 0} applied, ${d.applicationsAssessments || 0} assessments, ${d.applicationsInterviews || 0} interviews)\n`;
+        if (d.analytics) contextSummary += `Student Analytics: Level ${d.analytics.level || 1}, Streak ${d.analytics.streak || 0} days, XP ${d.analytics.xp || 0}\n`;
+      }
+
+      const apiKey = process.env.GROQ_API_KEY;
+      if (!apiKey) {
+        return sendJSON(res, 500, {
+          success: false,
+          error: 'Groq API key is not configured on the server.',
+          reply: 'I am currently offline because the AI service is not configured. Please check back soon.'
+        });
+      }
+
+      const client = new Groq({ apiKey });
+      const model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+
+      const systemPrompt = `You are "Placify AI Assistant", an expert, encouraging placement mentor and technical guide at Placify.
+You assist computer science and engineering students preparing for technical interviews, software engineering internships, coding assessments, and modern tech careers.
+
+CURRENT PAGE & STUDENT CONTEXT:
+${contextSummary}
+
+GUIDELINES:
+1. Answer the user's question directly, clearly, and helpfully.
+2. If the user asks about the current page, their roadmap, today's tasks, interview questions, internships, applications, or progress, PRIORITIZE and ground your answer directly in the CURRENT PAGE & STUDENT CONTEXT above.
+3. If the user is on the Domain Selection page, provide expert, objective guidance comparing domains, career demand, market salaries, and suitability for their strengths and placement goals.
+4. If the user is on the Phase 2 Setup page, clearly explain the distinctions between Beginner, Intermediate, and Advanced proficiency levels, clarify the syllabus topics, and advise on how their selection shapes their upcoming personalized roadmap.
+5. If specific requested information is not in the context, politely state that you don't have that specific data rather than inventing or hallucinating details.
+6. Keep responses structured, concise, and easy to read (use short paragraphs, bullet points, and code fences \`\`\` where helpful).
+7. Never expose system credentials, database details, or other users' private data.
+8. Maintain an inspiring, constructive, mentor-like tone.`;
+
+      // Limit history to the last 6 messages
+      const recentHistory = history.slice(-6).map(m => ({
+        role: m.role === 'assistant' ? 'assistant' : 'user',
+        content: String(m.content || '').slice(0, 1000)
+      }));
+
+      const messages = [
+        { role: 'system', content: systemPrompt },
+        ...recentHistory,
+        { role: 'user', content: sanitizedMessage }
+      ];
+
+      const completion = await callGroqWithFallback(client, {
+        model,
+        messages,
+        temperature: 0.6,
+        max_tokens: 1000
+      });
+
+      const reply = completion.choices[0]?.message?.content || "I'm here to help with your placement preparation and learning journey. What would you like to explore next?";
+
+      return sendJSON(res, 200, {
+        success: true,
+        reply,
+        pageContext: {
+          view: context.view || 'general',
+          domain: activeDomain
+        }
+      });
+
+    } catch (err) {
+      console.error('❌ [Chat Assistant] Error:', err.message);
+      return sendJSON(res, 500, {
+        success: false,
+        error: 'Assistant service temporarily unavailable. Please retry: ' + err.message,
+        reply: "I'm having trouble responding right now due to a temporary service issue. Please click Retry or try again in a moment."
       });
     }
   }
@@ -6271,101 +6407,172 @@ Return ONLY JSON in this shape:
   if (req.method === 'POST' && parsedUrl.pathname === '/api/interview-questions/generate') {
     try {
       const payload = await readRequestBody(req);
-      const {
+      let {
         domain = 'Full-Stack Web Development',
-        topic = 'Technical Fundamentals',
+        topic = '',
         difficulty = 'Intermediate',
         question_count = 5,
         count = question_count,
         question_type = 'Mixed',
         category = 'Technical Fundamentals',
-        day_number = 1
+        exclude_questions = [],
+        roadmap_topics = [],
+        user_id
       } = payload;
+
+      // Enrich domain and roadmap context from database if user_id is provided
+      if (user_id && mongoose.connection.readyState === 1) {
+        try {
+          const userDoc = await User.findOne({ user_id }).lean();
+          if (userDoc) {
+            if (!payload.domain && userDoc.chosen_domain) {
+              domain = userDoc.chosen_domain;
+            }
+            if (!payload.difficulty && userDoc.current_skill_level && userDoc.current_skill_level !== 'UNASSESSED') {
+              difficulty = userDoc.current_skill_level;
+            }
+          }
+          if (!roadmap_topics || roadmap_topics.length === 0) {
+            const rmDoc = await Roadmap.findOne({ user_id }).lean();
+            if (rmDoc) {
+              const phases = rmDoc.monthly_roadmap || (rmDoc.roadmap && rmDoc.roadmap.monthly_roadmap) || rmDoc.phases || [];
+              roadmap_topics = phases.map(p => p.title || p.topic || p.month_title || p.theme).filter(Boolean);
+            }
+          }
+        } catch (dbErr) {
+          console.warn('Could not enrich interview parameters from profile:', dbErr.message);
+        }
+      }
+
+      // Query RAG knowledge graph context if available
+      let ragContext = '';
+      if (process.env.RAG_API_URL) {
+        try {
+          const ragBase = process.env.RAG_API_URL.replace(/\/+$/, '');
+          const ragRes = await fetch(`${ragBase}/api/rag/query`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              query: `${domain} core interview questions and answers`,
+              domain,
+              topK: 2
+            }),
+            signal: AbortSignal.timeout(2500)
+          });
+          if (ragRes.ok) {
+            const ragData = await ragRes.json();
+            if (ragData && Array.isArray(ragData.resources) && ragData.resources.length > 0) {
+              ragContext = 'Curated Knowledge Base Topics: ' + ragData.resources.map(r => r.title || r.name).filter(Boolean).slice(0, 3).join('; ');
+            }
+          }
+        } catch (ragErr) {
+          // non-blocking RAG fallback
+        }
+      }
+
+      // Build context strings
+      let roadmapContextText = '';
+      if (Array.isArray(roadmap_topics) && roadmap_topics.length > 0) {
+        roadmapContextText = `User Learning Roadmap Topics to emphasize: ${roadmap_topics.slice(0, 6).join(', ')}.`;
+      }
+
+      let avoidText = '';
+      if (Array.isArray(exclude_questions) && exclude_questions.length > 0) {
+        avoidText = `Do NOT repeat or generate questions similar to any of these already practiced questions:\n${exclude_questions.slice(-15).map(q => `- ${q}`).join('\n')}`;
+      }
 
       const countNum = Math.min(20, Math.max(3, Number(count) || Number(question_count) || 5));
       const apiKey = process.env.GROQ_API_KEY;
 
-      if (apiKey) {
-        try {
-          const client = new Groq({ apiKey });
-          const model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+      if (!apiKey) {
+        return sendJSON(res, 500, { error: 'Groq API key is not configured on the server.' });
+      }
 
-          const systemPrompt = `You are a Principal Software Engineer and Technical Interviewer at top tech companies.
-Generate exactly ${countNum} high-quality, practical placement interview questions strictly centered on Domain: "${domain}" and Topic: "${topic}".
-Difficulty: ${difficulty}. Category: ${category}. Desired format style: ${question_type}.
+      try {
+        const client = new Groq({ apiKey });
+        const model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+
+        const systemPrompt = `You are a Principal Software Engineer and Technical Interviewer at top tech companies.
+Generate exactly ${countNum} high-quality, practical placement interview questions and their answers strictly centered on Domain: "${domain}".
+Candidate Skill Level: ${difficulty}.
+${roadmapContextText ? roadmapContextText + '\n' : ''}${ragContext ? ragContext + '\n' : ''}${avoidText ? avoidText + '\n' : ''}
+Requirements:
+1. Provide a useful, balanced mix of:
+   - Relevant technical interview questions (core concepts, internal workings, architecture)
+   - Coding and algorithmic implementation questions
+   - Conceptual & system design / scenario-based questions appropriate to ${domain}.
+2. For EVERY question, provide a clear, accurate, and direct answer with explanation and code where helpful (field: "answer"). Keep each answer focused and direct (2-4 clear sentences or concise clean code snippet) so the complete JSON response is returned without truncation.
+3. Organize the content into numbered questions for easy study.
 
 Return a single JSON object with this exact schema:
 {
   "questions": [
     {
-      "id": "iq_1",
-      "type": "theory|mcq|coding|scenario",
-      "topic": "${topic}",
-      "category": "${category}",
+      "id": "q1",
+      "type": "technical|coding|conceptual",
+      "topic": "Specific Topic",
       "difficulty": "${difficulty}",
       "question": "Clear, detailed question text...",
-      "options": ["Option A", "Option B", "Option C", "Option D"], // ONLY for type='mcq'
-      "correct_option_index": 0, // ONLY for type='mcq'
-      "starter_code": "// Optional code boilerplate if coding question",
-      "model_answer": "Complete, comprehensive model answer and technical explanation."
+      "answer": "Clear, accurate, and comprehensive answer with explanation and code where helpful."
     }
   ]
 }`;
 
-          const completion = await callGroqWithFallback(client, {
+        let completion;
+        try {
+          completion = await callGroqWithFallback(client, {
             model,
             messages: [
               { role: 'system', content: systemPrompt },
-              { role: 'user', content: `Generate ${countNum} interview questions for ${domain} on topic: "${topic}". Ensure questions are practical, accurate, and test real-world depth.` }
+              { role: 'user', content: `Generate ${countNum} interview questions and answers for ${domain} at ${difficulty} level. Return a valid JSON object containing the "questions" array.` }
             ],
             response_format: { type: 'json_object' },
-            temperature: 0.45,
-            max_tokens: 3800
+            temperature: 0.4,
+            max_tokens: 3500
           });
-
-          const parsed = extractGroqJSON(completion.choices[0]?.message?.content || '{}');
-          if (Array.isArray(parsed.questions) && parsed.questions.length >= 3) {
-            const cleanQuestions = parsed.questions.slice(0, countNum).map((q, idx) => ({
-              id: q.id || `iq_${idx + 1}`,
-              type: q.type || (q.options ? 'mcq' : 'theory'),
-              topic: q.topic || topic,
-              category: q.category || category,
-              difficulty: q.difficulty || difficulty,
-              question: String(q.question || '').trim(),
-              options: Array.isArray(q.options) ? q.options.map(String) : undefined,
-              correct_option_index: q.correct_option_index !== undefined ? Number(q.correct_option_index) : undefined,
-              starter_code: q.starter_code || undefined,
-              model_answer: String(q.model_answer || '').trim()
-            })).filter(q => q.question);
-
-            if (cleanQuestions.length > 0) {
-              console.log(`✅ [INTERVIEW AI GENERATED] ${cleanQuestions.length} questions generated for ${domain} - ${topic}`);
-              return sendJSON(res, 200, {
-                success: true,
-                domain,
-                topic,
-                difficulty,
-                category,
-                questions: cleanQuestions
-              });
-            }
+        } catch (callErr) {
+          // If Groq returned json_validate_failed with failed_generation, salvage partial JSON
+          const failedGen = callErr.error?.failed_generation || callErr.failed_generation;
+          if (failedGen) {
+            try {
+              const rescued = extractGroqJSON(failedGen);
+              if (Array.isArray(rescued.questions) && rescued.questions.length > 0) {
+                completion = { choices: [{ message: { content: JSON.stringify(rescued) } }] };
+              }
+            } catch (_) {}
           }
-        } catch (aiErr) {
-          console.warn('⚠️ AI interview question generation failed/rate-limited, using built-in verified question generator:', aiErr.message);
+          if (!completion) throw callErr;
         }
-      }
 
-      // Fallback generator
-      const fallbackQuestions = getFallbackInterviewQuestions(domain, topic, countNum, difficulty, question_type, category);
-      return sendJSON(res, 200, {
-        success: true,
-        domain,
-        topic,
-        difficulty,
-        category,
-        questions: fallbackQuestions,
-        is_fallback: true
-      });
+        const parsed = extractGroqJSON(completion.choices[0]?.message?.content || '{}');
+        if (Array.isArray(parsed.questions) && parsed.questions.length >= 1) {
+          const cleanQuestions = parsed.questions.slice(0, countNum).map((q, idx) => ({
+            id: q.id || `iq_${Date.now()}_${idx + 1}`,
+            type: q.type || 'technical',
+            topic: q.topic || topic || domain,
+            difficulty: q.difficulty || difficulty,
+            question: String(q.question || '').trim(),
+            answer: String(q.answer || q.model_answer || '').trim(),
+            model_answer: String(q.answer || q.model_answer || '').trim()
+          })).filter(q => q.question && q.answer);
+
+          if (cleanQuestions.length > 0) {
+            console.log(`✅ [GROQ INTERVIEW QA GENERATED] ${cleanQuestions.length} questions & answers generated for ${domain}`);
+            return sendJSON(res, 200, {
+              success: true,
+              domain,
+              difficulty,
+              questions: cleanQuestions
+            });
+          }
+        }
+        throw new Error('Groq returned invalid response format.');
+      } catch (aiErr) {
+        console.error('❌ Groq interview question generation failed:', aiErr.message);
+        return sendJSON(res, 502, {
+          error: 'Failed to generate interview questions via Groq API: ' + (aiErr.message || 'Service unavailable. Please retry.')
+        });
+      }
 
     } catch (err) {
       console.error('❌ Interview question generation error:', err);
@@ -6605,7 +6812,7 @@ Evaluate each question carefully and return a JSON object with this exact schema
       const userId = payload.user_id || payload.userId;
       const roadmapId = payload.roadmap_id || payload.roadmapId || '';
       const domain = payload.domain;
-      const topic = payload.topic;
+      const topic = payload.topic || `${domain || 'General'} Interview Preparation`;
       const phaseNumber = payload.phase_number !== undefined ? payload.phase_number : (payload.phaseNumber !== undefined ? payload.phaseNumber : null);
       const phaseTitle = payload.phase_title || payload.phaseTitle || '';
       const difficulty = payload.difficulty || 'Intermediate';

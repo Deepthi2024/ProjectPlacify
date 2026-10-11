@@ -1,0 +1,2000 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Placify | Personalized AI Learning Platform</title>
+  <meta name="description"
+    content="AI-driven personalized learning platform orchestrated by the Placify Supervisor Agent and 6 specialized sub-agents.">
+
+  <!-- Phosphor Icons & Fonts -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <!-- Top Announcement Banner (Image 1 Style) -->
+  <div id="top-announcement-banner" class="top-announcement-banner">
+    <div class="announcement-content" id="announcement-banner-link" title="Explore Placement Preparation">
+      <span>Practice Real Company Assessment Patterns • Latest 2025–2026 Mock Tests</span>
+      <i class="ph ph-arrow-right announcement-arrow"></i>
+    </div>
+    <button type="button" id="close-announcement-banner-btn" class="announcement-close-btn" aria-label="Close Announcement">
+      <i class="ph ph-x"></i>
+    </button>
+  </div>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="brand-container">
+      <img src="assets/placify-logo.jpg" alt="Placify Logo" class="brand-logo-img">
+      <div class="brand-text-block">
+        <span class="brand-company-title">PLACEMENT PREPARATION</span>
+        <span class="brand-company-sub">PLACIFY AI LEARNING PLATFORM</span>
+      </div>
+    </div>
+
+    <!-- MAIN APP NAVIGATION BAR -->
+    <nav id="main-navbar" class="main-navbar" style="display: none;">
+      <button id="nav-btn-roadmap" class="nav-item active" data-view="roadmap">
+        <i class="ph ph-map-trifold"></i> <span>Roadmap</span>
+      </button>
+      <button id="nav-btn-daily-hub" class="nav-item" data-view="dailyHub">
+        <i class="ph ph-calendar-check"></i> <span>Daily Hub</span>
+      </button>
+      <button id="nav-btn-interview-questions" class="nav-item" data-view="interviewQuestions">
+        <i class="ph ph-chats-circle"></i> <span>Interview Questions</span>
+      </button>
+      <button id="nav-btn-tech-news" class="nav-item" data-view="techNews">
+        <i class="ph ph-newspaper"></i> <span>Tech News</span>
+      </button>
+      <button id="nav-btn-analytics" class="nav-item" data-view="progressAnalytics">
+        <i class="ph ph-chart-line-up"></i> <span>Analytics</span>
+      </button>
+      <button id="nav-btn-internships" class="nav-item" data-view="internships">
+        <i class="ph ph-briefcase"></i> <span>Internships</span>
+      </button>
+      <button id="nav-btn-my-applications" class="nav-item" data-view="myApplications">
+        <i class="ph ph-kanban"></i> <span>My Applications</span>
+      </button>
+    </nav>
+
+    <div class="header-actions">
+      <!-- Help & Getting Started Guide Button -->
+      <button type="button" id="open-help-guide-btn" class="header-help-guide-btn" title="How to Use Placify AI — Complete Navigation & Workflow Guide" aria-label="Help and Guide">
+        <i class="ph ph-question"></i>
+        <span>How to Use</span>
+      </button>
+      <div id="header-user-badge" class="user-badge"
+        style="display: none; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.05); padding: 0.3rem 0.8rem; border-radius: var(--radius-full); border: 1px solid var(--border-color);">
+        <i class="ph ph-user-circle" style="font-size: 1.2rem; color: var(--accent-cyan);"></i>
+        <div style="text-align: left; font-size: 0.8rem;">
+          <div id="user-display-name" style="font-weight: 700; color: var(--text-main);">User</div>
+          <div id="user-display-domain" style="font-size: 0.7rem; color: var(--text-muted);">Domain</div>
+        </div>
+        <button id="logout-btn" class="btn btn-secondary"
+          style="padding: 0.2rem 0.5rem; font-size: 0.7rem; margin-left: 0.3rem;" title="Sign Out">
+          <i class="ph ph-sign-out"></i>
+        </button>
+      </div>
+
+      <div class="stat-pill" id="header-streak-pill" style="display: none;">
+        <i class="ph ph-flame"></i>
+        <span><strong id="user-streak-val">0</strong> Day Streak</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="app-container">
+
+    <!-- VIEW 1: Auth & Onboarding Phase -->
+    <section id="view-onboarding" class="view-section active">
+
+      <!-- Auth Choice Screen / Website Opening Hero (Image 1 Style) -->
+      <div id="auth-choice-screen" class="opening-hero-container">
+        <div class="opening-hero-bg"></div>
+
+        <!-- Faint Code Matrix Overlays -->
+        <div class="opening-code-left">ANALYS
+file :image, styles: { vert: '220', hor: '940x101' }
+:assign_position</div>
+
+        <div class="opening-code-right">class Banner &lt; ActiveRecord::Base
+  attr_accessible :horiz, :link, :visible
+  has_attached_file :image, styles: { ve...
+  before_create :assign_position
+  protected
+  def assign_position</div>
+
+        <!-- Placify Logo Centerpiece (Replaces AI Supervisor) -->
+        <div class="opening-hero-logo" title="Placify Platform">
+          <img src="assets/placify-logo.jpg" alt="Placify Logo" class="hero-center-logo">
+        </div>
+
+        <!-- Hero Headline -->
+        <h1 class="opening-hero-title">
+          <span class="opening-hero-highlight">Learn with Purpose.</span><br>
+          Get Hired with Confidence.
+        </h1>
+
+        <p class="opening-hero-subtitle">
+          Practice real company assessment patterns, master domain roadmaps with curated resources, and achieve placement excellence with AI mentorship.
+        </p>
+
+        <!-- Primary Action Choices -->
+        <div class="opening-hero-choices">
+          <button type="button" id="choice-signin-btn" class="hero-choice-btn hero-choice-btn-signin">
+            <i class="ph ph-sign-in" style="font-size: 1.3rem; color: var(--accent-cyan);"></i>
+            <span>Sign In</span>
+          </button>
+          <button type="button" id="choice-signup-btn" class="hero-choice-btn hero-choice-btn-signup">
+            <i class="ph ph-user-plus" style="font-size: 1.3rem;"></i>
+            <span>Sign Up</span>
+          </button>
+        </div>
+
+        <!-- Highlights Strip -->
+        <div class="opening-features-strip">
+          <div class="opening-feature-pill">
+            <i class="ph ph-buildings"></i>
+            <span>Company Assessment Patterns</span>
+          </div>
+          <div class="opening-feature-pill">
+            <i class="ph ph-graph"></i>
+            <span>8 Domains • 36 Skills Each</span>
+          </div>
+          <div class="opening-feature-pill">
+            <i class="ph ph-lightning"></i>
+            <span>Adaptive Daily Roadmaps</span>
+          </div>
+          <div class="opening-feature-pill">
+            <i class="ph ph-chats-circle"></i>
+            <span>AI Mock Interviews</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 1: REGISTRATION FORM -->
+      <div id="auth-register-panel" class="auth-panel glass-card" style="display: none; max-width: 820px; margin: 0 auto;">
+        <div style="margin-bottom: 1.2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.8rem;">
+          <button type="button" id="reg-back-btn" class="btn btn-secondary" style="padding: 0.3rem 0.7rem; font-size: 0.82rem;">
+            <i class="ph ph-arrow-left"></i> Back to options
+          </button>
+          <a href="#" id="switch-to-login-link" style="color: var(--accent-cyan); font-size: 0.88rem; text-decoration: none; font-weight: 600;">
+            Already have an account? Sign in <i class="ph ph-arrow-right"></i>
+          </a>
+        </div>
+        <form id="registration-form">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem;">
+            <div class="form-group">
+              <label for="reg-name"><i class="ph ph-user"></i> Full Name (`name`): <span
+                  style="color: var(--accent-rose);">*</span></label>
+              <input type="text" id="reg-name" class="form-control" placeholder="e.g. Alex Johnson" required>
+            </div>
+
+            <div class="form-group">
+              <label for="reg-email"><i class="ph ph-envelope"></i> Email Address (`email`): <span
+                  style="color: var(--accent-rose);">*</span></label>
+              <input type="email" id="reg-email" class="form-control" placeholder="e.g. alex@example.com" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="reg-password"><i class="ph ph-lock"></i> Password (min 6 characters): <span
+                style="color: var(--accent-rose);">*</span></label>
+            <input type="password" id="reg-password" class="form-control" placeholder="••••••••" minlength="6"
+              required>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+            <div class="form-group">
+              <label for="timeline-months"><i class="ph ph-calendar"></i> Preparation Timeline
+                (`timeline_months`):</label>
+              <input type="number" id="timeline-months" class="form-control" min="1" step="1"
+                placeholder="Enter preparation duration in months" required>
+            </div>
+
+            <div class="form-group">
+              <label for="daily-hours"><i class="ph ph-clock"></i> Daily Commitment (`daily_hours`):</label>
+              <input type="number" id="daily-hours" class="form-control" min="0.5" step="0.5"
+                placeholder="Enter hours per day" required>
+            </div>
+          </div>
+
+          <div id="reg-error-alert" class="alert-box alert-error" style="display: none; margin-top: 1rem;"></div>
+
+          <div style="margin-top: 1.5rem; text-align: right;">
+            <button type="submit" class="btn btn-primary" id="register-btn">
+              Create Account <i class="ph ph-arrow-right"></i>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- TAB 2: LOGIN FORM -->
+      <div id="auth-login-panel" class="auth-panel glass-card" style="display: none; max-width: 560px; margin: 0 auto;">
+        <div style="margin-bottom: 1.2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.8rem;">
+          <button type="button" id="login-back-btn" class="btn btn-secondary" style="padding: 0.3rem 0.7rem; font-size: 0.82rem;">
+            <i class="ph ph-arrow-left"></i> Back to options
+          </button>
+          <a href="#" id="switch-to-register-link" style="color: var(--accent-cyan); font-size: 0.88rem; text-decoration: none; font-weight: 600;">
+            New here? Sign up <i class="ph ph-arrow-right"></i>
+          </a>
+        </div>
+        <form id="login-form">
+          <div>
+            <div class="form-group">
+              <label for="login-email"><i class="ph ph-envelope"></i> Email Address (`email`): <span
+                  style="color: var(--accent-rose);">*</span></label>
+              <input type="email" id="login-email" class="form-control" placeholder="e.g. alex@example.com" required>
+            </div>
+
+            <div class="form-group">
+              <label for="login-password"><i class="ph ph-lock"></i> Password (`password`): <span
+                  style="color: var(--accent-rose);">*</span></label>
+              <input type="password" id="login-password" class="form-control" placeholder="••••••••" required>
+            </div>
+
+            <!-- HTTP 401 Unauthorized Error Alert -->
+            <div id="login-error-alert" class="alert-box alert-401" style="display: none; margin-top: 1rem;">
+              <!-- Error content rendered here -->
+            </div>
+
+            <div style="margin-top: 1.5rem; text-align: center;">
+              <button type="submit" class="btn btn-emerald" style="width: 100%; padding: 0.8rem;">
+                <i class="ph ph-sign-in"></i> Sign In & Pass User to `quiz_evaluator`
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+    </section>
+
+    <!-- VIEW 1b: Domain Selection (Post-Registration) -->
+    <section id="view-domain-selection" class="view-section">
+      <div class="glass-card domain-selection-main">
+        <div class="section-title">
+          <i class="ph ph-compass"></i> Choose Your Learning Domain
+        </div>
+        <p class="section-subtitle" id="domain-selection-subtitle">Welcome! Select the tech domain you want to master. Your personalized roadmap will be built around this choice.</p>
+
+        <div id="domain-selection-grid" class="domain-grid" style="margin-top: 1.5rem;">
+          <!-- Dynamically populated by app.js -->
+        </div>
+
+        <div id="domain-select-error" class="alert-box alert-error" style="display: none; margin-top: 1rem;"></div>
+
+        <div style="margin-top: 2rem; display: flex; justify-content: flex-end;">
+          <button type="button" id="confirm-domain-btn" class="btn btn-primary" style="padding: 0.8rem 2rem; font-size: 1rem;">
+            <i class="ph ph-arrow-right"></i> Continue with Selected Domain
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- DSA LANGUAGE SELECTION -->
+    <div id="dsa-language-modal" class="modal-overlay" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(3,7,18,0.82); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:1rem;">
+      <div class="glass-card" style="width:min(620px, 100%); padding:2rem; border:1px solid rgba(139,92,246,0.35); box-shadow:0 20px 70px rgba(0,0,0,0.45);">
+        <div style="display:flex; align-items:center; gap:.75rem; margin-bottom:.5rem;">
+          <i class="ph ph-code" style="font-size:1.7rem; color:var(--accent-cyan);"></i>
+          <h2 style="margin:0; color:#fff; font-size:1.35rem;">Choose Your DSA Programming Language</h2>
+        </div>
+        <p style="color:var(--text-muted); line-height:1.5; margin:.5rem 0 1.3rem;">
+          DSA concepts are language-independent, but your roadmap, coding practice, examples, and implementation tasks will be tailored to the language you choose.
+        </p>
+        <div id="dsa-language-options" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.75rem;">
+          <button type="button" class="dsa-language-option" data-language="C++">C++<small>Recommended for placements</small></button>
+          <button type="button" class="dsa-language-option" data-language="Java">Java<small>Strong OOP + placements</small></button>
+          <button type="button" class="dsa-language-option" data-language="Python">Python<small>Concise problem solving</small></button>
+          <button type="button" class="dsa-language-option" data-language="JavaScript">JavaScript<small>Web-focused DSA</small></button>
+          <button type="button" class="dsa-language-option" data-language="C">C<small>Low-level fundamentals</small></button>
+        </div>
+        <div id="dsa-language-error" class="alert-box alert-error" style="display:none; margin-top:1rem;"></div>
+        <button type="button" id="confirm-dsa-language-btn" class="btn btn-primary" disabled style="width:100%; margin-top:1.2rem; padding:.85rem;">
+          Continue with Selected Language
+        </button>
+      </div>
+    </div>
+
+    <!-- VIEW 2: Diagnostic Quiz Phase -->
+    <section id="view-diagnostic" class="view-section">
+      <div class="glass-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <div>
+            <div class="section-title">
+              <i class="ph ph-clipboard-text"></i>
+              Phase 2: Domain Proficiency Baseline & Assessment Setup
+            </div>
+            <p class="section-subtitle" style="margin-bottom: 0;">Declare where you stand in <strong id="diagnostic-domain-name-header" style="color: var(--accent-cyan);">Chosen Domain</strong> and choose whether to validate with our AI Diagnostic Quiz.</p>
+          </div>
+          <div
+            id="diagnostic-concept-count-badge"
+            style="background: rgba(139, 92, 246, 0.15); color: var(--accent-violet); padding: 0.4rem 0.8rem; border-radius: 50px; font-size: 0.85rem; font-weight: 700;">
+            Technical Diagnostic Quiz
+          </div>
+        </div>
+
+        <!-- STEP 1: MANDATORY SELF-ASSESSMENT (WHERE DO YOU STAND?) -->
+        <div style="margin-bottom: 1.5rem; background: rgba(139, 92, 246, 0.06); border: 1px solid rgba(139, 92, 246, 0.25); padding: 1.25rem; border-radius: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+              <h3 style="font-size: 1.05rem; font-weight: 700; color: #fff; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                <span style="background: var(--accent-violet); color: #fff; border-radius: 50%; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800;">1</span>
+                Step 1: Declare Where You Stand in <span id="manual-domain-title" style="color: var(--accent-cyan);">Chosen Domain</span> <span style="color: var(--accent-rose); font-size: 0.8rem;">*Required</span>
+              </h3>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0.2rem 0 0 1.9rem;">
+                Select your current self-assessed proficiency level. This serves as your baseline for roadmap customization.
+              </p>
+            </div>
+            <span id="selected-level-pill" class="tier-label BEGINNER" style="font-size: 0.85rem; padding: 0.3rem 0.8rem;">BEGINNER SELECTED</span>
+          </div>
+
+          <!-- LEVEL SELECTION CARDS -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-top: 1rem;">
+            <!-- CARD 1: BEGINNER -->
+            <div class="manual-level-card active" data-level="BEGINNER" style="background: rgba(255, 255, 255, 0.03); border: 2px solid var(--accent-emerald); border-radius: 12px; padding: 1.1rem; cursor: pointer; transition: all 0.2s;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span class="tier-label BEGINNER" style="font-size: 0.78rem; padding: 0.15rem 0.5rem;">BEGINNER</span>
+                <i class="ph ph-check-circle manual-card-icon" style="font-size: 1.3rem; color: var(--accent-emerald);"></i>
+              </div>
+              <h4 style="font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 0.3rem;">Novice / Foundational</h4>
+              <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; margin: 0;">
+                New to this domain or building core principles from scratch. Needs step-by-step foundational guidance.
+              </p>
+            </div>
+
+            <!-- CARD 2: INTERMEDIATE -->
+            <div class="manual-level-card" data-level="INTERMEDIATE" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 12px; padding: 1.1rem; cursor: pointer; transition: all 0.2s;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span class="tier-label INTERMEDIATE" style="font-size: 0.78rem; padding: 0.15rem 0.5rem; background: rgba(245, 158, 11, 0.2); color: #f59e0b;">INTERMEDIATE</span>
+                <i class="ph ph-circle manual-card-icon" style="font-size: 1.3rem; color: var(--text-muted);"></i>
+              </div>
+              <h4 style="font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 0.3rem;">Practical Practitioner</h4>
+              <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; margin: 0;">
+                Familiar with core concepts & syntax. Ready for applied projects, framework integration & practical workflows.
+              </p>
+            </div>
+
+            <!-- CARD 3: ADVANCED -->
+            <div class="manual-level-card" data-level="ADVANCED" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 12px; padding: 1.1rem; cursor: pointer; transition: all 0.2s;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span class="tier-label ADVANCED" style="font-size: 0.78rem; padding: 0.15rem 0.5rem;">ADVANCED</span>
+                <i class="ph ph-circle manual-card-icon" style="font-size: 1.3rem; color: var(--text-muted);"></i>
+              </div>
+              <h4 style="font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 0.3rem;">Experienced Developer</h4>
+              <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; margin: 0;">
+                High technical proficiency. Looking to focus on advanced architecture, system design & optimization.
+              </p>
+            </div>
+          </div>
+
+          <!-- SYLLABUS COVERED IN YOUR ROADMAP -->
+          <div id="syllabus-container" style="margin-top: 1.2rem; background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; flex-wrap: wrap; gap: 0.5rem;">
+              <div style="font-size: 0.88rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 0.45rem;">
+                <i class="ph ph-books" style="color: var(--accent-cyan); font-size: 1.15rem;"></i>
+                Syllabus Covered in Your Roadmap
+              </div>
+              <span id="syllabus-level-badge" class="tier-label BEGINNER" style="font-size: 0.75rem; padding: 0.15rem 0.55rem;">BEGINNER SYLLABUS</span>
+            </div>
+            <div id="roadmap-syllabus-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.55rem; margin-top: 0.6rem;">
+              <!-- Dynamically populated based on selected level & domain in app.js -->
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2: CHOOSE ASSESSMENT PATH -->
+        <div style="margin-bottom: 1.5rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); padding: 1.25rem; border-radius: 12px;">
+          <h3 style="font-size: 1.05rem; font-weight: 700; color: #fff; margin: 0 0 0.8rem 0; display: flex; align-items: center; gap: 0.5rem;">
+            <span style="background: var(--accent-cyan); color: #000; border-radius: 50%; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800;">2</span>
+            Step 2: Choose How You Want to Complete Baseline Setup
+          </h3>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+            <!-- OPTION A: TAKE DIAGNOSTIC QUIZ -->
+            <div style="background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 1.2rem; display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <div style="font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.5rem;">
+                  <i class="ph ph-note-pencil" style="color: var(--accent-violet); font-size: 1.2rem;"></i> Take Technical Diagnostic Quiz
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.8rem; line-height: 1.4;">
+                  Validate your baseline with an AI-generated diagnostic test covering multiple question types tailored to your domain & level.
+                </p>
+
+                <!-- QUESTION COUNT SELECTION -->
+                <div style="margin-bottom: 1rem; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(139, 92, 246, 0.25); padding: 0.8rem; border-radius: 8px;">
+                  <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem;">
+                    <i class="ph ph-list-numbers" style="color: var(--accent-cyan);"></i> Select Number of Questions:
+                  </label>
+                  <div id="quiz-question-count-pills" style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                    <button type="button" class="quiz-count-pill" data-count="5">5 Qs</button>
+                    <button type="button" class="quiz-count-pill active" data-count="10">10 Qs</button>
+                    <button type="button" class="quiz-count-pill" data-count="15">15 Qs</button>
+                    <button type="button" class="quiz-count-pill" data-count="20">20 Qs</button>
+                    <button type="button" class="quiz-count-pill" data-count="25">25 Qs</button>
+                    <button type="button" class="quiz-count-pill" data-count="30">30 Qs</button>
+                    <div style="display:flex;align-items:center;gap:0.4rem;margin-left:0.2rem;">
+                      <input type="number" id="custom-quiz-question-count" min="1" max="50" placeholder="Custom" aria-label="Custom number of questions" style="width:88px;padding:0.45rem 0.55rem;border-radius:7px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;">
+                      <span style="font-size:0.72rem;color:var(--text-muted);">1–50</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button type="button" id="start-diagnostic-quiz-btn" class="btn btn-primary" style="width: 100%; justify-content: center;">
+                <i class="ph ph-play"></i> Generate <span id="quiz-count-btn-label">10-Question</span> Quiz
+              </button>
+            </div>
+
+            <!-- OPTION B: SKIP QUIZ & BUILD ROADMAP DIRECTLY -->
+            <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 1.2rem; display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <div style="font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.5rem;">
+                  <i class="ph ph-lightning" style="color: var(--accent-emerald); font-size: 1.2rem;"></i> Skip Quiz & Generate Roadmap Now
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.4;">
+                  Proceed directly using your declared skill level (<span id="declared-level-summary" style="color: var(--accent-emerald); font-weight: 700;">BEGINNER</span>). No diagnostic quiz required.
+                </p>
+              </div>
+              <button type="button" id="submit-self-assessment-btn" class="btn btn-emerald" style="width: 100%; justify-content: center; font-weight: 700;">
+                <i class="ph ph-sparkle"></i> Build Roadmap with My Declared Level
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2b: Dedicated Technical Diagnostic Quiz Page -->
+    <section id="view-diagnostic-quiz" class="view-section">
+      <div class="glass-card">
+        <!-- Top Bar with Back button & Header Info -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 0.8rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 1rem;">
+          <div style="display: flex; align-items: center; gap: 0.8rem;">
+            <button type="button" id="quiz-back-to-baseline-btn" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.82rem;" title="Return to Baseline Setup">
+              <i class="ph ph-arrow-left"></i> Back to Setup
+            </button>
+            <div>
+              <h2 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="ph ph-exam" style="color: var(--accent-violet);"></i>
+                NPTEL Technical Diagnostic Assessment
+              </h2>
+              <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">
+                Domain: <strong id="quiz-page-domain-title" style="color: var(--accent-cyan);">Chosen Domain</strong>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <span id="quiz-page-level-badge" class="tier-label BEGINNER" style="font-size: 0.78rem; padding: 0.25rem 0.7rem;">BEGINNER</span>
+            <span id="quiz-page-count-badge" style="font-size: 0.78rem; background: rgba(139, 92, 246, 0.15); color: var(--accent-violet); padding: 0.25rem 0.7rem; border-radius: 50px; font-weight: 700;">10 Questions</span>
+          </div>
+        </div>
+
+        <!-- Empty / Error state if page opened with no quiz -->
+        <div id="quiz-empty-state" style="display: none; text-align: center; padding: 3rem 1rem;">
+          <i class="ph ph-warning-circle" style="font-size: 3rem; color: var(--accent-rose); margin-bottom: 1rem;"></i>
+          <h3 style="color: #fff; font-size: 1.2rem; margin-bottom: 0.5rem;">No Active Assessment Found</h3>
+          <p style="color: var(--text-muted); max-width: 480px; margin: 0 auto 1.5rem;">
+            Please select your domain, skill level, and question count on the baseline setup page first to generate a personalized diagnostic quiz.
+          </p>
+          <button type="button" id="quiz-empty-return-btn" class="btn btn-primary">
+            <i class="ph ph-arrow-left"></i> Go to Baseline Setup
+          </button>
+        </div>
+
+        <!-- Main Quiz Content Area -->
+        <div id="quiz-active-content">
+          <!-- Question Palette Navigation -->
+          <div style="margin-bottom: 1.2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-muted);">Question Palette (Click to jump):</span>
+              <span style="font-size: 0.75rem; color: var(--text-muted);"><span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent-emerald); margin-right: 4px;"></span>Answered &bull; <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent-violet); margin-right: 4px;"></span>Current</span>
+            </div>
+            <div id="diagnostic-palette-container" style="display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0.8rem; background: rgba(0, 0, 0, 0.25); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08);">
+              <!-- Palette buttons 1..N populated dynamically -->
+            </div>
+          </div>
+
+          <form id="diagnostic-quiz-form" class="quiz-container">
+            <div id="diagnostic-questions-container">
+              <!-- Dynamically populated NPTEL-style questions -->
+            </div>
+
+            <div style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+              <div style="display: flex; gap: 0.5rem;">
+                <button type="button" id="quiz-prev-btn" class="btn btn-secondary" style="display: none;">
+                  <i class="ph ph-arrow-left"></i> Previous Question
+                </button>
+                <button type="button" id="quiz-next-btn" class="btn btn-secondary">
+                  Next Question <i class="ph ph-arrow-right"></i>
+                </button>
+              </div>
+
+              <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+                <button type="button" id="quiz-skip-btn" class="btn btn-secondary" style="border-color: rgba(245, 158, 11, 0.4); color: #f59e0b;">
+                  <i class="ph ph-skip-forward"></i> Skip Quiz & Use Declared Level
+                </button>
+                <button type="submit" id="quiz-submit-btn" class="btn btn-emerald">
+                  Submit Quiz to `quiz_evaluator` <i class="ph ph-check-circle"></i>
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: Skill Assessment & Gap Report -->
+    <section id="view-assessment-report" class="view-section">
+      <div class="glass-card">
+        <div class="section-title" style="margin-bottom: 1.5rem;">
+          <i class="ph ph-chart-polar"></i>
+          Phase 2 Output: Diagnostic Evaluation & Topic-Wise Proficiency Report
+        </div>
+
+        <div class="assessment-results-grid">
+          <!-- Left: Tier Card -->
+          <div class="glass-card tier-badge-card">
+            <span
+              style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-weight: 600;">Established
+              Baseline</span>
+            <div id="tier-score-display" class="tier-score-ring">0%</div>
+            <div id="tier-label-display" class="tier-label BEGINNER">BEGINNER</div>
+          </div>
+
+          <!-- Right: Gaps, Intermediate, and Mastered breakdown -->
+          <div style="display: flex; flex-direction: column; gap: 1.2rem;">
+            <!-- WEAK TOPICS / GAPS -->
+            <div>
+              <h3
+                style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.8rem; color: var(--accent-rose); display: flex; align-items: center; gap: 0.5rem;">
+                <i class="ph ph-warning-circle"></i> Identified Knowledge Gaps (WEAK: <span id="gap-count-num">0</span>)
+              </h3>
+              <div id="gaps-list-container">
+                <!-- Dynamically filled with gap items -->
+              </div>
+            </div>
+
+            <!-- INTERMEDIATE TOPICS -->
+            <div>
+              <h3
+                style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.8rem; color: #f59e0b; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="ph ph-chart-bar"></i> Applied Skill Topics (INTERMEDIATE: <span id="intermediate-count-num">0</span>)
+              </h3>
+              <div id="intermediate-list-container">
+                <!-- Dynamically filled -->
+              </div>
+            </div>
+
+            <!-- STRONG TOPICS -->
+            <div>
+              <h3
+                style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.8rem; color: var(--accent-emerald); display: flex; align-items: center; gap: 0.5rem;">
+                <i class="ph ph-check-square"></i> Mastered Prerequisites (STRONG: <span id="mastered-count-num">0</span>)
+              </h3>
+              <div id="mastered-list-container">
+                <!-- Dynamically filled -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Topic Proficiency Table -->
+        <div id="topic-proficiency-breakdown-section" style="margin-top: 2rem;">
+          <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.8rem; color: var(--accent-cyan); display: flex; align-items: center; gap: 0.5rem;">
+            <i class="ph ph-table"></i> Detailed Topic Proficiency Breakdown
+          </h3>
+          <div id="topic-proficiency-table-container" style="overflow-x: auto;">
+            <!-- Rendered by app.js -->
+          </div>
+        </div>
+
+        <div style="margin-top: 2rem; text-align: right;">
+          <button id="build-roadmap-btn" class="btn btn-primary">
+            Build Personalized Milestone Roadmap <i class="ph ph-tree-structure"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 4: Personalized Dynamic Roadmap -->
+    <section id="view-roadmap" class="view-section">
+      <div class="glass-card">
+        <!-- Header & Profile Summary Card -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 1rem;">
+          <div>
+            <div class="section-title" style="display: flex; align-items: center; gap: 0.6rem;">
+              <i class="ph ph-tree-structure" style="color: var(--accent-cyan);"></i>
+              Personalized Dynamic Roadmap
+            </div>
+            <p class="section-subtitle" style="margin-bottom: 0;">
+              Generated by <strong style="color: var(--accent-cyan);">PersonalizedRoadmapAgent</strong> & stored in <strong style="color: var(--accent-violet);">MongoDB Atlas</strong>.
+            </p>
+          </div>
+          <div style="display: flex; gap: 0.6rem; align-items: center;">
+            <button type="button" class="page-context-help-btn" data-page-help="roadmap" title="What can I do on Roadmap?">
+              <i class="ph ph-question"></i> What can I do here?
+            </button>
+            <span class="node-tag STANDARD" id="roadmap-domain-tag">Domain</span>
+          </div>
+        </div>
+
+        <!-- Start My Journey Action Banner -->
+        <div id="start-journey-banner" style="display: none; background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.15)); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: var(--radius-sm); padding: 1.2rem 1.4rem; margin-bottom: 1.5rem; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div style="font-size: 1.1rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="ph ph-rocket-launch" style="color: var(--accent-emerald); font-size: 1.3rem;"></i> Ready to Begin Your Learning Journey?
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.3rem; margin-bottom: 0;">
+              Click <strong>Start My Journey</strong> to set Day 1 to your device's local date and map all milestones to real calendar dates.
+            </p>
+          </div>
+          <button id="start-journey-btn" class="btn btn-primary" style="font-size: 0.95rem; padding: 0.6rem 1.4rem; background: linear-gradient(135deg, #10b981, #06b6d4); border: none; font-weight: 700;">
+            <i class="ph ph-rocket-launch"></i> Start My Journey
+          </button>
+        </div>
+
+        <!-- User Profile Parameters Bar -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; background: rgba(255, 255, 255, 0.03); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-glass);">
+          <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Selected Domain</div>
+            <div id="rm-summary-domain" style="font-size: 0.95rem; font-weight: 700; color: #fff; margin-top: 0.2rem;">-</div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Timeline</div>
+            <div id="rm-summary-timeline" style="font-size: 0.95rem; font-weight: 700; color: var(--accent-cyan); margin-top: 0.2rem;">-</div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Daily Commitment</div>
+            <div id="rm-summary-hours" style="font-size: 0.95rem; font-weight: 700; color: var(--accent-emerald); margin-top: 0.2rem;">-</div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Diagnostic Score</div>
+            <div id="rm-summary-score" style="font-size: 0.95rem; font-weight: 700; color: var(--accent-violet); margin-top: 0.2rem;">-</div>
+          </div>
+        </div>
+
+        <!-- Level Drill-Down Navigation Tabs -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; gap: 1rem; flex-wrap: wrap;">
+          <div id="roadmap-breadcrumbs" style="display: flex; gap: 0.5rem; align-items: center; font-size: 0.85rem; font-weight: 600; flex-wrap: wrap;">
+            <button id="nav-level-months" class="btn btn-secondary active" style="padding: 0.35rem 0.8rem; font-size: 0.8rem;">
+              <i class="ph ph-calendar"></i> Monthly View
+            </button>
+            <span style="color: var(--text-muted);"><i class="ph ph-caret-right"></i></span>
+            <button id="nav-level-weeks" class="btn btn-secondary" style="padding: 0.35rem 0.8rem; font-size: 0.8rem;" disabled>
+              <i class="ph ph-calendar-blank"></i> Weekly View
+            </button>
+            <span style="color: var(--text-muted);"><i class="ph ph-caret-right"></i></span>
+            <button id="nav-level-days" class="btn btn-secondary" style="padding: 0.35rem 0.8rem; font-size: 0.8rem;" disabled>
+              <i class="ph ph-clock"></i> Phase-Wise Tasks
+            </button>
+          </div>
+          <div id="roadmap-level-indicator" style="font-size: 0.8rem; color: var(--accent-cyan); font-weight: 700; text-transform: uppercase;">
+            Level 1: Monthly Roadmap
+          </div>
+        </div>
+
+        <!-- Hierarchical Dynamic Container -->
+        <div id="roadmap-nodes-container" class="roadmap-timeline">
+          <!-- Dynamically populated hierarchical roadmap cards -->
+        </div>
+
+        <!-- Bottom Action Bar -->
+        <div style="margin-top: 1.8rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-glass); padding-top: 1.2rem;">
+          <div style="font-size: 0.9rem; color: var(--text-muted);">
+            Ready to start learning?
+          </div>
+          <button id="enter-daily-hub-btn" class="btn btn-emerald">
+            Enter Daily Learning Hub <i class="ph ph-play-circle"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 5: Daily Learning Hub & Resource Curation -->
+    <section id="view-daily-hub" class="view-section">
+      <div class="daily-hub-layout">
+        <!-- Main: Current Day Tasks & Recommended Resources -->
+        <div class="glass-card">
+          <div style="margin-bottom: 1rem;">
+            <button id="top-back-to-weekly-roadmap-btn" class="btn btn-secondary back-to-weekly-roadmap-btn" style="font-size: 0.8rem; padding: 0.35rem 0.8rem;">
+              <i class="ph ph-arrow-left"></i> Back to Weekly Roadmap
+            </button>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 1rem; flex-wrap: wrap; gap: 0.6rem;">
+            <div>
+              <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                <button type="button" class="page-context-help-btn" data-page-help="dailyHub" title="What can I do in Daily Hub?">
+                  <i class="ph ph-question"></i> What can I do here?
+                </button>
+                <span id="current-day-badge"
+                  style="background: rgba(139, 92, 246, 0.2); color: var(--accent-violet); font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 4px; text-transform: uppercase;">
+                  PHASE 1 TASK EXECUTION
+                </span>
+                <span id="current-day-progress-badge"
+                  style="background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 4px;">
+                  0 / 0 Completed (0%)
+                </span>
+              </div>
+              <h2 id="current-task-title"
+                style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 700; margin-top: 0.4rem; color: #fff;">
+                Phase Task Execution
+              </h2>
+            </div>
+            <div style="display: flex; gap: 0.6rem; align-items: center;">
+              <span id="current-day-workload-badge" style="font-size: 0.85rem; font-weight: 700; color: var(--accent-amber); background: rgba(245, 158, 11, 0.15); padding: 0.3rem 0.7rem; border-radius: 4px;">
+                ⏱️ Workload
+              </span>
+              <span id="task-type-badge" class="node-tag STANDARD">BEGINNER</span>
+            </div>
+          </div>
+
+          <!-- Day Completion Progress Bar -->
+          <div id="day-progress-bar-container" style="margin-bottom: 1.2rem; background: rgba(255, 255, 255, 0.05); border-radius: 4px; height: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05);">
+            <div id="day-progress-bar-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-emerald), var(--accent-cyan)); transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+          </div>
+
+          <div id="suggested-resources-list">
+            <!-- Dynamically populated daily tasks & resource cards -->
+          </div>
+
+          <div
+            style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-glass); padding-top: 1.2rem;">
+            <button id="view-all-roadmap-btn" class="btn btn-secondary back-to-weekly-roadmap-btn">
+              <i class="ph ph-arrow-left"></i> Back to Weekly Roadmap
+            </button>
+            <div style="display:flex; gap:0.6rem; flex-wrap:wrap; justify-content:flex-end; align-items:center;">
+              <button id="start-concept-quiz-btn" class="btn btn-emerald" disabled aria-disabled="true" style="opacity: 0.5; cursor: not-allowed;" title="Complete all tasks in this phase to unlock the assessment.">
+                Take Phase Assessment <i class="ph ph-note-pencil"></i>
+              </button>
+              <button id="skip-day-assessment-btn" class="btn btn-secondary">
+                Skip Assessment <i class="ph ph-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- VIEW 6: Concept Assessment Quiz (Resource Fetcher Output) -->
+    <section id="view-concept-quiz" class="view-section">
+      <div class="glass-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <div>
+            <div class="section-title">
+              <i class="ph ph-seal-check"></i>
+              Phase 5: Concept Assessment
+            </div>
+            <p class="section-subtitle" style="margin-bottom: 0;">Synthesized by <strong
+                style="color: var(--accent-cyan);">`resource_fetcher`</strong>. Grounded directly in your daily learning
+              materials.</p>
+          </div>
+          <span
+            style="background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); padding: 0.35rem 0.8rem; border-radius: 50px; font-size: 0.8rem; font-weight: 700;">
+            Pass Mark: 70%
+          </span>
+        </div>
+
+        <!-- Grounded content summary box -->
+        <div
+          style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 1.5rem; font-size: 0.88rem; line-height: 1.5;">
+          <strong style="color: var(--accent-cyan);"><i class="ph ph-file-text"></i> Grounded Resource Context:</strong>
+          <span id="quiz-grounded-summary">Loading resource context summary...</span>
+        </div>
+
+        <form id="concept-assessment-form" class="quiz-container">
+          <div id="concept-quiz-questions-container">
+            <!-- Dynamically populated concept quiz questions -->
+          </div>
+
+          <div style="margin-top: 1.5rem; display:flex; justify-content:space-between; align-items:center; gap:0.8rem; flex-wrap:wrap;">
+            <button type="button" id="skip-assessment-from-quiz-btn" class="btn btn-secondary">
+              Skip Assessment & Continue <i class="ph ph-arrow-right"></i>
+            </button>
+            <button type="submit" class="btn btn-emerald">
+              Submit Assessment & Log Progress <i class="ph ph-paper-plane-right"></i>
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- VIEW 6b: Dedicated Assessment Evaluation Page -->
+    <section id="view-assessment-evaluation" class="view-section">
+      <div class="glass-card" style="padding: 1.8rem;">
+        
+        <!-- Header Bar with Phase Title and Navigation -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 1.2rem;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem; flex-wrap: wrap;">
+              <span id="eval-phase-badge" style="background: rgba(139, 92, 246, 0.2); color: var(--accent-violet); font-size: 0.78rem; font-weight: 700; padding: 0.25rem 0.7rem; border-radius: 4px; text-transform: uppercase;">
+                Phase 1 Assessment
+              </span>
+              <span id="eval-date-badge" style="font-size: 0.78rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.05); padding: 0.25rem 0.7rem; border-radius: 4px;">
+                <i class="ph ph-clock"></i> Just now
+              </span>
+            </div>
+            <h2 id="eval-phase-title" style="font-family: var(--font-heading); font-size: 1.5rem; font-weight: 800; color: #fff; margin: 0;">
+              Assessment Evaluation Report
+            </h2>
+            <p class="section-subtitle" style="margin-bottom: 0; margin-top: 0.25rem;">
+              Detailed question-by-question evaluation, score breakdown, and targeted revision recommendations.
+            </p>
+          </div>
+        </div>
+
+        <!-- Dynamic Container for Evaluation Summary, Question Breakdown, Concepts to Review -->
+        <div id="assessment-evaluation-content">
+          <!-- Populated dynamically by renderAssessmentEvaluationPage -->
+        </div>
+
+        <!-- Bottom Action Bar -->
+        <div style="margin-top: 2.2rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-glass); padding-top: 1.2rem; flex-wrap: wrap; gap: 1rem;">
+          <button type="button" id="eval-bottom-back-roadmap-btn" class="btn btn-secondary eval-nav-roadmap-btn">
+            <i class="ph ph-arrow-left"></i> Back to Weekly Roadmap
+          </button>
+          <div style="display: flex; gap: 0.8rem; flex-wrap: wrap;">
+            <button type="button" id="eval-bottom-review-phase-btn" class="btn btn-secondary eval-nav-review-btn">
+              <i class="ph ph-book-open"></i> Review Phase
+            </button>
+            <button type="button" id="eval-bottom-retake-btn" class="btn btn-emerald eval-nav-retake-btn">
+              <i class="ph ph-arrows-counter-clockwise"></i> Retake Assessment
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- VIEW 7: Dedicated Interview Preparation Studio -->
+    <section id="view-interview-questions" class="view-section">
+      <div class="glass-card" style="padding: 2rem;">
+        
+        <!-- Header & Domain Banner -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 1.2rem;">
+          <div>
+            <div class="section-title" style="margin-bottom: 0.3rem;">
+              <i class="ph ph-chats-circle" style="color: var(--accent-cyan);"></i> Interview Preparation Studio
+            </div>
+            <p class="section-subtitle" style="margin: 0;">
+              Prepare for technical interviews using curated learning resources or practice questions tailored to your domain.
+            </p>
+          </div>
+          <button type="button" class="page-context-help-btn" data-page-help="interviewQuestions" title="What can I do in Interview Prep?">
+              <i class="ph ph-question"></i> What can I do here?
+            </button>
+            <div id="interview-domain-badge-container" style="display: flex; align-items: center; gap: 0.6rem; background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); padding: 0.5rem 1rem; border-radius: var(--radius-full);">
+            <i class="ph ph-briefcase" style="color: var(--accent-cyan); font-size: 1.1rem;"></i>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Target Domain:</span>
+            <strong id="interview-user-domain-label" style="color: #fff; font-size: 0.9rem;">Full-Stack Web Development</strong>
+          </div>
+        </div>
+
+        <!-- 1. LANDING MODE SELECTION CARDS -->
+        <div id="interview-landing-hub">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            
+            <!-- Option 1: Learn from Other Websites -->
+            <div id="select-option-external-btn" class="glass-card" style="cursor: pointer; padding: 1.8rem; border: 1px solid var(--border-glass); transition: all 0.25s ease; background: rgba(255,255,255,0.02); display: flex; flex-direction: column; justify-content: space-between;" onmouseover="this.style.borderColor='var(--accent-cyan)'; this.style.transform='translateY(-3px)';" onmouseout="this.style.borderColor='var(--border-glass)'; this.style.transform='translateY(0)';">
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                  <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(6, 182, 212, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: var(--accent-cyan);">
+                    <i class="ph ph-globe"></i>
+                  </div>
+                  <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-cyan); background: rgba(6, 182, 212, 0.12); padding: 0.25rem 0.75rem; border-radius: 50px; border: 1px solid rgba(6, 182, 212, 0.25);">
+                    External Resources
+                  </span>
+                </div>
+                <h3 style="color: #fff; font-family: var(--font-heading); margin-bottom: 0.6rem; font-size: 1.3rem;">Learn from Other Websites</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.2rem;">
+                  Explore interview questions, explanations, coding problems, and interview experiences from trusted external platforms.
+                </p>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--accent-cyan); font-weight: 700; font-size: 0.9rem;">
+                <span>Explore External Platforms</span> <i class="ph ph-arrow-right"></i>
+              </div>
+            </div>
+
+            <!-- Option 2: Prepare on Placify AI -->
+            <div id="select-option-placify-btn" class="glass-card" style="cursor: pointer; padding: 1.8rem; border: 1px solid var(--border-glass); transition: all 0.25s ease; background: rgba(255,255,255,0.02); display: flex; flex-direction: column; justify-content: space-between;" onmouseover="this.style.borderColor='var(--accent-violet)'; this.style.transform='translateY(-3px)';" onmouseout="this.style.borderColor='var(--border-glass)'; this.style.transform='translateY(0)';">
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                  <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(139, 92, 246, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: var(--accent-violet);">
+                    <i class="ph ph-sparkle"></i>
+                  </div>
+                  <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-violet); background: rgba(139, 92, 246, 0.12); padding: 0.25rem 0.75rem; border-radius: 50px; border: 1px solid rgba(139, 92, 246, 0.25);">
+                    Placify AI Simulator
+                  </span>
+                </div>
+                <h3 style="color: #fff; font-family: var(--font-heading); margin-bottom: 0.6rem; font-size: 1.3rem;">Prepare on Placify AI</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.2rem;">
+                  Practice interview questions directly inside Placify AI, tailored to your domain, roadmap topics, and skill level.
+                </p>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--accent-violet); font-weight: 700; font-size: 0.9rem;">
+                <span>Start AI Practice Session</span> <i class="ph ph-arrow-right"></i>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Past Practice History -->
+          <div id="interview-history-section" style="margin-top: 1.5rem; display: none;">
+            <h4 style="color: #fff; font-family: var(--font-heading); margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="ph ph-clock-counter-clockwise" style="color: var(--accent-amber);"></i> Recent Interview Practice History
+            </h4>
+            <div id="interview-history-list" style="display: grid; gap: 0.75rem;"></div>
+          </div>
+        </div>
+
+        <!-- 2. OPTION 1 WORKFLOW: LEARN FROM OTHER WEBSITES -->
+        <div id="interview-external-workflow" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
+            <button type="button" class="btn btn-secondary back-to-interview-hub-btn">
+              <i class="ph ph-arrow-left"></i> Back to Studio Hub
+            </button>
+            <span style="font-size: 0.82rem; color: var(--text-muted);">
+              Showing interview resources for <strong id="ext-current-topic-label" style="color: var(--accent-cyan);">Core Concepts</strong>
+            </span>
+          </div>
+
+          <!-- Step A: Choose Preparation Day or Topic -->
+          <div style="background: rgba(255,255,255,0.02); padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-glass); margin-bottom: 1.5rem;">
+            <h4 style="color: #fff; font-family: var(--font-heading); margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="ph ph-calendar" style="color: var(--accent-cyan);"></i> Choose Interview Preparation Phase / Day
+            </h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; align-items: center;">
+              <div>
+                <label for="interview-ext-phase-select" style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 0.3rem;"><i class="ph ph-calendar"></i> Roadmap Phase / Day:</label>
+                <select id="interview-ext-phase-select" class="form-control" style="background: rgba(15, 23, 42, 0.8);">
+                  <option value="">-- Select from your Roadmap Phases --</option>
+                </select>
+              </div>
+              <div id="interview-ext-custom-topic-container">
+                <label for="interview-ext-custom-topic" style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 0.3rem;"><i class="ph ph-pencil-simple"></i> Or Specific Topic / Concept:</label>
+                <input type="text" id="interview-ext-custom-topic" class="form-control" placeholder="e.g. Asynchronous JavaScript, Closures, System Design">
+              </div>
+              <div>
+                <label for="interview-ext-resource-type" style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 0.3rem;"><i class="ph ph-tag"></i> Resource Type:</label>
+                <select id="interview-ext-resource-type" class="form-control" style="background: rgba(15, 23, 42, 0.8);">
+                  <option value="all" selected>All Resource Types</option>
+                  <option value="interview_questions">Interview Questions & Answers</option>
+                  <option value="coding_practice">Coding Practice & Challenges</option>
+                  <option value="tutorials">Tutorials & Concept Guides</option>
+                  <option value="documentation">Official Documentation</option>
+                  <option value="mock_interviews">Mock Interviews & Problem Kits</option>
+                </select>
+              </div>
+              <div style="padding-top: 1.4rem;">
+                <button type="button" id="interview-ext-fetch-resources-btn" class="btn btn-primary" style="width: 100%;">
+                  <i class="ph ph-magnifying-glass"></i> Explore Resources
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step B: Recommended External Websites Grid -->
+          <div id="interview-external-cards-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.2rem;">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- 3. OPTION 2 WORKFLOW: PREPARE ON PLACIFY AI -->
+        <div id="interview-placify-workflow" style="display: none;">
+          <!-- Top Bar with Back and Generate More buttons -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
+            <button type="button" class="btn btn-secondary back-to-interview-hub-btn" id="btn-qa-back-hub-top">
+              <i class="ph ph-arrow-left"></i> Back to Studio Hub
+            </button>
+            <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+              <button type="button" id="btn-generate-more-questions" class="btn btn-primary" style="padding: 0.55rem 1.25rem; font-size: 0.88rem; display: inline-flex; align-items: center; gap: 0.45rem;">
+                <i class="ph ph-sparkle"></i> Generate More Questions
+              </button>
+            </div>
+          </div>
+
+          <!-- Header Section with Detected Domain -->
+          <div class="glass-card" style="padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid var(--border-glass); background: rgba(255,255,255,0.02);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.45rem; flex-wrap: wrap;">
+                  <span style="font-size: 0.72rem; font-weight: 800; color: var(--accent-violet); background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.3); padding: 0.2rem 0.65rem; border-radius: var(--radius-full); text-transform: uppercase; letter-spacing: 0.04em;">
+                    ⚡ Placify AI Groq Engine
+                  </span>
+                  <span id="interview-qa-domain-badge" style="font-size: 0.78rem; font-weight: 700; color: var(--accent-cyan); background: rgba(6, 182, 212, 0.12); border: 1px solid rgba(6, 182, 212, 0.25); padding: 0.2rem 0.65rem; border-radius: var(--radius-full);">
+                    <i class="ph ph-briefcase"></i> Target Domain: <strong id="interview-qa-detected-domain">Full-Stack Web Development</strong>
+                  </span>
+                  <span id="interview-qa-level-badge" style="font-size: 0.75rem; font-weight: 600; color: var(--accent-amber); background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25); padding: 0.2rem 0.55rem; border-radius: var(--radius-full);">
+                    <i class="ph ph-chart-bar"></i> <span id="interview-qa-detected-level">Intermediate</span>
+                  </span>
+                </div>
+                <h2 style="color: #fff; font-family: var(--font-heading); font-size: 1.55rem; margin: 0 0 0.35rem 0;">
+                  Interview Questions and Answers
+                </h2>
+                <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0; line-height: 1.45;">
+                  Comprehensive domain-tailored technical, coding, and conceptual interview questions with in-depth answers.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Loading Indicator -->
+          <div id="interview-practice-loading" style="display: none; text-align: center; padding: 3.5rem 1rem; background: rgba(255,255,255,0.02); border-radius: var(--radius-md); border: 1px solid var(--border-glass); margin-bottom: 1.5rem;">
+            <div class="spinner" style="margin: 0 auto 1.2rem auto; width: 44px; height: 44px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--accent-violet); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+            <h4 style="color: #fff; font-family: var(--font-heading); font-size: 1.2rem; margin-bottom: 0.5rem;">Generating Interview Questions & Answers...</h4>
+            <p style="color: var(--text-muted); font-size: 0.88rem;" id="interview-loading-subtext">Synthesizing domain knowledge and technical interview patterns via Groq AI.</p>
+          </div>
+
+          <!-- Error Indicator -->
+          <div id="interview-practice-error" style="display: none; text-align: center; padding: 3rem 1.5rem; background: rgba(239, 68, 68, 0.05); border-radius: var(--radius-md); border: 1px solid rgba(239, 68, 68, 0.2); margin-bottom: 1.5rem;">
+            <i class="ph ph-warning-circle" style="font-size: 2.5rem; color: var(--accent-rose); margin-bottom: 0.8rem; display: block;"></i>
+            <h4 style="color: #fff; font-family: var(--font-heading); margin-bottom: 0.4rem;">Question Generation Issue</h4>
+            <p id="interview-practice-error-msg" style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.2rem; max-width: 550px; margin-left: auto; margin-right: auto;">
+              Failed to generate interview questions. Please try again.
+            </p>
+            <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+              <button type="button" class="btn btn-secondary back-to-interview-hub-btn">Back to Studio Hub</button>
+              <button type="button" id="btn-retry-generate-questions" class="btn btn-primary">
+                <i class="ph ph-arrow-clockwise"></i> Try Again
+              </button>
+            </div>
+          </div>
+
+          <!-- Direct Questions & Answers Content Container -->
+          <div id="interview-qa-container" style="display: flex; flex-direction: column; gap: 1.3rem;">
+            <!-- Dynamically populated numbered questions and answers -->
+          </div>
+
+          <!-- Bottom Actions Bar -->
+          <div id="interview-qa-bottom-actions" style="margin-top: 2rem; display: none; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; padding-top: 1.5rem; border-top: 1px solid var(--border-glass);">
+            <button type="button" class="btn btn-secondary back-to-interview-hub-btn" id="btn-qa-back-hub-bottom">
+              <i class="ph ph-arrow-left"></i> Back to Studio Hub
+            </button>
+            <button type="button" id="btn-generate-more-questions-bottom" class="btn btn-primary" style="padding: 0.65rem 1.4rem; font-size: 0.92rem; display: inline-flex; align-items: center; gap: 0.5rem;">
+              <i class="ph ph-sparkle"></i> Generate More Questions
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- VIEW 8: Progress & Mastery Dashboard -->
+    <section id="view-progress-analytics" class="view-section">
+      <div class="glass-card">
+        <div class="section-title">
+          <i class="ph ph-chart-bar-horizontal"></i>
+          Phase 6: Mastery & Progress Analytics Studio
+        </div>
+        <div style="margin-bottom: 0.8rem;">
+          <button type="button" class="page-context-help-btn" data-page-help="progressAnalytics" title="What can I do in Analytics?">
+            <i class="ph ph-question"></i> What can I do here?
+          </button>
+        </div>
+        <p class="section-subtitle">Managed by <strong
+            style="color: var(--accent-emerald);">`progress_tracker`</strong>. Real-time updates on mastery %, streaks,
+          XP gain, and skill tier upgrades.</p>
+
+        <div
+          style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.2rem; margin-bottom: 2rem;">
+          <div class="glass-card" style="text-align: center; padding: 1.2rem;">
+            <i class="ph ph-percent" style="font-size: 2rem; color: var(--accent-violet);"></i>
+            <div style="font-size: 1.8rem; font-family: var(--font-heading); font-weight: 800; margin: 0.4rem 0;"
+              id="analytics-mastery-num">0%</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Domain Mastery</div>
+          </div>
+
+          <div class="glass-card" style="text-align: center; padding: 1.2rem;">
+            <i class="ph ph-flame" style="font-size: 2rem; color: var(--accent-amber);"></i>
+            <div style="font-size: 1.8rem; font-family: var(--font-heading); font-weight: 800; margin: 0.4rem 0;"
+              id="analytics-streak-num">1</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Current Streak (Days)</div>
+          </div>
+
+          <div class="glass-card" style="text-align: center; padding: 1.2rem;">
+            <i class="ph ph-lightning" style="font-size: 2rem; color: var(--accent-cyan);"></i>
+            <div style="font-size: 1.8rem; font-family: var(--font-heading); font-weight: 800; margin: 0.4rem 0;"
+              id="analytics-xp-num">0</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Total XP Earned</div>
+          </div>
+
+          <div class="glass-card" style="text-align: center; padding: 1.2rem; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 0;">
+            <i class="ph ph-shield-check" style="font-size: 2rem; color: var(--accent-emerald);"></i>
+            <div style="font-size: clamp(1rem, 1.4vw, 1.35rem); font-family: var(--font-heading); font-weight: 800; margin: 0.4rem 0; min-width: 0; max-width: 100%; overflow-wrap: break-word; word-break: break-word; line-height: 1.25; text-align: center; color: #fff;"
+              id="analytics-tier-name">BEGINNER</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.2;">Current Skill Tier</div>
+          </div>
+        </div>
+
+        <div id="assessment-result-summary" style="margin-top:1.2rem; padding:1rem; border:1px solid var(--border-glass); border-radius:var(--radius-sm); color:var(--text-muted);">
+          Complete today's assessment to see your result. The assessment is optional.
+        </div>
+        <div style="margin-top: 1.5rem; display:flex; justify-content:flex-end; gap:0.7rem; flex-wrap:wrap;">
+          <button id="take-interview-btn" class="btn btn-secondary" style="display:none;">Practice Interview Questions <i class="ph ph-microphone"></i></button>
+          <button id="skip-interview-btn" class="btn btn-primary">Skip & Continue to Next Day <i class="ph ph-arrow-right"></i></button>
+          <button id="continue-learning-btn" class="btn btn-primary" style="display:none;">Continue Next Daily Learning Task <i class="ph ph-arrow-right"></i></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 8: Dedicated Tech News Hub -->
+    <section id="view-tech-news" class="view-section">
+      <div class="glass-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding-bottom: 1.2rem; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div class="section-title" style="display: flex; align-items: center; gap: 0.6rem; font-size: 1.4rem;">
+              <i class="ph ph-newspaper" style="color: var(--accent-cyan);"></i> 📰 All Tech News Feed
+            </div>
+            <p class="section-subtitle" style="margin-bottom: 0;">
+              Real-time technology news across AI, Web Development, Cloud & DevOps, Data Science, Cyber Security, Software Engineering, and Systems.
+            </p>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap;">
+            <button type="button" class="page-context-help-btn" data-page-help="techNews" title="What can I do in Tech News?">
+              <i class="ph ph-question"></i> What can I do here?
+            </button>
+            <span id="news-personalized-tag" class="news-personalized-tag" style="font-size: 0.78rem; font-weight: 700; color: var(--accent-cyan); background: rgba(6, 182, 212, 0.12); padding: 0.35rem 0.85rem; border-radius: var(--radius-full); border: 1px solid rgba(6, 182, 212, 0.3);">
+              ALL TECH NEWS • LATEST FEED
+            </span>
+            <span id="news-last-updated" class="news-last-updated" style="font-size: 0.78rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.05); padding: 0.35rem 0.85rem; border-radius: var(--radius-full); border: 1px solid var(--border-glass);">
+              <i class="ph ph-clock"></i> Updating...
+            </span>
+          </div>
+        </div>
+
+        <!-- News Cards Container -->
+        <div id="tech-news-feed-container" class="news-feed-container news-feed-grid">
+          <!-- Dynamically populated tech news cards -->
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 9: Dynamic Internship Recommendation & Application Links -->
+    <section id="view-internships" class="view-section">
+      <div class="glass-card">
+        <!-- Section Title Bar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div class="section-title">
+              <i class="ph ph-briefcase" style="color: var(--accent-emerald);"></i> Real-Time Internship Opportunities
+            </div>
+            <p class="section-subtitle" style="margin-bottom: 0;">
+              Dynamically fetched real internship listings tailored to your domain: <strong id="internship-user-domain-label" style="color: var(--accent-cyan);">Selected Domain</strong>
+            </p>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <button type="button" class="page-context-help-btn" data-page-help="internships" title="What can I do in Internships?">
+              <i class="ph ph-question"></i> What can I do here?
+            </button>
+            <span id="internship-count-badge" style="font-size: 0.78rem; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.12); padding: 0.35rem 0.85rem; border-radius: var(--radius-full); border: 1px solid rgba(16, 185, 129, 0.3); font-weight: 700;">
+              <i class="ph ph-sparkle"></i> Dynamic Real Jobs API
+            </span>
+            <button id="refresh-internships-btn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.4rem 0.9rem;" title="Fetch Latest Internships">
+              <i class="ph ph-arrows-counter-clockwise"></i> Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Controls & Filtering Bar -->
+        <div class="internships-filter-bar glass-card" style="margin-bottom: 1.5rem; padding: 1rem; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.8rem; align-items: center;">
+          <!-- Keyword Search -->
+          <div class="form-group" style="margin: 0;">
+            <label style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.2rem; display: block;"><i class="ph ph-magnifying-glass"></i> Custom Keywords:</label>
+            <input type="text" id="internship-search-input" class="form-control" placeholder="e.g. Python, React, Machine Learning..." style="padding: 0.45rem 0.75rem; font-size: 0.85rem;">
+          </div>
+
+          <!-- Domain Override Select -->
+          <div class="form-group" style="margin: 0;">
+            <label style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.2rem; display: block;"><i class="ph ph-compass"></i> Tech Domain:</label>
+            <select id="internship-domain-select" class="form-control" style="padding: 0.45rem 0.75rem; font-size: 0.85rem; background: var(--bg-card); color: #fff;">
+              <option value="fullstack">Full-Stack Web Development</option>
+              <option value="datascience">Data Science & Machine Learning</option>
+              <option value="ai_llm">Artificial Intelligence / GenAI</option>
+              <option value="cybersecurity">Cybersecurity & SOC</option>
+              <option value="data_analytics">Data Analytics & BI</option>
+              <option value="devops">Cloud Computing & DevOps</option>
+              <option value="mobile">Android & Mobile Development</option>
+              <option value="dsa">Software Development & DSA</option>
+            </select>
+          </div>
+
+          <!-- Location Filter -->
+          <div class="form-group" style="margin: 0;">
+            <label style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.2rem; display: block;"><i class="ph ph-map-pin"></i> Location:</label>
+            <input type="text" id="internship-location-input" class="form-control" value="India" placeholder="e.g. India, Remote, USA..." style="padding: 0.45rem 0.75rem; font-size: 0.85rem;">
+          </div>
+
+          <!-- Filter Action Button -->
+          <div style="margin-top: auto; display: flex; gap: 0.5rem;">
+            <button type="button" id="apply-internship-filter-btn" class="btn btn-primary" style="width: 100%; padding: 0.5rem; font-size: 0.85rem;">
+              <i class="ph ph-funnel"></i> Search Internships
+            </button>
+          </div>
+        </div>
+
+        <!-- Internship Cards Container -->
+        <div id="internships-cards-container" class="internships-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.25rem;">
+          <!-- Dynamically populated internship cards -->
+        </div>
+
+        <!-- Pagination Controls -->
+        <div id="internship-pagination-container" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+          <span id="internship-page-info" style="font-size: 0.82rem; color: var(--text-muted);">
+            Showing page <strong id="internship-current-page" style="color: #fff;">1</strong>
+          </span>
+          <div style="display: flex; gap: 0.5rem;">
+            <button type="button" id="internship-prev-page-btn" class="btn btn-secondary" style="padding: 0.35rem 0.85rem; font-size: 0.8rem;" disabled>
+              <i class="ph ph-caret-left"></i> Previous
+            </button>
+            <button type="button" id="internship-next-page-btn" class="btn btn-secondary" style="padding: 0.35rem 0.85rem; font-size: 0.8rem;">
+              Next <i class="ph ph-caret-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- News Cards Container -->
+        <div id="tech-news-feed-container" class="news-feed-container news-feed-grid">
+          <!-- Dynamically populated tech news cards -->
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 10: Application Tracking System (My Applications) -->
+    <section id="view-my-applications" class="view-section">
+      <div class="glass-card">
+        <!-- Title Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div class="section-title">
+              <i class="ph ph-kanban" style="color: var(--accent-cyan);"></i> My Applications
+            </div>
+            <p class="section-subtitle" style="margin-bottom: 0;">
+              Track your confirmed internship & job application progress, status timelines, and connected preparation.
+            </p>
+          </div>
+          <button type="button" class="page-context-help-btn" data-page-help="myApplications" title="What can I do in My Applications?">
+              <i class="ph ph-question"></i> What can I do here?
+            </button>
+            <button id="refresh-ats-btn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.4rem 0.9rem;" title="Refresh Applications">
+            <i class="ph ph-arrows-counter-clockwise"></i> Refresh Tracker
+          </button>
+        </div>
+
+        <!-- Primary Dashboard Header: Total Applications Submitted -->
+        <div class="ats-hero-banner" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.12), rgba(16, 185, 129, 0.12)); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: var(--radius-md); padding: 1.25rem 1.5rem; margin-bottom: 1.5rem;">
+          <div>
+            <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-cyan); font-weight: 800;">
+              Total Applications Submitted
+            </div>
+            <div style="font-size: 2.2rem; font-weight: 800; color: #fff; line-height: 1.2; margin-top: 0.2rem;">
+              <span id="ats-hero-total-num">0</span> Applications Submitted
+            </div>
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.3rem; margin-bottom: 0;">
+              Only opportunities where you confirmed "Application Submitted" are counted here.
+            </p>
+          </div>
+        </div>
+
+        <!-- Applications Cards Grid -->
+        <div id="my-applications-grid" class="applications-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.25rem;">
+          <!-- Dynamically populated application cards -->
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL 1: Post-Apply Confirmation ("Have you submitted your application?") -->
+  <div id="post-apply-modal" class="modal-overlay" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(3,7,18,0.85); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:1rem;">
+    <div class="glass-card" style="width:min(520px, 100%); padding:2rem; border:1px solid rgba(16, 185, 129, 0.35); box-shadow:0 20px 70px rgba(0,0,0,0.5);">
+      <div style="display:flex; align-items:center; gap:.75rem; margin-bottom:.5rem;">
+        <i class="ph ph-paper-plane-tilt" style="font-size:1.8rem; color:var(--accent-emerald);"></i>
+        <h2 style="margin:0; color:#fff; font-size:1.3rem;">Have you submitted your application?</h2>
+      </div>
+      <p style="color:var(--text-muted); line-height:1.5; margin:.5rem 0 1.2rem; font-size:0.88rem;">
+        You can track this opportunity in Placify AI after submitting your application on the external portal for <strong id="post-apply-job-title" style="color:#fff;">Job Title</strong> at <strong id="post-apply-company" style="color:var(--accent-cyan);">Company</strong>.
+      </p>
+
+      <div id="post-apply-alert-box" class="alert-box alert-error" style="display:none; margin-bottom:1rem;"></div>
+
+      <div style="display:flex; gap:0.75rem; justify-content:flex-end; margin-top:1.5rem;">
+        <button type="button" id="btn-cancel-track-app" class="btn btn-secondary" style="padding:0.6rem 1.2rem; font-size:0.88rem;">
+          Not Yet
+        </button>
+        <button type="button" id="btn-confirm-track-app" class="btn btn-emerald" style="padding:0.6rem 1.4rem; font-size:0.88rem;">
+          <i class="ph ph-check"></i> Application Submitted
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Update Application Status & Notes -->
+  <div id="update-app-status-modal" class="modal-overlay" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(3,7,18,0.85); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:1rem;">
+    <div class="glass-card" style="width:min(580px, 100%); padding:2rem; border:1px solid rgba(139, 92, 246, 0.35); box-shadow:0 20px 70px rgba(0,0,0,0.5); max-height:90vh; overflow-y:auto;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <div style="display:flex; align-items:center; gap:.75rem;">
+          <i class="ph ph-pencil-simple" style="font-size:1.5rem; color:var(--accent-violet);"></i>
+          <h3 style="margin:0; color:#fff; font-size:1.2rem;">Update Application Status</h3>
+        </div>
+        <button type="button" id="close-update-status-modal-btn" class="assistant-icon-btn"><i class="ph ph-x"></i></button>
+      </div>
+
+      <div style="margin-bottom:1rem; padding:0.75rem; background:rgba(255,255,255,0.03); border-radius:8px; border:1px solid var(--border-color);">
+        <div id="update-status-app-title" style="font-weight:700; color:#fff;">Job Title</div>
+        <div id="update-status-app-company" style="font-size:0.82rem; color:var(--accent-cyan);">Company</div>
+      </div>
+
+      <form id="update-status-form">
+        <input type="hidden" id="update-status-app-id" value="">
+
+        <!-- Status Radio Selector Grid -->
+        <label style="font-size:0.8rem; color:var(--text-muted); font-weight:700; margin-bottom:0.4rem; display:block;">Select Placify Status:</label>
+        <div class="status-radio-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:0.6rem; margin-bottom:1.2rem;">
+          <label class="status-radio-label"><input type="radio" name="appStatusRadio" value="Saved"> <span>⚪ Saved</span></label>
+          <label class="status-radio-label"><input type="radio" name="appStatusRadio" value="Applied"> <span>🟡 Applied</span></label>
+          <label class="status-radio-label"><input type="radio" name="appStatusRadio" value="Assessment"> <span>🟣 Assessment</span></label>
+          <label class="status-radio-label"><input type="radio" name="appStatusRadio" value="Interview"> <span>🔵 Interview</span></label>
+          <label class="status-radio-label"><input type="radio" name="appStatusRadio" value="Offer"> <span>🟢 Offer</span></label>
+          <label class="status-radio-label"><input type="radio" name="appStatusRadio" value="Rejected"> <span>🔴 Rejected</span></label>
+          <label class="status-radio-label"><input type="radio" name="appStatusRadio" value="Withdrawn"> <span>🔘 Withdrawn</span></label>
+        </div>
+
+        <!-- Optional Interview Details Fields -->
+        <div id="interview-details-fields" style="display:none; background:rgba(56, 189, 248, 0.06); border:1px solid rgba(56, 189, 248, 0.25); padding:1rem; border-radius:10px; margin-bottom:1.2rem;">
+          <div style="font-size:0.85rem; font-weight:700; color:var(--accent-cyan); margin-bottom:0.6rem; display:flex; align-items:center; gap:0.4rem;">
+            <i class="ph ph-calendar"></i> Interview Details (Optional)
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin-bottom:0.6rem;">
+            <div class="form-group" style="margin:0;">
+              <label style="font-size:0.75rem; color:var(--text-muted);">Round Name:</label>
+              <input type="text" id="interview-round-input" class="form-control" placeholder="e.g. Technical Round 1">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label style="font-size:0.75rem; color:var(--text-muted);">Interview Date:</label>
+              <input type="date" id="interview-date-input" class="form-control">
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem;">
+            <div class="form-group" style="margin:0;">
+              <label style="font-size:0.75rem; color:var(--text-muted);">Interview Time:</label>
+              <input type="time" id="interview-time-input" class="form-control">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label style="font-size:0.75rem; color:var(--text-muted);">Interview Type:</label>
+              <select id="interview-type-input" class="form-control" style="background:var(--bg-card); color:#fff;">
+                <option value="Online">Online / Video Call</option>
+                <option value="In-person">In-person Onsite</option>
+                <option value="Phone Screen">Phone Screen</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notes Input -->
+        <div class="form-group" style="margin-bottom:1.2rem;">
+          <label style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">Student Notes (Optional):</label>
+          <textarea id="update-status-notes-input" class="form-control" rows="3" placeholder="e.g. Recruiter mentioned 3 rounds. Revise Python and SQL questions."></textarea>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
+          <button type="button" id="cancel-update-status-btn" class="btn btn-secondary">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Save Status Update</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 3: Timeline & Preparation Connection Drawer/Modal -->
+  <div id="app-timeline-modal" class="modal-overlay" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(3,7,18,0.85); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:1rem;">
+    <div class="glass-card" style="width:min(640px, 100%); padding:2rem; border:1px solid rgba(139, 92, 246, 0.35); box-shadow:0 20px 70px rgba(0,0,0,0.5); max-height:90vh; overflow-y:auto;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <div style="display:flex; align-items:center; gap:.75rem;">
+          <i class="ph ph-clock-counter-clockwise" style="font-size:1.5rem; color:var(--accent-cyan);"></i>
+          <h3 style="margin:0; color:#fff; font-size:1.2rem;">Application Timeline & Preparation</h3>
+        </div>
+        <button type="button" id="close-timeline-modal-btn" class="assistant-icon-btn"><i class="ph ph-x"></i></button>
+      </div>
+
+      <div id="timeline-modal-header-info" style="margin-bottom:1.2rem; padding:1rem; background:rgba(255,255,255,0.03); border-radius:10px; border:1px solid var(--border-color);">
+        <!-- Dynamically rendered header -->
+      </div>
+
+      <!-- Preparation Connection Banner -->
+      <div id="timeline-prep-connection-box" style="margin-bottom:1.5rem;">
+        <!-- Dynamically populated prep recommendations -->
+      </div>
+
+      <!-- Status Timeline History -->
+      <div style="margin-bottom:1.5rem;">
+        <h4 style="font-size:0.95rem; font-weight:700; color:#fff; margin-bottom:0.8rem; display:flex; align-items:center; gap:0.4rem;">
+          <i class="ph ph-git-commit" style="color:var(--accent-emerald);"></i> Status Timeline History
+        </h4>
+        <div id="timeline-history-container" class="timeline-stepper">
+          <!-- Dynamically populated status history timeline -->
+        </div>
+      </div>
+
+      <!-- Student Notes Log -->
+      <div style="margin-bottom:1.5rem;">
+        <h4 style="font-size:0.95rem; font-weight:700; color:#fff; margin-bottom:0.5rem; display:flex; align-items:center; gap:0.4rem;">
+          <i class="ph ph-note" style="color:var(--accent-violet);"></i> Application Notes
+        </h4>
+        <div id="timeline-notes-box" style="font-size:0.85rem; color:var(--text-muted); padding:0.8rem; background:rgba(255,255,255,0.02); border-radius:8px; border:1px solid var(--border-color);">
+          No notes added.
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border-color); padding-top:1rem;">
+        <span style="font-size:0.75rem; color:var(--text-muted);">Placify Student-Managed Status</span>
+        <a id="timeline-external-link-btn" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="font-size:0.82rem;">
+          Track on Original Website <i class="ph ph-arrow-square-out"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  </main>
+
+  <!-- GLOBAL FLOATING CONTEXT-AWARE CHATBOT WIDGET -->
+  <div id="placify-chatbot-widget" class="placify-chatbot-root">
+    <!-- Floating Circular Trigger (AI Assistant Sparkle FAB) -->
+    <button id="placify-chatbot-trigger" class="placify-chatbot-fab" aria-label="Placify AI Assistant" title="Placify AI Assistant">
+      <span class="fab-icon-ai" aria-hidden="true">
+        <svg class="ai-sparkle-icon" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+          <path d="M5 3v4"/>
+          <path d="M19 17v4"/>
+          <path d="M3 5h4"/>
+          <path d="M17 19h4"/>
+        </svg>
+      </span>
+      <span class="fab-icon-close" aria-hidden="true">
+        <svg class="ai-close-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </span>
+      <span class="sr-only">Placify AI Assistant</span>
+    </button>
+
+    <!-- Floating Chat Panel -->
+    <div id="placify-chatbot-panel" class="placify-chatbot-panel" style="display: none;" role="dialog" aria-labelledby="chatbot-header-title">
+      <!-- Header -->
+      <div class="chatbot-header">
+        <div class="chatbot-header-left">
+          <div class="chatbot-avatar">
+            <i class="ph ph-sparkle"></i>
+            <span class="chatbot-status-indicator" title="Assistant Online"></span>
+          </div>
+          <div class="chatbot-title-box">
+            <h4 id="chatbot-header-title" class="chatbot-title">Placify AI Assistant</h4>
+            <span id="chatbot-context-badge" class="chatbot-context-badge">Placement Guide</span>
+          </div>
+        </div>
+        <div class="chatbot-header-actions">
+          <button id="chatbot-clear-btn" type="button" class="chatbot-icon-btn" title="Clear conversation" aria-label="Clear conversation">
+            <i class="ph ph-trash"></i>
+          </button>
+          <button id="chatbot-close-btn" type="button" class="chatbot-icon-btn" title="Close chat" aria-label="Close chat">
+            <i class="ph ph-x"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Messages Scroll Area -->
+      <div id="chatbot-messages-container" class="chatbot-messages">
+        <!-- Initial Greeting -->
+        <div class="chat-message chat-message-assistant">
+          <div class="chat-bubble chat-bubble-assistant">
+            <p>Hi! I'm your <strong>Placify AI Assistant</strong>. Ask me anything about this page or your learning journey.</p>
+          </div>
+        </div>
+        <!-- Dynamic Suggestion Chips -->
+        <div id="chatbot-chips-container" class="chatbot-chips"></div>
+      </div>
+
+      <!-- Typing / Loading Indicator -->
+      <div id="chatbot-typing-indicator" class="chatbot-typing-indicator" style="display: none;">
+        <div class="typing-bubble">
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+        </div>
+        <span class="typing-text">Thinking...</span>
+      </div>
+
+      <!-- Error / Retry Notice -->
+      <div id="chatbot-error-notice" class="chatbot-error-notice" style="display: none;">
+        <span id="chatbot-error-text">Failed to get response.</span>
+        <button id="chatbot-retry-btn" type="button" class="chatbot-retry-link">Retry</button>
+      </div>
+
+      <!-- Input Area -->
+      <div class="chatbot-input-container">
+        <textarea id="chatbot-input" class="chatbot-textarea" placeholder="Ask a question about this page..." rows="1" maxlength="1000"></textarea>
+        <button id="chatbot-send-btn" type="button" class="chatbot-send-btn" aria-label="Send message" title="Send (Enter)">
+          <i class="ph ph-paper-plane-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fullscreen Loading Overlay for Automatic Roadmap Generation -->
+  <div id="roadmap-loading-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(10, 15, 30, 0.92); backdrop-filter: blur(12px); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 2rem;">
+    <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-glass); padding: 2.5rem 3rem; border-radius: var(--radius-lg); max-width: 500px; width: 90%; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+      <div style="font-size: 3rem; color: var(--accent-cyan); margin-bottom: 1rem;">
+        <i class="ph ph-spinner spinner"></i>
+      </div>
+      <h3 style="font-family: var(--font-heading); font-size: 1.4rem; color: #fff; margin-bottom: 0.6rem;">Preparing Your Personalized Roadmap</h3>
+      <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.5;">
+        Synthesizing diagnostic assessment performance, target timeline, and daily commitment using <strong>PersonalizedRoadmapAgent</strong>...
+      </p>
+      
+      <div style="display: flex; flex-direction: column; gap: 0.6rem; text-align: left; font-size: 0.82rem;">
+        <div style="display: flex; align-items: center; gap: 0.6rem; color: var(--accent-emerald);">
+          <i class="ph ph-check-circle"></i> Analyzing diagnostic performance
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.6rem; color: var(--accent-cyan);">
+          <i class="ph ph-circle-notch spinner"></i> Constructing monthly milestone roadmap
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.6rem; color: var(--text-muted);">
+          <i class="ph ph-circle"></i> Aligning weekly learning goals
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.6rem; color: var(--text-muted);">
+          <i class="ph ph-circle"></i> Preparing day-wise task breakdown
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load Application Scripts -->
+  <script src="js/config.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/agents.js"></script>
+  <script src="js/app.js"></script>
+
+  <!-- ========================================================================= -->
+  <!-- HOW TO USE PLACIFY AI — INTERACTIVE USER GUIDE MODAL                     -->
+  <!-- ========================================================================= -->
+  <div id="placify-guide-modal" class="modal-overlay" style="display: none; position: fixed; inset: 0; z-index: 10000; background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(10px); align-items: center; justify-content: center; padding: 1rem;" role="dialog" aria-modal="true" aria-labelledby="guide-modal-title">
+    <div class="glass-card guide-modal-dialog" style="width: min(880px, 100%); max-height: 90vh; display: flex; flex-direction: column; padding: 0; border: 1px solid rgba(6, 182, 212, 0.35); box-shadow: 0 25px 80px rgba(0, 0, 0, 0.7); overflow: hidden; border-radius: 16px;">
+      
+      <!-- Modal Header -->
+      <div class="guide-modal-header" style="padding: 1.25rem 1.75rem; border-bottom: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.02); flex-wrap: wrap; gap: 0.8rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(139, 92, 246, 0.2)); border: 1px solid rgba(6, 182, 212, 0.4); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: var(--accent-cyan);">
+            <i class="ph ph-compass"></i>
+          </div>
+          <div>
+            <h3 id="guide-modal-title" style="margin: 0; color: #fff; font-size: 1.25rem; font-family: var(--font-heading); font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
+              How to Use Placify AI
+              <span style="font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 20px; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); font-weight: 700; border: 1px solid rgba(6, 182, 212, 0.3);">User Guide</span>
+            </h3>
+            <p style="margin: 0.2rem 0 0 0; color: var(--text-muted); font-size: 0.82rem;">Complete platform navigation, workflow roadmap, and activity finder.</p>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <button type="button" id="start-tour-from-modal-btn" class="btn btn-primary" style="padding: 0.45rem 1rem; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 0.45rem;">
+            <i class="ph ph-play-circle"></i> Start Guided Tour
+          </button>
+          <button type="button" id="close-guide-modal-btn" class="guide-close-btn" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-glass); color: #fff; width: 34px; height: 34px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: all 0.2s ease;" aria-label="Close Guide">
+            <i class="ph ph-x"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="guide-tabs-bar" style="display: flex; gap: 0.5rem; padding: 0.75rem 1.75rem; border-bottom: 1px solid var(--border-glass); background: rgba(0, 0, 0, 0.25); overflow-x: auto;">
+        <button type="button" class="guide-tab-btn active" data-tab="where-to-go">
+          <i class="ph ph-map-pin"></i> Where Should I Go?
+        </button>
+        <button type="button" class="guide-tab-btn" data-tab="menu-breakdown">
+          <i class="ph ph-list-dashes"></i> Navigation Menus
+        </button>
+        <button type="button" class="guide-tab-btn" data-tab="workflow-steps">
+          <i class="ph ph-git-commit"></i> 5-Step Workflow
+        </button>
+        <button type="button" class="guide-tab-btn" data-tab="ai-assistant-tips">
+          <i class="ph ph-sparkle"></i> AI Assistant & Tips
+        </button>
+      </div>
+
+      <!-- Scrollable Tab Content Container -->
+      <div class="guide-modal-body" style="padding: 1.5rem 1.75rem; overflow-y: auto; flex: 1;">
+        
+        <!-- TAB 1: WHERE SHOULD I GO? QUICK GUIDE -->
+        <div id="guide-tab-content-where-to-go" class="guide-tab-content active">
+          <div style="margin-bottom: 1.2rem;">
+            <h4 style="color: #fff; font-size: 1rem; margin: 0 0 0.35rem 0; font-weight: 700;">Find What You Need in One Click</h4>
+            <p style="color: var(--text-muted); font-size: 0.83rem; margin: 0;">Click any common goal below to jump straight to the right section in Placify AI.</p>
+          </div>
+
+          <div class="guide-goals-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.9rem;">
+            
+            <div class="guide-goal-card" data-action="navigate" data-target="roadmap">
+              <div class="guide-goal-icon" style="background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan);"><i class="ph ph-tree-structure"></i></div>
+              <div class="guide-goal-info">
+                <strong>I want to start or view my learning plan</strong>
+                <p>View your multi-phase roadmap, milestones, and topics.</p>
+                <span class="guide-goal-link">Go to Roadmap <i class="ph ph-arrow-right"></i></span>
+              </div>
+            </div>
+
+            <div class="guide-goal-card" data-action="navigate" data-target="dailyHub">
+              <div class="guide-goal-icon" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald);"><i class="ph ph-calendar-check"></i></div>
+              <div class="guide-goal-info">
+                <strong>I want to know today's assigned tasks</strong>
+                <p>Access curated videos, documentation & mark daily tasks done.</p>
+                <span class="guide-goal-link">Go to Daily Hub <i class="ph ph-arrow-right"></i></span>
+              </div>
+            </div>
+
+            <div class="guide-goal-card" data-action="navigate" data-target="interviewQuestions">
+              <div class="guide-goal-icon" style="background: rgba(139, 92, 246, 0.15); color: var(--accent-violet);"><i class="ph ph-chats-circle"></i></div>
+              <div class="guide-goal-info">
+                <strong>I want to prepare for job interviews</strong>
+                <p>Generate domain-specific questions & answers powered by Groq AI.</p>
+                <span class="guide-goal-link">Go to Interview Questions <i class="ph ph-arrow-right"></i></span>
+              </div>
+            </div>
+
+            <div class="guide-goal-card" data-action="navigate" data-target="progressAnalytics">
+              <div class="guide-goal-icon" style="background: rgba(245, 158, 11, 0.15); color: var(--accent-amber);"><i class="ph ph-chart-line-up"></i></div>
+              <div class="guide-goal-info">
+                <strong>I want to check my progress & score</strong>
+                <p>Review skill mastery %, streaks, XP gain, and tier level.</p>
+                <span class="guide-goal-link">Go to Analytics <i class="ph ph-arrow-right"></i></span>
+              </div>
+            </div>
+
+            <div class="guide-goal-card" data-action="navigate" data-target="internships">
+              <div class="guide-goal-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;"><i class="ph ph-briefcase"></i></div>
+              <div class="guide-goal-info">
+                <strong>I want to find internship opportunities</strong>
+                <p>Browse live listings filtered by your tech domain and location.</p>
+                <span class="guide-goal-link">Go to Internships <i class="ph ph-arrow-right"></i></span>
+              </div>
+            </div>
+
+            <div class="guide-goal-card" data-action="navigate" data-target="myApplications">
+              <div class="guide-goal-icon" style="background: rgba(244, 63, 94, 0.15); color: var(--accent-rose);"><i class="ph ph-kanban"></i></div>
+              <div class="guide-goal-info">
+                <strong>I want to track submitted applications</strong>
+                <p>Manage application stages, timeline notes & follow-up alerts.</p>
+                <span class="guide-goal-link">Go to My Applications <i class="ph ph-arrow-right"></i></span>
+              </div>
+            </div>
+
+            <div class="guide-goal-card" data-action="navigate" data-target="techNews">
+              <div class="guide-goal-icon" style="background: rgba(168, 85, 247, 0.15); color: #c084fc;"><i class="ph ph-newspaper"></i></div>
+              <div class="guide-goal-info">
+                <strong>I want to read industry tech news</strong>
+                <p>Stay ahead with real-time news across software engineering.</p>
+                <span class="guide-goal-link">Go to Tech News <i class="ph ph-arrow-right"></i></span>
+              </div>
+            </div>
+
+            <div class="guide-goal-card" data-action="open-chatbot">
+              <div class="guide-goal-icon" style="background: rgba(6, 182, 212, 0.2); color: #fff;"><i class="ph ph-sparkle"></i></div>
+              <div class="guide-goal-info">
+                <strong>I need help understanding something</strong>
+                <p>Ask the floating AI Assistant about any page or task anytime.</p>
+                <span class="guide-goal-link">Open AI Assistant <i class="ph ph-chat-teardrop-text"></i></span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- TAB 2: COMPLETE NAVIGATION MENU BREAKDOWN -->
+        <div id="guide-tab-content-menu-breakdown" class="guide-tab-content" style="display: none;">
+          <div style="margin-bottom: 1.2rem;">
+            <h4 style="color: #fff; font-size: 1rem; margin: 0 0 0.35rem 0; font-weight: 700;">Navigation Bar Menu Reference</h4>
+            <p style="color: var(--text-muted); font-size: 0.83rem; margin: 0;">What every tab in the top navigation bar does and how to use it:</p>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+            
+            <div class="guide-menu-card">
+              <div class="guide-menu-header">
+                <span class="guide-menu-tag"><i class="ph ph-map-trifold"></i> Roadmap</span>
+                <span class="guide-menu-badge">Core Journey</span>
+              </div>
+              <p>Your personalized, hierarchical curriculum. Displays multi-month phases, weekly goals, and prerequisite skills tailored to your tech domain and proficiency level.</p>
+              <ul>
+                <li>View monthly milestones and roadmap completion percentage.</li>
+                <li>Drill down into weeks and days to see specific learning objectives.</li>
+                <li>Click <strong>Start My Journey</strong> to anchor tasks to real calendar dates.</li>
+              </ul>
+            </div>
+
+            <div class="guide-menu-card">
+              <div class="guide-menu-header">
+                <span class="guide-menu-tag"><i class="ph ph-calendar-check"></i> Daily Hub</span>
+                <span class="guide-menu-badge">Daily Study Cockpit</span>
+              </div>
+              <p>Your active daily workbench for studying assigned concepts and completing tasks.</p>
+              <ul>
+                <li>Access curated video lessons with chapter timestamps and official documentation.</li>
+                <li>Check off completed tasks to advance your day progress and earn XP.</li>
+                <li>Unlock and take optional phase assessments once all tasks in a phase are complete.</li>
+              </ul>
+            </div>
+
+            <div class="guide-menu-card">
+              <div class="guide-menu-header">
+                <span class="guide-menu-tag"><i class="ph ph-chats-circle"></i> Interview Questions</span>
+                <span class="guide-menu-badge">Interview Readiness</span>
+              </div>
+              <p>Targeted technical interview practice specifically generated for your domain.</p>
+              <ul>
+                <li>Generate 5 in-depth technical questions and comprehensive answers with Groq AI.</li>
+                <li>Covers coding problems, framework fundamentals, system design, and best practices.</li>
+                <li>Explore curated external interview prep links (LeetCode, NeetCode, GfG, etc.).</li>
+              </ul>
+            </div>
+
+            <div class="guide-menu-card">
+              <div class="guide-menu-header">
+                <span class="guide-menu-tag"><i class="ph ph-newspaper"></i> Tech News</span>
+                <span class="guide-menu-badge">Industry Insights</span>
+              </div>
+              <p>Live technology news aggregated from Hacker News, Google News, Dev.to, and Tavily, classified by topic.</p>
+              <ul>
+                <li>Keep up with releases, industry trends, and tech employer developments.</li>
+                <li>Build context and awareness for managerial and cultural interview conversations.</li>
+              </ul>
+            </div>
+
+            <div class="guide-menu-card">
+              <div class="guide-menu-header">
+                <span class="guide-menu-tag"><i class="ph ph-chart-line-up"></i> Analytics</span>
+                <span class="guide-menu-badge">Mastery & Progress</span>
+              </div>
+              <p>Real-time analytics engine measuring your placement preparation velocity.</p>
+              <ul>
+                <li>Track overall domain mastery percentage and active streak days.</li>
+                <li>View total XP earned and your current skill tier (Beginner, Intermediate, Advanced).</li>
+                <li>Review diagnostic quiz evaluations to spot weak topics needing extra study.</li>
+              </ul>
+            </div>
+
+            <div class="guide-menu-card">
+              <div class="guide-menu-header">
+                <span class="guide-menu-tag"><i class="ph ph-briefcase"></i> Internships</span>
+                <span class="guide-menu-badge">Job Discovery</span>
+              </div>
+              <p>Curated internship listings fetched in real-time based on your target domain and location.</p>
+              <ul>
+                <li>Search by keywords and filter by domain (Web, Cloud, Data Science, DSA, etc.).</li>
+                <li>Open genuine external employer application portals with one click.</li>
+                <li>Confirm tracking when you actually submit your application.</li>
+              </ul>
+            </div>
+
+            <div class="guide-menu-card">
+              <div class="guide-menu-header">
+                <span class="guide-menu-tag"><i class="ph ph-kanban"></i> My Applications</span>
+                <span class="guide-menu-badge">Job Tracker</span>
+              </div>
+              <p>Application Tracking System (ATS) for opportunities you have applied to.</p>
+              <ul>
+                <li>Only tracks opportunities where you explicitly confirmed submission.</li>
+                <li>Update statuses across stages: Applied, Assessment, Interview, Offer, Rejected.</li>
+                <li>Add interview dates, recruiter notes, and set follow-up alerts.</li>
+              </ul>
+            </div>
+
+            <div class="guide-menu-card">
+              <div class="guide-menu-header">
+                <span class="guide-menu-tag" style="background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan);"><i class="ph ph-sparkle"></i> Floating AI Assistant</span>
+                <span class="guide-menu-badge">24/7 Placement Guide</span>
+              </div>
+              <p>The circular sparkle widget in the bottom-right corner of your screen.</p>
+              <ul>
+                <li>Understands the exact page, domain, and task you are currently viewing.</li>
+                <li>Ask questions about technical topics, roadmap customization, or confusing code concepts.</li>
+              </ul>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- TAB 3: 5-STEP WORKFLOW JOURNEY -->
+        <div id="guide-tab-content-workflow-steps" class="guide-tab-content" style="display: none;">
+          <div style="margin-bottom: 1.2rem;">
+            <h4 style="color: #fff; font-size: 1rem; margin: 0 0 0.35rem 0; font-weight: 700;">The 5-Step Placify AI Journey</h4>
+            <p style="color: var(--text-muted); font-size: 0.83rem; margin: 0;">Follow these 5 steps to maximize your placement preparation from start to finish:</p>
+          </div>
+
+          <div class="guide-timeline">
+            
+            <div class="guide-step-card">
+              <div class="guide-step-number">1</div>
+              <div class="guide-step-body">
+                <h5>Step 1: Sign Up or Sign In</h5>
+                <p>Create your Placify AI account. Signing in unlocks cloud progress synchronization, streak tracking, and access to all personalized roadmap tools.</p>
+              </div>
+            </div>
+
+            <div class="guide-step-card">
+              <div class="guide-step-number">2</div>
+              <div class="guide-step-body">
+                <h5>Step 2: Choose Your Learning Domain</h5>
+                <p>Select your desired tech specialization from 8 core engineering domains (Full-Stack Web Development, Data Science & ML, Cloud & DevOps, AI/GenAI, Cybersecurity, DSA, etc.).</p>
+              </div>
+            </div>
+
+            <div class="guide-step-card">
+              <div class="guide-step-number">3</div>
+              <div class="guide-step-body">
+                <h5>Step 3: Select Proficiency Level & Setup</h5>
+                <p>Pick your starting point: Beginner, Intermediate, or Advanced. Review the syllabus topics and choose whether to validate your baseline via the AI diagnostic quiz or start learning immediately.</p>
+              </div>
+            </div>
+
+            <div class="guide-step-card">
+              <div class="guide-step-number">4</div>
+              <div class="guide-step-body">
+                <h5>Step 4: Explore Your Roadmap</h5>
+                <p>Review your customized multi-month roadmap. See which concepts are prerequisites for subsequent phases and follow the structured milestone path to placement readiness.</p>
+              </div>
+            </div>
+
+            <div class="guide-step-card">
+              <div class="guide-step-number">5</div>
+              <div class="guide-step-body">
+                <h5>Step 5: Master the Daily Hub & Practice</h5>
+                <p>Execute your daily study plan. Watch curated videos, read documentation, check off completed tasks, practice AI interview questions, and apply to curated internships.</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- TAB 4: AI ASSISTANT & BEST PRACTICES -->
+        <div id="guide-tab-content-ai-assistant-tips" class="guide-tab-content" style="display: none;">
+          <div style="margin-bottom: 1.2rem;">
+            <h4 style="color: #fff; font-size: 1rem; margin: 0 0 0.35rem 0; font-weight: 700;">How to Get the Most Out of Placify AI</h4>
+            <p style="color: var(--text-muted); font-size: 0.83rem; margin: 0;">Pro-tips for effective daily learning and placement success:</p>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem;">
+            <div class="glass-card" style="padding: 1.2rem; background: rgba(255, 255, 255, 0.02);">
+              <div style="font-size: 1.3rem; color: var(--accent-cyan); margin-bottom: 0.5rem;"><i class="ph ph-chat-circle-dots"></i></div>
+              <h5 style="color: #fff; margin: 0 0 0.4rem 0; font-size: 0.95rem;">Context-Aware Chatbot</h5>
+              <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0; line-height: 1.45;">The AI Assistant automatically detects what page you are on. When stuck on a task, simply open the chat and ask "Explain this task in simple terms".</p>
+            </div>
+
+            <div class="glass-card" style="padding: 1.2rem; background: rgba(255, 255, 255, 0.02);">
+              <div style="font-size: 1.3rem; color: var(--accent-amber); margin-bottom: 0.5rem;"><i class="ph ph-flame"></i></div>
+              <h5 style="color: #fff; margin: 0 0 0.4rem 0; font-size: 0.95rem;">Maintain Your Daily Streak</h5>
+              <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0; line-height: 1.45;">Completing at least one task per calendar day keeps your study streak alive and boosts your mastery ranking on the Analytics dashboard.</p>
+            </div>
+
+            <div class="glass-card" style="padding: 1.2rem; background: rgba(255, 255, 255, 0.02);">
+              <div style="font-size: 1.3rem; color: var(--accent-emerald); margin-bottom: 0.5rem;"><i class="ph ph-briefcase"></i></div>
+              <h5 style="color: #fff; margin: 0 0 0.4rem 0; font-size: 0.95rem;">Honest Application Tracking</h5>
+              <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0; line-height: 1.45;">Only mark an opportunity as "Application Submitted" after applying on the external employer site. This keeps your My Applications stats completely accurate.</p>
+            </div>
+
+            <div class="glass-card" style="padding: 1.2rem; background: rgba(255, 255, 255, 0.02);">
+              <div style="font-size: 1.3rem; color: var(--accent-violet); margin-bottom: 0.5rem;"><i class="ph ph-microphone"></i></div>
+              <h5 style="color: #fff; margin: 0 0 0.4rem 0; font-size: 0.95rem;">Weekly Mock Interview Drills</h5>
+              <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0; line-height: 1.45;">Use the Interview Questions studio to generate questions after every learning milestone. Practice explaining your logic out loud before checking the answer.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="guide-modal-footer" style="padding: 1rem 1.75rem; border-top: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.01); flex-wrap: wrap; gap: 0.8rem;">
+        <span style="font-size: 0.8rem; color: var(--text-muted);">
+          Tip: You can re-open this guide anytime via <strong>How to Use</strong> in the top header.
+        </span>
+        <button type="button" id="guide-modal-close-bottom-btn" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.45rem 1.2rem;">
+          Close Guide
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- FIRST-TIME WELCOME EXPERIENCE POPUP                                       -->
+  <!-- ========================================================================= -->
+  <div id="placify-welcome-modal" class="modal-overlay" style="display: none; position: fixed; inset: 0; z-index: 10001; background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 1rem;" role="dialog" aria-modal="true" aria-labelledby="welcome-modal-title">
+    <div class="glass-card" style="width: min(540px, 100%); padding: 2.2rem 2rem; border: 1px solid rgba(6, 182, 212, 0.4); box-shadow: 0 20px 80px rgba(0, 0, 0, 0.7); text-align: center; border-radius: 16px;">
+      
+      <div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(139, 92, 246, 0.2)); border: 1px solid var(--accent-cyan); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 1.2rem auto; color: var(--accent-cyan); animation: tourPulse 2s infinite;">
+        <i class="ph ph-hand-waving"></i>
+      </div>
+
+      <h3 id="welcome-modal-title" style="color: #fff; font-family: var(--font-heading); font-size: 1.5rem; font-weight: 800; margin: 0 0 0.6rem 0;">
+        Welcome to Placify AI!
+      </h3>
+
+      <p style="color: var(--text-muted); font-size: 0.92rem; line-height: 1.55; margin: 0 0 1.8rem 0;">
+        Your personalized placement preparation journey starts here. We'll help you choose a learning domain, follow your roadmap, practice interview questions, and track your progress.
+      </p>
+
+      <div style="display: flex; gap: 0.8rem; justify-content: center; flex-wrap: wrap;">
+        <button type="button" id="welcome-start-tour-btn" class="btn btn-primary" style="padding: 0.7rem 1.6rem; font-size: 0.95rem; font-weight: 700;">
+          <i class="ph ph-play-circle"></i> Start Guided Tour
+        </button>
+        <button type="button" id="welcome-dismiss-btn" class="btn btn-secondary" style="padding: 0.7rem 1.4rem; font-size: 0.95rem;">
+          Explore on My Own
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- INTERACTIVE GUIDED TOUR SPOTLIGHT & POPOVER WIDGET                        -->
+  <!-- ========================================================================= -->
+  <div id="placify-tour-container" style="display: none; position: fixed; inset: 0; z-index: 10002; pointer-events: none;">
+    <!-- Clickable Dark Backdrop -->
+    <div id="placify-tour-backdrop" style="position: absolute; inset: 0; background: rgba(3, 7, 18, 0.65); pointer-events: auto;"></div>
+
+    <!-- Glowing Spotlight Box around target element -->
+    <div id="placify-tour-spotlight" style="position: absolute; border-radius: 8px; box-shadow: 0 0 0 3px var(--accent-cyan), 0 0 25px rgba(6, 182, 212, 0.65); pointer-events: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+
+    <!-- Floating Tour Tooltip Popover -->
+    <div id="placify-tour-popover" class="placify-tour-popover" style="position: absolute; width: 340px; pointer-events: auto; z-index: 10003; transition: all 0.25s ease;" role="dialog" aria-labelledby="tour-step-title">
+      <div class="glass-card" style="padding: 1.25rem; border: 1px solid rgba(6, 182, 212, 0.4); box-shadow: 0 15px 50px rgba(0, 0, 0, 0.75); border-radius: 12px; background: rgba(13, 19, 33, 0.96);">
+        
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+          <span id="tour-step-badge" style="font-size: 0.72rem; font-weight: 800; color: var(--accent-cyan); background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); padding: 0.15rem 0.55rem; border-radius: 20px; text-transform: uppercase;">
+            Step 1 of 8
+          </span>
+          <button type="button" id="tour-skip-x-btn" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 0.2rem; line-height: 1;" title="Skip Tour" aria-label="Skip Tour">
+            <i class="ph ph-x"></i>
+          </button>
+        </div>
+
+        <!-- Title & Text -->
+        <h4 id="tour-step-title" style="color: #fff; font-size: 1.05rem; font-family: var(--font-heading); margin: 0 0 0.4rem 0; font-weight: 700;">
+          Step Title
+        </h4>
+        <p id="tour-step-desc" style="color: var(--text-muted); font-size: 0.84rem; line-height: 1.45; margin: 0 0 0.75rem 0;">
+          Step description text.
+        </p>
+
+        <!-- Action Prompt -->
+        <div id="tour-step-action-prompt" style="font-size: 0.78rem; color: #38bdf8; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); padding: 0.45rem 0.65rem; border-radius: 6px; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.4rem;">
+          <i class="ph ph-info"></i> <span id="tour-step-action-text">Action instructions</span>
+        </div>
+
+        <!-- Controls -->
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <button type="button" id="tour-skip-btn" style="background: transparent; border: none; color: var(--text-muted); font-size: 0.78rem; cursor: pointer; text-decoration: underline; padding: 0;">
+            Skip Tour
+          </button>
+          <div style="display: flex; gap: 0.45rem;">
+            <button type="button" id="tour-prev-btn" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
+              <i class="ph ph-arrow-left"></i> Prev
+            </button>
+            <button type="button" id="tour-next-btn" class="btn btn-primary" style="padding: 0.35rem 0.85rem; font-size: 0.8rem;">
+              Next <i class="ph ph-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</body>
+
+</html>

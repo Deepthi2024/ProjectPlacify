@@ -1,17 +1,19 @@
 {
-  "name": "placify-backend",
+  "name": "placify-ai",
   "version": "1.0.0",
-  "description": "Placify Backend API Server connected to MongoDB Atlas for User Registration and Authentication.",
-  "main": "server.js",
+  "description": "Placify AI — Placement Preparation Platform",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node scripts/start-all.js",
+    "dev": "node scripts/start-all.js",
+    "start:backend": "npm --prefix backend start",
+    "start:frontend": "npm --prefix frontend start",
+    "test:backend": "npm --prefix backend test"
   },
-  "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^16.6.1",
-    "express": "^4.19.2",
-    "groq-sdk": "^1.5.0",
-    "mongoose": "^8.3.1"
-  }
+  "keywords": [
+    "placify",
+    "placement-preparation",
+    "ai-mentorship"
+  ],
+  "author": "Placify AI Team",
+  "license": "ISC"
 }

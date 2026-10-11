@@ -1,0 +1,39 @@
+{
+  "domain": "System Design & Distributed Architecture",
+  "levels": [
+    "Beginner",
+    "Intermediate",
+    "Advanced",
+    "Unknown"
+  ],
+  "languages": [
+    "English",
+    "Hindi",
+    "Kannada",
+    "Tamil",
+    "Telugu",
+    "Malayalam",
+    "Other",
+    "Unknown"
+  ],
+  "topics": {
+    "Core Architecture Foundations": {
+      "Client-Server & Protocol Fundamentals": "HTTP/2, HTTP/3, WebSockets, gRPC, and RESTful service contracts",
+      "Database Scaling & Normalization": "ACID properties, B-Tree indexes, query optimization, connection pooling, and sharding",
+      "Caching Architectures (Redis/Memcached)": "Cache-aside, write-through, cache stampede mitigation, eviction policies (LRU), and TTL"
+    },
+    "Scalability & Availability": {
+      "Load Balancing & Reverse Proxies": "Round-robin, least connections, consistent hashing, SSL termination, and CDN edge caching",
+      "CAP Theorem & Consistency Models": "Strong vs eventual consistency, PACELC theorem, quorum consensus, and replication lag"
+    },
+    "Distributed Messaging & Storage": {
+      "Message Queues & Event Streaming (Kafka/RabbitMQ)": "Pub/sub paradigms, consumer groups, partition keys, dead letter queues, and exactly-once processing",
+      "Blob Storage & Object Stores (S3)": "Chunked multipart uploads, pre-signed URLs, lifecycle policies, and replication"
+    },
+    "Enterprise Distributed Systems": {
+      "Distributed Transactions & Sagas": "Two-phase commit limitations, Saga orchestration vs choreography, and compensating actions",
+      "Rate Limiting & Resiliency Patterns": "Token bucket, leaky bucket, sliding window counters, circuit breakers, and bulkhead isolation",
+      "High-Scale Case Studies": "Designing URL shorteners, distributed job schedulers, collaborative doc editors, and notification engines"
+    }
+  }
+}

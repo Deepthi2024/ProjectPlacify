@@ -1,0 +1,18 @@
+{
+  "name": "placify-frontend",
+  "version": "1.0.0",
+  "description": "Placify AI Frontend Application",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "placify",
+    "frontend",
+    "placement-prep",
+    "ai-learning"
+  ],
+  "author": "Placify AI Team",
+  "license": "ISC"
+}

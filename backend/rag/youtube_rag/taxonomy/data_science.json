@@ -1,0 +1,46 @@
+{
+  "domain": "Data Science & Machine Learning",
+  "levels": [
+    "Beginner",
+    "Intermediate",
+    "Advanced",
+    "Unknown"
+  ],
+  "languages": [
+    "English",
+    "Hindi",
+    "Kannada",
+    "Tamil",
+    "Telugu",
+    "Malayalam",
+    "Other",
+    "Unknown"
+  ],
+  "topics": {
+    "Python for Data Science": {
+      "Python Syntax & Data Types": "Fundamental Python variables, lists, dicts, and control flow for data workflows",
+      "NumPy Arrays & Vectorization": "N-dimensional arrays, broadcasting, vector math, and indexing",
+      "Pandas DataFrames": "Data ingestion, series, dataframes, filtering, and missing value imputation",
+      "Pandas GroupBy & Aggregations": "Split-apply-combine patterns, aggregations, pivoting, and joins",
+      "Data Cleaning & Preprocessing": "Outlier removal, data normalization, categorical encoding, and feature scaling"
+    },
+    "Exploratory Data Analysis": {
+      "Matplotlib & Seaborn": "Scatter plots, histograms, heatmaps, box plots, and multi-variable visualizations",
+      "Descriptive Statistics": "Mean, median, variance, standard deviation, skewness, and correlation analysis",
+      "Hypothesis Testing & P-values": "Null hypotheses, t-tests, chi-square tests, and statistical significance"
+    },
+    "Machine Learning Foundations": {
+      "Linear & Logistic Regression": "Ordinary least squares, gradient descent, sigmoid activation, and decision boundaries",
+      "Decision Trees & Ensembles": "Information gain, Gini impurity, Random Forests, and bagging",
+      "Gradient Boosting (XGBoost/LightGBM)": "Boosting mechanics, shrinkage, tree regularization, and tabular ML modeling",
+      "Cross-Validation & Metrics": "K-fold CV, precision, recall, F1-score, ROC-AUC, and confusion matrix",
+      "Unsupervised Learning (K-Means/PCA)": "Clustering algorithms, dimensionality reduction, and principal component projections"
+    },
+    "Deep Learning & MLOps": {
+      "Neural Networks with PyTorch/TensorFlow": "Forward passes, backpropagation, activation functions, and optimizer configuration",
+      "Convolutional & Recurrent Architectures": "CNN kernels, pooling layers, image classification, RNNs, and LSTMs",
+      "Model Deployment & Flask/FastAPI": "Exporting ONNX/pickle models, REST APIs, and microservice containerization",
+      "MLflow & Model Tracking": "Experiment tracking, model registry, artifact storage, and pipeline observability"
+    }
+  }
+}
